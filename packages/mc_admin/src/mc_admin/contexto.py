@@ -17,7 +17,9 @@ from mc_admin.infra.docker import Compose
 from mc_admin.infra.rcon import Conexion
 
 
-@dataclass(slots=True)
+# Sin slots=True a propósito: `cached_property` necesita un __dict__ donde
+# guardar lo que ya calculó, y slots se lo quita.
+@dataclass
 class Contexto:
     """Todo lo que un comando necesita saber del proyecto."""
 

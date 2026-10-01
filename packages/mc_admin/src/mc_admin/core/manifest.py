@@ -39,10 +39,16 @@ Sha256 = Annotated[str, AfterValidator(_normalizar_sha256)]
 
 
 class Destino(StrEnum):
-    """Dónde vive cada cosa dentro de la carpeta de datos del servidor."""
+    """Dónde vive cada cosa dentro de la carpeta de datos del servidor.
+
+    Los datapacks NO van en una carpeta `datapacks/` suelta: Minecraft los
+    busca DENTRO del mundo, en `world/datapacks/`. Si los pones en otro lado
+    el servidor arranca igual pero genera el mundo vanilla, sin Terralith ni
+    nada, y es un problema que no se nota hasta que exploras.
+    """
 
     PLUGINS = "plugins"
-    DATAPACKS = "datapacks"
+    DATAPACKS = "world/datapacks"
 
 
 class _Base(BaseModel):

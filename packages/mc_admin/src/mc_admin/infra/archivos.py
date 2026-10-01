@@ -49,15 +49,28 @@ def escribir_si_cambio(ruta: Path, contenido: str, *, dry_run: bool = False) -> 
         return Escritura(ruta, cambio=False, creado=False)
 
     if not dry_run:
-        ruta.parent.mkdir(parents=True, exist_ok=True)
-        # Escribimos a un temporal en la misma carpeta y luego renombramos:
-        # un corte de luz a media escritura no deja una config a medias.
-        with tempfile.NamedTemporaryFile(
-            "w", encoding="utf-8", dir=ruta.parent, delete=False, suffix=".tmp"
-        ) as tmp:
-            tmp.write(contenido)
-            temporal = Path(tmp.name)
-        temporal.replace(ruta)
+        try:
+            ruta.parent.mkdir(parents=True, exist_ok=True)
+            # Escribimos a un temporal en la misma carpeta y luego renombramos:
+            # un corte de luz a media escritura no deja una config a medias.
+            with tempfile.NamedTemporaryFile(
+                "w", encoding="utf-8", dir=ruta.parent, delete=False, suffix=".tmp"
+            ) as tmp:
+                tmp.write(contenido)
+                temporal = Path(tmp.name)
+            temporal.replace(ruta)
+        except PermissionError as exc:
+            raise ErrorDeEntorno(
+                f"no me dejan escribir en {ruta}",
+                pista=(
+                    "Casi siempre es que los archivos quedaron del usuario del "
+                    "contenedor. Arréglalo con:\n"
+                    "    sudo chown -R $USER:$USER data\n"
+                    "y revisa que UID y GID en .env sean los tuyos (`id -u`, `id -g`)."
+                ),
+            ) from exc
+        except OSError as exc:
+            raise ErrorDeEntorno(f"no pude escribir {ruta}: {exc}") from exc
 
     return Escritura(ruta, cambio=True, creado=not existia)
 
@@ -83,8 +96,20 @@ def copiar_si_cambio(origen: Path, destino: Path, *, dry_run: bool = False) -> E
     if existia and destino.stat().st_size == origen.stat().st_size:
         return Escritura(destino, cambio=False, creado=False)
     if not dry_run:
-        destino.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(origen, destino)
+        try:
+            destino.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(origen, destino)
+        except PermissionError as exc:
+            raise ErrorDeEntorno(
+                f"no me dejan copiar a {destino}",
+                pista=(
+                    "Casi siempre es que los archivos quedaron del usuario del "
+                    "contenedor. Arréglalo con:\n"
+                    "    sudo chown -R $USER:$USER data"
+                ),
+            ) from exc
+        except OSError as exc:
+            raise ErrorDeEntorno(f"no pude copiar a {destino}: {exc}") from exc
     return Escritura(destino, cambio=True, creado=not existia)
 
 
