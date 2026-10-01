@@ -58,6 +58,9 @@ class Artefacto(_Base):
     url: str = Field(pattern=r"^https://")
     sha256: Sha256
     nota: str = ""
+    # Subcarpeta dentro del destino. Vacío = directo en plugins/ o datapacks/.
+    # Floodgate busca su add-on de base de datos en plugins/floodgate/.
+    subcarpeta: str = ""
 
     @field_validator("archivo")
     @classmethod
@@ -67,6 +70,20 @@ class Artefacto(_Base):
             msg = f"el nombre de archivo '{v}' no puede traer rutas ni '..'"
             raise ValueError(msg)
         return v
+
+    @field_validator("subcarpeta")
+    @classmethod
+    def _subcarpeta_segura(cls, v: str) -> str:
+        """Una subcarpeta con .. o ruta absoluta escaparía de la carpeta de datos."""
+        if v.startswith("/") or ".." in v or "\\" in v:
+            msg = f"la subcarpeta '{v}' tiene que ser una ruta relativa sin '..'"
+            raise ValueError(msg)
+        return v.strip("/")
+
+    def ruta_destino(self, destino: Destino) -> str:
+        """Ruta relativa a la carpeta de datos donde va este archivo."""
+        partes = [destino.value, self.subcarpeta, self.archivo]
+        return "/".join(p for p in partes if p)
 
 
 class PackVanillaTweaks(_Base):
@@ -144,13 +161,12 @@ class Manifest(_Base):
 
     def archivos_repetidos(self) -> list[str]:
         """Dos artefactos con el mismo nombre de archivo se pisarían."""
-        vistos: dict[tuple[Destino, str], list[str]] = {}
+        vistos: dict[str, list[str]] = {}
         for destino, a in self.artefactos:
-            vistos.setdefault((destino, a.archivo), []).append(a.nombre)
+            vistos.setdefault(a.ruta_destino(destino), []).append(a.nombre)
         return [
-            f"{len(nombres)} artefactos escriben el mismo archivo {destino}/{archivo}: "
-            f"{', '.join(nombres)}"
-            for (destino, archivo), nombres in vistos.items()
+            f"{len(nombres)} artefactos escriben el mismo archivo {ruta}: {', '.join(nombres)}"
+            for ruta, nombres in vistos.items()
             if len(nombres) > 1
         ]
 

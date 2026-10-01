@@ -1,0 +1,95 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Cambia settings.yml y vuelve a correr `mc build`.
+# ===========================================================================
+#  CoreProtect es la caja negra del servidor: registra quién puso, quitó o
+#  se llevó cada cosa, y deja revertirlo.
+#
+#  En este servidor NO hay protección de terrenos (compartimos todo), así que
+#  CoreProtect es la única red de seguridad que tenemos: si alguien se pasa
+#  de listo, se revierte y ya.
+#
+#  Comandos útiles (solo admins):
+#    /co i            -> modo inspección: pega un bloque y te dice quién fue
+#    /co lookup u:Pepe t:3d  -> qué hizo Pepe en los últimos 3 días
+#    /co rollback u:Pepe t:1d r:50  -> revierte lo de Pepe
+# ===========================================================================
+
+# SQLite (use-mysql: false): un archivo en el volumen del servidor, sin base
+# de datos aparte. Para 15 jugadores sobra, y entra en los respaldos.
+use-mysql: false
+table-prefix: co_
+
+# CoreProtect NO trae español (verificado en el jar 24.1). `mc build` deja
+# nuestra traducción completa en plugins/CoreProtect/language.yml y esta
+# clave la deja apuntando ahí.
+language: es
+
+# Las versiones las fijamos nosotros y se revisan con `mc update`.
+check-updates: false
+error-reporting: true
+api-enabled: true
+# Que diga en la consola qué está haciendo al arrancar y al purgar.
+verbose: true
+
+# CoreProtect usa radio 10 por defecto y máximo 100. Los dejamos: un
+# rollback de radio 100 ya es enorme, y poner más es la forma clásica de
+# tumbar el servidor con un comando.
+default-radius: 10
+max-radius: 100
+
+rollback-items: true
+rollback-entities: true
+# CoreProtect lo trae en true: no guarda metadatos genéricos de bloques.
+# Lo dejamos, ahorra bastante base de datos y no se pierde nada útil.
+skip-generic-data: true
+
+# --- Qué registramos ------------------------------------------------------
+#  Casi todo viene encendido por defecto y así lo dejamos. Lo que ajustamos
+#  es lo que en un servidor con granjas grandes llena la base de datos sin
+#  darte información que vayas a usar.
+
+block-place: true
+block-break: true
+natural-break: true
+block-movement: true
+pistons: true
+block-burn: true
+block-ignite: true
+fire-extinguish: false
+explosions: true
+entity-change: true
+entity-kills: true
+sign-text: true
+buckets: true
+
+# CoreProtect registra el decaimiento de hojas y el crecimiento de árboles,
+# plantas y enredaderas. Con el datapack timber y granjas de cultivos
+# automáticas, esto son MILLONES de filas al mes y nunca vas a hacer un
+# lookup de "quién dejó crecer esta hoja". Lo apagamos.
+leaf-decay: false
+tree-growth: false
+mushroom-growth: false
+vine-growth: false
+sculk-spread: false
+
+portals: true
+# El flujo de agua y lava lo apagamos por la misma razón: una granja de
+# cultivos con agua corriendo genera muchísimas filas inútiles. Lo que SÍ
+# nos interesa es quién VACIÓ la cubeta, y eso lo cubre `buckets: true`.
+water-flow: false
+lava-flow: false
+liquid-tracking: false
+
+# Estos son los importantes para "¿quién se llevó mis cosas?".
+item-transactions: true
+item-drops: true
+item-pickups: true
+
+# Los hoppers de una granja grande mueven miles de ítems por minuto. Esto
+# solo, en un servidor con ordenadores de ítems, puede ser el 90% de la base
+# de datos. Lo apagamos: para saber quién se llevó algo de un cofre ya
+# tenemos item-transactions.
+hopper-transactions: false
+
+player-interactions: true

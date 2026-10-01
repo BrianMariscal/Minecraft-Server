@@ -1,0 +1,47 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Cambia settings.yml y vuelve a correr `mc build`.
+# ===========================================================================
+#  SkinsRestorer le devuelve la skin a los jugadores no premium. Sin esto,
+#  en un servidor con online_mode: false todos se verían como Steve.
+#
+#  Los jugadores de Bedrock traen su propia skin vía Geyser y Floodgate;
+#  SkinsRestorer es sobre todo para los de Java no premium.
+# ===========================================================================
+
+# El idioma de los mensajes. SkinsRestorer trae locale_es.json incluido
+# (verificado en el jar 15.12.6). Su default es inglés.
+language: es
+
+# --- Skins por defecto -----------------------------------------------------
+# Apagado: que cada quien se ponga la suya con /skin set <nombre>.
+defaultSkins:
+  enabled: false
+  applyForPremium: false
+
+# --- Comandos --------------------------------------------------------------
+commands:
+  # Segundos de espera entre un /skin y otro. SkinsRestorer usa 5.
+  # Lo subimos a 30: cada cambio de skin es una llamada a Mojang, y con 15
+  # jugadores jugando con el /skin se acaba el límite de peticiones.
+  skinChangeCooldown: 30
+  # Sin costo por cambiar de skin: no hay economía en este servidor.
+  perSkinPermissions: false
+
+# --- Rendimiento -----------------------------------------------------------
+# Refrescar las skins cada tantos minutos. SkinsRestorer usa 15.
+# Lo subimos a 60: las skins casi no cambian y cada refresco son llamadas a
+# Mojang que pueden tardar.
+storage:
+  skinExpiresAfter: 60
+
+# --- Varios ----------------------------------------------------------------
+# Las versiones las fijamos nosotros y se revisan con `mc update`.
+updater:
+  enabled: false
+
+# No tocamos las skins de quien entra por Bedrock: Floodgate ya le puso la
+# suya y SkinsRestorer encima la pisaría.
+login:
+  # Aplica la skin al entrar, para que no se vea Steve ni un segundo.
+  applySkinOnJoin: true

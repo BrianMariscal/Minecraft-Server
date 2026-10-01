@@ -1,0 +1,168 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Cambia settings.yml y vuelve a correr `mc build`.
+# ===========================================================================
+#  Paper reescribe este archivo y le borra los comentarios en cada arranque.
+#  La copia comentada es la de minecraft/generated/.
+#  Referencia: https://docs.papermc.io/paper/reference/spigot-configuration/
+# ===========================================================================
+
+config-version: 13
+
+settings:
+  debug: false
+  # Sin proxy adelante. Con online-mode false, prender bungeecord aquí sería
+  # un hoyo de seguridad: cualquiera podría decir que viene de un proxy.
+  bungeecord: false
+  # Spigot usa 12. Con máximo {{ max_jugadores }} jugadores mostramos a todos
+  # en el ping de la lista de servidores.
+  sample-count: {{ max_jugadores }}
+  # Spigot guarda el caché de usuarios todo el tiempo. Guardarlo solo al
+  # apagar ahorra escrituras a disco, que es lo que escasea en un VPS.
+  save-user-cache-on-stop-only: true
+  user-cache-size: 1000
+  # Spigot usa 4. Lo dejamos: es un hilo de red por vCore.
+  netty-threads: 4
+  timeout-time: 60
+  restart-on-crash: false
+  # Los dejamos encendidos: saber qué mató a un aldeano o a un mob con nombre
+  # es justo lo que necesitas cuando se te cae una granja.
+  log-villager-deaths: true
+  log-named-deaths: true
+  moved-wrongly-threshold: 0.0625
+  # Spigot usa 10.0. Lo subimos porque Geyser reenvía el movimiento de los
+  # jugadores de Bedrock con un poco de retraso y el servidor los marcaba
+  # como "moved too quickly" al correr con hielo azul o en elytra.
+  moved-too-quickly-multiplier: 15.0
+
+# --- Mensajes del servidor, en español de México ---------------------------
+#  Estos seis los manda Spigot con texto fijo en inglés: no son textos
+#  vanilla, así que el cliente NO los traduce. Si no los cambiamos aquí,
+#  salen en inglés aunque el jugador tenga el juego en español.
+messages:
+  # Lo que ve quien no está en la whitelist. Amable, sin regañar.
+  whitelist: "{{ kick_whitelist }}"
+  unknown-command: "Ese comando no existe. Escribe /help para ver los que sí."
+  server-full: "El servidor está llenito ahora mismo. Intenta en un rato."
+  # {0} es la versión que pide el servidor; Spigot la rellena.
+  outdated-client: "Tu Minecraft es muy nuevo para este servidor. Usa la versión {0}."
+  outdated-server: "Este servidor todavía está en la versión {0}. Cambia tu Minecraft a esa."
+  restart: "Reiniciando el servidor, ahorita volvemos."
+
+advancements:
+  disable-saving: false
+
+world-settings:
+  default:
+    # view-distance y simulation-distance se quedan en `default` para que
+    # manden los de server.properties: un solo lugar donde buscarlos.
+    view-distance: default
+    simulation-distance: default
+
+    # --- Control de lag por configuración ----------------------------------
+    #  Rango de activación: a qué distancia del jugador una entidad deja de
+    #  pensar. Spigot trae animals 32, monsters 32, raiders 64, misc 16.
+    #
+    #  Subimos villagers y raiders, NO los bajamos: ahí es donde los
+    #  servidores rompen el juego técnico sin darse cuenta.
+    entity-activation-range:
+      # Los aldeanos tienen que seguir pensando de lejos o los salones de
+      # comercio y los criaderos se congelan cuando te alejas un poco.
+      villagers: 48
+      # Los raiders a 64 (el default) para que las raids no se atoren a
+      # media oleada.
+      raiders: 64
+      monsters: 32
+      animals: 32
+      flying-monsters: 32
+      misc: 16
+      water: 16
+      # Spigot lo trae en true. Lo dejamos: si no, los aldeanos inactivos
+      # dejan de reabastecer su comercio.
+      tick-inactive-villagers: true
+      # true por defecto, y así se queda: un aldeano en pánico (raid, zombi)
+      # tiene que seguir activo aunque esté lejos.
+      villagers-active-for-panic: true
+      villagers-work-immunity-after: 100
+      villagers-work-immunity-for: 20
+      # Que un espectador no mantenga medio mapa despierto.
+      ignore-spectators: true
+
+    # Rango de seguimiento: a qué distancia se le MANDA una entidad al
+    # cliente. Esto no cambia la lógica del servidor, solo el tráfico de red,
+    # así que aquí sí podemos recortar sin romper nada.
+    entity-tracking-range:
+      players: 128
+      # Spigot usa 96 para los dos. 64 es más que suficiente para ver venir
+      # a un mob, y baja bastante el ancho de banda con jugadores en celular.
+      animals: 64
+      monsters: 64
+      misc: 64
+      display: 128
+      other: 64
+
+    # --- Juntar ítems y orbes ---------------------------------------------
+    merge-radius:
+      # Spigot usa 0.5. Subirlo a 3.0 junta los ítems tirados en montones,
+      # lo que baja muchísimo el conteo de entidades en una granja de
+      # cultivos o de mobs. Los ítems NO se pierden: se apilan.
+      item: 3.0
+      # Spigot usa -1 (apagado). Prendemos el de XP en 4.0 por lo mismo:
+      # una granja de XP pasa de cientos de orbes a un puñado, y la
+      # experiencia total es idéntica.
+      exp: 4.0
+
+    # Spigot usa 6000 ticks (5 min) para que un ítem tirado desaparezca. Lo
+    # dejamos: bajarlo haría que las granjas con hopper lento pierdan botín.
+    item-despawn-rate: 6000
+
+    # Spigot usa 100. Lo dejamos: es el tope de TNT que se procesa por tick
+    # y bajarlo rompe los cañones.
+    max-tnt-per-tick: 100
+
+    # Spigot usa 8 (chunks desde el jugador donde pueden aparecer mobs).
+    # Lo dejamos en el default vanilla: bajarlo haría que las granjas de
+    # mobs compitan con el spawn natural de alrededor.
+    mob-spawn-range: 8
+
+    # Spigot usa 8 y 1. Lo dejamos tal cual: cambiar la velocidad de los
+    # hoppers altera el ritmo de TODOS los ordenadores de ítems y de los
+    # relojes de hopper que ya estén construidos.
+    ticks-per:
+      hopper-transfer: 8
+      hopper-check: 1
+    hopper-amount: 1
+    # false por defecto, y así se queda: un hopper que carga chunks es una
+    # forma clásica de tirar el servidor sin querer.
+    hopper-can-load-chunks: false
+
+    # Spigot usa 50 ms para cada uno. Son los topes de cuánto puede tardar
+    # un tick de bloques o de entidades antes de que Paper lo corte. Los
+    # dejamos: bajarlos hace que las granjas grandes se "salten" ticks.
+    max-tick-time:
+      tile: 50
+      entity: 50
+
+    # Los zombis tienen que seguir atacando aldeanos: así se consigue
+    # material para curarlos y bajar precios.
+    zombie-aggressive-towards-villager: true
+    # false por defecto. Si se prendiera, los mobs de spawner no sueltan
+    # botín ni XP y se mueren todas las granjas de spawner.
+    nerf-spawner-mobs: false
+    # Los pigmen de portal tienen que seguir apareciendo para las granjas
+    # de oro del Nether.
+    enable-zombie-pigmen-portal-spawns: true
+    verbose: false
+
+players:
+  disable-saving: false
+
+stats:
+  disable-saving: false
+  forced-stats: {}
+
+commands:
+  log: true
+  tab-complete: 0
+  send-namespaced: true
+  silent-commandblock-console: false

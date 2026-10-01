@@ -1,0 +1,94 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Se sobrescribe en cada build. Lo que quieras cambiar, cámbialo en
+#  settings.yml (en la raíz del proyecto) y vuelve a correr `mc build`.
+# ===========================================================================
+#  Cada línea trae el por qué cuando se aparta del valor por defecto de
+#  Minecraft.
+# ===========================================================================
+
+# --- Identidad -------------------------------------------------------------
+# El MOTD va con códigos § porque server.properties no entiende MiniMessage.
+# Son los que Geyser traduce mejor a Bedrock; nada de degradados, que Bedrock
+# los aplana a un solo color y se ve peor.
+motd={{ motd_legacy }}
+server-port={{ puerto_java }}
+
+# --- Jugadores -------------------------------------------------------------
+# Por defecto son 20; aquí jugamos máximo {{ max_jugadores }}.
+max-players={{ max_jugadores }}
+
+# --- Servidor no premium ---------------------------------------------------
+# Por defecto esto es true (solo cuentas de pago). Lo apagamos para que entren
+# cuentas no premium. La identidad la pone AuthMe (/register y /login), y la
+# whitelist es lo que evita que cualquiera entre con el nombre que quiera.
+online-mode={{ "true" if online_mode else "false" }}
+white-list={{ "true" if whitelist else "false" }}
+# Aplicar la whitelist también a los operadores: si no, un nombre con op
+# podría entrar sin estar en la lista.
+enforce-whitelist=true
+
+# --- Mundo -----------------------------------------------------------------
+difficulty={{ dificultad }}
+gamemode={{ modo_juego }}
+pvp={{ "true" if pvp else "false" }}
+{% if semilla %}
+level-seed={{ semilla }}
+{% else %}
+# Semilla vacía = aleatoria. Se fija sola en el primer arranque.
+# Para cambiarla usa `mc world reset`, no edites esto a mano.
+level-seed=
+{% endif %}
+# Mantenemos la generación vanilla: los datapacks (Terralith, Incendium,
+# Nullscape) ya se encargan de cambiar los biomas.
+level-type=minecraft\:normal
+allow-nether=true
+
+# --- Rendimiento -----------------------------------------------------------
+# Por defecto son 10 y 10. Bajamos simulation-distance a {{ simulation_distance }}
+# porque simular chunks que nadie alcanza a ver nada más gasta CPU.
+view-distance={{ view_distance }}
+simulation-distance={{ simulation_distance }}
+# Por defecto son 16 bloques donde solo los operadores pueden construir.
+# Lo ponemos en 0: en este servidor no hay protección de terrenos, compartimos
+# todo. CoreProtect queda para revertir si alguien se pasa de listo.
+spawn-protection=0
+max-world-size=29999984
+
+# --- Consola remota (RCON) -------------------------------------------------
+# Por defecto está apagada. La prendemos porque `mc console`, `mc whitelist` y
+# el contenedor de respaldos la usan. Vive solo en la red interna de Docker:
+# NUNCA abras este puerto en el firewall (ver docs/vps.md).
+enable-rcon=true
+rcon.port={{ puerto_rcon }}
+# SIN esta línea el servidor arranca pero deja RCON APAGADO, con un aviso
+# chiquito en el log: "No rcon password set in server.properties, rcon
+# disabled!". Y si RCON está apagado, NO funcionan `mc console`,
+# `mc whitelist`, `mc admin` ni los respaldos en caliente.
+#
+# Normalmente la imagen de itzg escribe esta línea sola, pero nosotros
+# usamos SKIP_SERVER_PROPERTIES=true para que no pise nuestro archivo, así
+# que nos toca ponerla. El valor sale de RCON_PASSWORD de .env.
+rcon.password={{ rcon_password }}
+broadcast-rcon-to-ops=false
+
+# --- Red -------------------------------------------------------------------
+# Por defecto true. Lo dejamos encendido: con ONLINE_MODE=false, apagar la
+# compresión o el estado no aporta nada y sí ayuda a que la lista de servidores
+# muestre el MOTD y el conteo de jugadores.
+enable-status=true
+network-compression-threshold=256
+# Sin proxy (BungeeCord/Velocity) adelante, así que esto se queda apagado.
+prevent-proxy-connections=false
+
+# --- Cosas que dejamos como vienen ----------------------------------------
+# Los mensajes de muerte, los logros y el chat vanilla se quedan igual: así
+# cada cliente los traduce a su propio idioma.
+enable-command-block=false
+spawn-monsters=true
+allow-flight=false
+# Lo prendemos para que los jugadores de Bedrock que vienen por Geyser puedan
+# mandar mensajes sin que el servidor los marque como no firmados.
+enforce-secure-profile=false
+hide-online-players=false
+log-ips=true

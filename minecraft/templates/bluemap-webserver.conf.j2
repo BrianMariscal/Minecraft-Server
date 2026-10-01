@@ -1,0 +1,37 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Cambia settings.yml y vuelve a correr `mc build`.
+# ===========================================================================
+#  El servidor web que sirve el mapa. Es su propio puerto, aparte del
+#  servidor de Minecraft.
+#
+#  Para verlo desde fuera del VPS hay que abrir este puerto en el firewall.
+#  Ver docs/vps.md. Si prefieres que el mapa sea privado, NO lo abras y
+#  entra por un túnel SSH:
+#      ssh -L {{ puerto_bluemap }}:localhost:{{ puerto_bluemap }} usuario@tu-vps
+#  y luego abre http://localhost:{{ puerto_bluemap }} en tu compu.
+# ===========================================================================
+
+enabled: true
+webroot: "bluemap/web"
+
+# El puerto sale de settings.yml (puertos.bluemap).
+port: {{ puerto_bluemap }}
+
+# Server-sent events: así el mapa mueve a los jugadores en vivo sin que
+# tengas que refrescar la página.
+sse-enabled: true
+
+additional-headers: {
+  # Los mosaicos del mapa casi no cambian, así que el navegador los puede
+  # guardar un día. Esto hace que el mapa cargue rapidísimo la segunda vez
+  # y le quita trabajo al VPS.
+  "Cache-Control": "public, max-age=86400, stale-if-error=604800"
+  "CDN-Cache-Control": "max-age=60"
+}
+
+log: {
+  file: "bluemap/logs/webserver.log"
+  append: false
+  format: "%1$s \"%3$s %4$s %5$s\" %6$s %7$s"
+}

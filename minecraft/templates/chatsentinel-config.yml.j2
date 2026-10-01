@@ -1,0 +1,130 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Cambia settings.yml y vuelve a correr `mc build`.
+# ===========================================================================
+#  ChatSentinel es el anti-spam del chat. En este servidor hace SOLO dos
+#  cosas: cortar el flood (mensajes repetidos o larguísimos) y bajarle a las
+#  mayúsculas excesivas.
+#
+#  El filtro de groserías queda APAGADO a propósito: entre amigos nos
+#  hablamos como nos hablamos. Era un requisito explícito del proyecto.
+#
+#  Solo escribimos lo que nos aparta del default.
+# ===========================================================================
+
+{% if chat.anti_spam.activo %}
+# --- Flood: letras repetidas y mensajes larguísimos ----------------------
+flood:
+  enabled: true
+  custom-module-name: "Flood"
+  # true = CORRIGE el mensaje en lugar de bloquearlo.
+  # "Holaaaaaaaa" le llega a los demás como "Holaa".
+  # Es mucho menos molesto que cancelar el mensaje y dejar al jugador
+  # preguntándose si se envió.
+  replace: true
+  # El patrón que trae ChatSentinel, con la ñ ya contemplada en la clase de
+  # caracteres: 4+ letras iguales seguidas, 20+ símbolos seguidos, o un
+  # mensaje de más de 220 caracteres.
+  pattern: '(([\p{L}\p{N}_])\2{3,})|([^\p{L}\p{N}_ñ]{20,})|(^.{220,}$)'
+
+# --- Mayúsculas excesivas ------------------------------------------------
+capitalization:
+  enabled: true
+  custom-module-name: "Mayusculas"
+  # true = lo CORRIGE a minúsculas en lugar de bloquearlo. Igual que arriba:
+  # el mensaje sí se manda, nada más sin los gritos.
+  correct: true
+  # Esto lo APAGAMOS. ChatSentinel lo trae en true y pone mayúscula a la
+  # primera letra de cada mensaje. Queda raro y condescendiente; que cada
+  # quien escriba como quiera.
+  capitalize-first-letter: false
+  # ChatSentinel permite 8 mayúsculas. Lo calculamos desde
+  # chat.anti_spam.max_mayusculas_pct ({{ chat.anti_spam.max_mayusculas_pct }}%)
+  # sobre un mensaje típico de 30 caracteres.
+  max-uppercase: {{ (30 * chat.anti_spam.max_mayusculas_pct / 100) | round | int }}
+
+# --- Espera entre mensajes -----------------------------------------------
+cooldown:
+  enabled: true
+  time:
+    # ChatSentinel usa 1000 ms entre mensajes normales. Lo subimos a
+    # {{ chat.anti_spam.segundos_entre_mensajes * 1000 }} ms
+    # ({{ chat.anti_spam.segundos_entre_mensajes }} s) según
+    # chat.anti_spam.segundos_entre_mensajes de settings.yml.
+    normal: {{ chat.anti_spam.segundos_entre_mensajes * 1000 }}
+    # 10 s si repites el MISMO mensaje: eso sí es spam.
+    repeat: 10000
+    repeat-global: 1000
+    # Los comandos los dejamos con poca espera: /tpa y /home no son spam.
+    command: 400
+{% else %}
+# chat.anti_spam.activo está en false en settings.yml: todo apagado.
+flood:
+  enabled: false
+capitalization:
+  enabled: false
+cooldown:
+  enabled: false
+{% endif %}
+
+# --- Filtro de groserías: APAGADO ----------------------------------------
+# ChatSentinel lo trae ENCENDIDO con una lista de palabrotas por idioma
+# (incluye blacklist/offense/spanish.yml). Lo apagamos: en este servidor no
+# se censura cómo habla la banda.
+blacklist:
+  enabled: false
+  censorship:
+    enabled: false
+  # Nunca mandamos un mensaje falso al jugador haciéndole creer que se envió
+  # cuando no: eso es mentirle al usuario.
+  fake_message: false
+
+# --- Otros módulos que apagamos y por qué --------------------------------
+# Publicidad: no tenemos nada que proteger de "entra a mi server", y el
+# filtro pesca cualquier mensaje con un punto (como una IP o una URL que
+# alguien quiera compartir a propósito).
+advertising:
+  enabled: false
+
+# "Syntax": bloquea mensajes que parecen comandos mal escritos. Pesca de a
+# gratis a quien escribe "/hoome" por error.
+syntax:
+  enabled: false
+
+# "Similarity": bloquea mensajes parecidos entre sí. Con 15 amigos platicando
+# se dispara con cosas normales como "si", "sí", "siii".
+similarity:
+  enabled: false
+
+# Autocorrección: la lista que trae es de faltas de ortografía en INGLÉS
+# (teh -> the, adn -> and). En un servidor en español no corrige nada y
+# podría cambiar palabras nuestras sin razón.
+correction:
+  enabled: false
+
+# Filtro de caracteres: ya viene apagado y así se queda. Si se prendiera, su
+# regex no incluye la ñ ni los acentos y nos borraría los nombres y los
+# mensajes en español.
+allowed-characters:
+  enabled: false
+
+# Obligar a moverse antes de escribir: no tiene sentido entre amigos.
+no-move-chat:
+  enabled: false
+
+general:
+  # Que no toque los nombres de los jugadores: con el prefijo "." de
+  # Floodgate, "sanitizar" nombres puede romper a los de Bedrock.
+  sanitize-names: false
+  # Solo revisamos el chat, no los comandos de otros plugins.
+  filter-other: false
+  global-bypass-permission: "chatsentinel.bypass"
+
+# Sin integraciones que no usamos.
+redis:
+  enabled: false
+discord-webhook:
+  enabled: false
+server-mute:
+  enabled: true
+  muted: false

@@ -1,0 +1,128 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Cambia settings.yml y vuelve a correr `mc build`.
+# ===========================================================================
+#  Tumbas: cuando te mueres, tus cosas y tu XP se quedan en una tumba con tu
+#  cabeza, en lugar de volar por el suelo y desaparecer en 5 minutos.
+#
+#  Se usa AxGraves y no AngelChest porque AngelChest no tiene release estable
+#  compatible con Minecraft 26.x. Ver docs/versiones.md.
+# ===========================================================================
+
+# AxGraves trae un prefijo con degradado rosa que grita. Lo cambiamos a algo
+# sobrio y en español. Sin degradados: Bedrock los aplana a un solo color.
+prefix: '&8[&bTumbas&8] &7'
+
+# --- Cuánto dura la tumba --------------------------------------------------
+# AxGraves usa 180 segundos (3 minutos). Lo subimos a
+# {{ tumbas.duracion_minutos }} minutos ({{ tumbas.duracion_minutos * 60 }} s)
+# porque morir en el fondo de una cueva de Terralith y tener que volver
+# caminando toma más de 3 minutos.
+despawn-time-seconds: {{ tumbas.duracion_minutos * 60 }}
+
+# Cuando la tumba expira, las cosas caen al suelo en lugar de borrarse.
+# Es la diferencia entre "llegué tarde" y "perdí todo".
+drop-items: true
+dropped-item-velocity: false
+
+# --- Quién puede abrirla ---------------------------------------------------
+{% if tumbas.cualquiera_puede_abrir %}
+# false = CUALQUIERA puede abrir la tumba de cualquiera.
+# Es a propósito: en este servidor compartimos todo y no hay protección de
+# terrenos, así que un amigo puede recoger tus cosas y guardártelas.
+interact-only-own: false
+# Y cualquiera puede recogerla completa agachándose y haciendo clic derecho.
+enable-instant-pickup: true
+instant-pickup-only-own: false
+{% else %}
+interact-only-own: true
+enable-instant-pickup: true
+instant-pickup-only-own: true
+{% endif %}
+
+# --- Experiencia -----------------------------------------------------------
+{% if tumbas.guardar_xp %}
+# La tumba guarda la XP y te la devuelve completa al abrirla.
+store-xp: true
+# 1.0 = el 100% de la experiencia. Vanilla te quita casi toda al morir;
+# aquí no se pierde nada.
+xp-keep-percentage: 1.0
+{% else %}
+store-xp: false
+xp-keep-percentage: 0.0
+{% endif %}
+
+store-items: true
+# La armadura se te vuelve a poner sola al abrir la tumba, en lugar de
+# acabar suelta en el inventario.
+auto-equip-armor: true
+# Primero la armadura, luego lo que traías en las manos: así lo importante
+# queda arriba en la ventana.
+grave-item-order:
+- ARMOR
+- HAND
+- OFFHAND
+
+# No forzamos nada sobre keepInventory: si algún día prendemos ese gamerule,
+# que gane el gamerule.
+override-keep-inventory: false
+override-keep-level: false
+
+# --- Varias tumbas ---------------------------------------------------------
+# -1 = sin límite. Si te mueres tres veces seguidas buscando tus cosas, las
+# tres tumbas siguen ahí.
+grave-limit: -1
+# Si ya sacaste todo, la tumba se va: no deja cabezas vacías tiradas.
+despawn-when-empty: true
+
+save-graves:
+  # Las tumbas sobreviven a un reinicio del servidor. Importante: los
+  # respaldos corren cada 6 horas y el VPS se puede reiniciar.
+  enabled: true
+  auto-save-seconds: 30
+
+# --- Cómo se ve ------------------------------------------------------------
+# AxGraves usa 0.5 y -1.2. Los dejamos: son los valores que mejor caen con
+# Geyser, donde la cabeza y el holograma se dibujan un poco distinto.
+hologram-height: 0.5
+head-height: -1.2
+rotate-head-360: true
+auto-rotation:
+  enabled: false
+  speed: 10.0
+
+holograms:
+  background-color: 00000000
+  alignment: center
+  billboard: vertical
+  see-through: false
+  shadow: true
+
+# Nombres de los mundos en español, para el holograma y /graves list.
+world-name:
+  world: "Mundo"
+  world_nether: "Nether"
+  world_the_end: "End"
+
+command-aliases:
+- tumbas
+- tumba
+- graves
+- grave
+
+# Sin mundos excluidos: las tumbas funcionan en los tres.
+disabled-worlds: []
+blacklisted-death-causes: []
+blacklisted-items: {}
+
+death-listener-priority: HIGHEST
+
+update-notifier:
+  # Las versiones las fijamos nosotros y se revisan con `mc update`.
+  enabled: false
+  on-join: false
+
+debug: false
+
+# No cambies esto: lo usa AxGraves para migrar el archivo si cambia de forma.
+version: 19

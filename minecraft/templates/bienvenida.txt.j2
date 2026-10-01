@@ -1,0 +1,39 @@
+{#- ========================================================================
+  GENERADO POR `mc build` — NO LO EDITES A MANO
+  Cambia settings.yml y vuelve a correr `mc build`.
+  ========================================================================
+  Este archivo NO lo lee ningún plugin directamente: es la referencia de
+  los textos de bienvenida, para que estén todos juntos y se puedan leer
+  de corrido. `mc build` los mete donde van:
+    - el de la primera vez y el de regreso, en el MOTD de EssentialsX
+    - el de la whitelist, en spigot.yml
+  ======================================================================== -#}
+# ===========================================================================
+#  Textos de bienvenida de {{ nombre }}
+# ===========================================================================
+#  Tono: como lo diría un amigo. Corto, sin emojis de más, sin frases de
+#  folleto. Nada de "¡Bienvenido a la mejor experiencia de supervivencia!".
+# ===========================================================================
+
+[primera-vez]
+¡Qué onda, {jugador}! Bienvenido a {{ nombre }}.
+Primero regístrate: /register contraseña contraseña
+Aquí se respeta lo ajeno, nada de grifear.
+/spawn para volver aquí, /sethome para guardar tu casa.
+
+[regreso]
+¡Va de nuez, {jugador}!
+Entra con /login tuContraseña
+
+[kick-whitelist]
+{{ kick_whitelist }}
+
+{% if chat.recordatorio.activo %}
+[recordatorio]
+# Sale cada {{ chat.recordatorio.cada_minutos }} minutos.
+# Viene APAGADO por defecto en settings.yml: nada de spam de consejos.
+Acuérdate: /sethome guarda tu casa y /back te regresa a donde te moriste.
+{% else %}
+# El recordatorio periódico está APAGADO (chat.recordatorio.activo: false).
+# Era a propósito: sin anuncios automáticos ni spam de consejos.
+{% endif %}

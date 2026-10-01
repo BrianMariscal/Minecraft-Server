@@ -1,0 +1,293 @@
+# ===========================================================================
+#  AuthMe Reloaded — mensajes en español de México
+# ===========================================================================
+#  AuthMe SÍ trae messages_es.yml y está completo (181/181 claves), pero es
+#  español de España y con varios errores:
+#    - "Por favor, elija otra", "Sólo para jugadores registrados": usted y
+#      tono de trámite.
+#    - "carácteres" (se escribe sin acento), "Porfavor", "elije" (es
+#      "elige"), "atenticación", "ningun".
+#    - Dos claves se quedaron en inglés: dialog.login.canceled y
+#      dialog.register.canceled.
+#    - registration.reg_only manda a http://www.example.com/.
+#
+#  `mc build` copia este archivo a plugins/AuthMe/messages/messages_es.yml.
+#  AuthMe le da prioridad al archivo de su carpeta sobre el del jar.
+#
+#  Placeholders que rellena AuthMe (no los cambies):
+#    %nl%  salto de línea      %username%  nombre del jugador
+#    %displayname%             %valid_chars%  caracteres permitidos
+#    %captcha_code%  %email%  %name%  %count%  %time%  %code%  %url%
+#    %status%  %alternative%  %cmd%  %valid%  %invalid%  %m%
+# ===========================================================================
+
+# --- Registro --------------------------------------------------------------
+#  ESTO es lo primero que ve cualquiera que entra al servidor. Tiene que ser
+#  clarísimo: la mitad de la banda entra desde el celular.
+registration:
+    disabled: '&cAhorita no se puede registrar nadie.'
+    name_taken: '&cEse nombre ya está registrado.'
+    register_request: '&eRegístrate para jugar: &f/register tuContraseña tuContraseña'
+    command_usage: '&cSe usa así: &f/register contraseña contraseña'
+    reg_only: '&cEsto es solo para quien ya se registró. Escribe &f/register contraseña contraseña'
+    success: '&a¡Listo, ya quedaste! Ahora entra con &f/login tuContraseña'
+    kicked_admin_registered: 'Un admin te acaba de registrar. Vuelve a entrar.'
+
+# --- Errores de contraseña al registrarse ---------------------------------
+password:
+    match_error: '&cLas dos contraseñas no son iguales. Escríbela igualita las dos veces.'
+    name_in_password: '&cNo uses tu propio nombre de contraseña, escoge otra.'
+    unsafe_password: '&cEsa contraseña está muy fácil de adivinar, escoge otra.'
+    forbidden_characters: '&cTu contraseña trae caracteres que no se pueden. Los que sí: %valid_chars'
+    wrong_length: '&cEsa contraseña está muy corta o muy larga.'
+
+# --- Entrar ----------------------------------------------------------------
+login:
+    command_usage: '&cSe usa así: &f/login tuContraseña'
+    wrong_password: '&cContraseña incorrecta.'
+    success: '&a¡Listo! Ya puedes jugar.'
+    login_request: '&eEntra con &f/login tuContraseña'
+    timeout_error: '&cSe te acabó el tiempo para entrar. Vuelve a conectarte.'
+
+# --- Errores ---------------------------------------------------------------
+error:
+    denied_command: '&cPrimero entra con &f/login tuContraseña'
+    denied_chat: '&cPrimero entra con &f/login tuContraseña'
+    unregistered_user: '&cEse nombre no está registrado.'
+    not_logged_in: '&cTodavía no has entrado.'
+    no_permission: '&cNo tienes permiso para eso.'
+    unexpected_error: '&cAlgo falló de nuestro lado. Dile a un admin.'
+    # El español del jar se comía %reg_count, %max_acc y %reg_names, que son
+    # justo los que dicen cuántas cuentas hay y cuáles. Se los devolvemos.
+    max_registration: '&cYa tienes %reg_count de %max_acc cuentas desde tu conexión: %reg_names'
+    logged_in: '&cYa estás dentro.'
+    kick_for_vip: '&cEntró un jugador VIP y el servidor estaba lleno.'
+    kick_unresolved_hostname: '&cNo pude resolver tu conexión. Intenta otra vez.'
+    tempban_max_logins: '&cFallaste la contraseña demasiadas veces. Espérate un rato y vuelve a intentar.'
+
+# --- AntiBot ---------------------------------------------------------------
+antibot:
+    kick_antibot: 'Prendimos la protección contra bots. Espérate unos minutos y vuelve a entrar.'
+    auto_enabled: '[AuthMe] Prendí AntiBot solo: llegaron muchas conexiones de golpe.'
+    auto_disabled: '[AuthMe] Apagué AntiBot solo después de %m minutos.'
+
+# --- Darse de baja ---------------------------------------------------------
+unregister:
+    success: '&aListo, borré tu registro.'
+    command_usage: '&cSe usa así: &f/unregister tuContraseña'
+
+# --- Varios ----------------------------------------------------------------
+misc:
+    account_not_activated: '&cTu cuenta todavía no está activada.'
+    password_changed: '&a¡Listo, cambié tu contraseña!'
+    logout: '&aSaliste de tu cuenta.'
+    reload: '&aRecargué la configuración y la base de datos.'
+    usage_change_password: '&cSe usa así: &f/changepw contraseñaDeAhorita contraseñaNueva'
+    accounts_owned_self: 'Tienes %count cuentas:'
+    accounts_owned_other: '%name tiene %count cuentas:'
+
+# --- Sesión ----------------------------------------------------------------
+#  Las sesiones duran 10 minutos (ver authme-config.yml): si se te cae el
+#  internet, al volver no tienes que escribir la contraseña otra vez.
+session:
+    valid_session: '&aTe reconocí, no hace falta que entres otra vez.'
+    invalid_session: '&cTu sesión ya no cuadra. Vuelve a entrar con /login.'
+
+# --- Al conectarse ---------------------------------------------------------
+on_join_validation:
+    same_ip_online: 'Ya hay alguien jugando desde tu misma conexión.'
+    same_nick_online: '&cYa hay alguien conectado con ese nombre.'
+    name_length: '&cTu nombre está muy corto o muy largo.'
+    # Este mensaje importa: a los de Bedrock, Floodgate les pone un punto
+    # adelante (.Pepe). En authme-config.yml ya agregamos el punto a los
+    # caracteres permitidos, así que esto no debería salirles.
+    characters_in_name: '&cTu nombre trae caracteres que no se pueden. Los que sí: %valid_chars'
+    kick_full_server: '&cEl servidor está llenito. Intenta en un rato.'
+    country_banned: 'No se permiten conexiones desde tu país.'
+    not_owner_error: 'Esa cuenta no es tuya. Entra con otro nombre.'
+    invalid_name_case: 'Tu nombre va escrito %valid, no %invalid.'
+    quick_command: 'Escribiste el comando demasiado rápido. Vuelve a entrar y espérate tantito.'
+
+# --- Correo (apagado en este servidor) -------------------------------------
+#  En authme-config.yml no configuramos servidor de correo: entre amigos, si
+#  alguien olvida su contraseña, un admin la resetea con /unregister.
+#  Va traducido por si algún día se prende.
+email:
+    add_email_request: '&eAgrega tu correo con: &f/email add tuCorreo tuCorreo'
+    usage_email_add: '&cSe usa así: &f/email add <correo> <correo>'
+    usage_email_change: '&cSe usa así: &f/email change <correoViejo> <correoNuevo>'
+    new_email_invalid: '&cEse correo nuevo no sirve.'
+    old_email_invalid: '&cEse correo anterior no sirve.'
+    invalid: '&cEse correo no sirve.'
+    added: '&a¡Listo, guardé tu correo!'
+    add_not_allowed: '&cNo se puede agregar correo.'
+    request_confirmation: '&eConfirma tu correo.'
+    changed: '&a¡Listo, cambié tu correo!'
+    change_not_allowed: '&cNo se puede cambiar el correo.'
+    email_show: '&aTu correo es: &f%email'
+    no_email_for_account: '&cNo tienes ningún correo guardado.'
+    already_used: '&cEse correo ya lo está usando alguien más.'
+    incomplete_settings: 'Falta configurar el correo en el servidor. Dile a un admin.'
+    send_failure: 'No se pudo mandar el correo. Dile a un admin.'
+    change_password_expired: 'Ya no puedes cambiar la contraseña con ese comando.'
+    email_cooldown_error: '&cYa te mandé un correo hace poco. Espérate %time.'
+    confirm_code_sent: '&aTe mandé un código a &f%email&a. Confírmalo con &f/email confirm <código>'
+    usage_email_confirm: '&cSe usa así: &f/email confirm <código>'
+    confirm_wrong_code: '&cEse código no es. Vuelve a intentar.'
+    confirm_code_expired: '&cNo hay ninguna confirmación pendiente. Empieza de nuevo.'
+    confirm_success: '&a¡Listo, confirmé tu correo!'
+
+# --- Recuperar contraseña por correo ---------------------------------------
+recovery:
+    forgot_password_hint: '&e¿Se te olvidó la contraseña? Usa &f/email recovery tuCorreo'
+    command_usage: '&cSe usa así: &f/email recovery <correo>'
+    email_sent: '&aTe mandé el correo de recuperación.'
+    code:
+        code_sent: 'Te mandé a tu correo el código para recuperar tu contraseña.'
+        # El español del jar se comía %count (los intentos que te quedan).
+        incorrect: '&cEse código no es. Te quedan %count intentos.'
+        tries_exceeded: '&cFallaste el código demasiadas veces. Pide otro con /email recovery tuCorreo'
+        correct: '&a¡Código correcto!'
+        change_password: 'Ahora cambia tu contraseña con: /email setpassword tuContraseñaNueva'
+
+# --- Captcha ---------------------------------------------------------------
+#  Se activa después de 4 intentos fallidos (ver authme-config.yml). Es lo
+#  que para a un bot probando contraseñas.
+captcha:
+    usage_captcha: '&eEscribe: &f/captcha %captcha_code'
+    wrong_captcha: '&cNo era ese. Escribe: &f/captcha %captcha_code'
+    valid_captcha: '&a¡Listo! Ya puedes intentar otra vez.'
+    captcha_for_registration: '&eAntes de registrarte escribe: &f/captcha %captcha_code'
+    register_captcha_valid: '&a¡Listo! Ya puedes registrarte con /register'
+
+# --- Verificación por correo (apagada) -------------------------------------
+verification:
+    code_required: '&eEse comando pide verificación por correo. Revisa tu bandeja.'
+    command_usage: '&cSe usa así: &f/verification <código>'
+    incorrect_code: '&cEse código no es. Escribe &f/verification <código>&c con el que te llegó.'
+    success: '&a¡Listo! Ya puedes usar todos los comandos en esta sesión.'
+    already_verified: '&aYa estabas verificado en esta sesión.'
+    code_expired: '&cSe venció tu código. Vuelve a correr el comando para que te mande otro.'
+    email_needed: '&eNecesitas agregar tu correo a tu cuenta para verificarte.'
+
+# --- Ventanas de login y registro ------------------------------------------
+#  AuthMe 6.x muestra estos cuadros antes de entrar al juego. En Bedrock,
+#  Geyser los convierte en formularios nativos: se ven muy bien en celular.
+dialog:
+  login:
+    title: '&bEntrar'
+    body: '&7Escribe tu contraseña para jugar.'
+    password: '&fContraseña'
+    recovery_email: '&fCorreo (opcional)'
+    recovery_button: '&e¿Se te olvidó?'
+    button: '&aEntrar'
+    # Esta y la de abajo venían en inglés en el archivo del jar.
+    canceled: '&cCancelaste. Vuelve a entrar al servidor para intentar de nuevo.'
+  register:
+    title: '&bRegistrarte'
+    body: '&7Escoge una contraseña para tu cuenta. Apúntatela.'
+    password: '&fContraseña'
+    confirm_password: '&fOtra vez la contraseña'
+    email: '&fCorreo (opcional)'
+    confirm_email: '&fOtra vez el correo'
+    button: '&aRegistrarme'
+    canceled: '&cCancelaste. Vuelve a entrar al servidor para intentar de nuevo.'
+  two_factor:
+    title: '&bVerificación en dos pasos'
+    body: '&7Abre tu app de autenticación y escribe el código de 6 dígitos.'
+    code: '&fCódigo'
+    button: '&aVerificar'
+  recovery:
+    title: '&bRecuperar contraseña'
+    body: '&7Escribe tu correo y te mando un código para cambiarla.'
+    email: '&fCorreo'
+    button: '&aMandar correo'
+
+  button:
+    cancel: '&cCancelar'
+
+# --- Unidades de tiempo ----------------------------------------------------
+time:
+    second: 'segundo'
+    seconds: 'segundos'
+    minute: 'minuto'
+    minutes: 'minutos'
+    hour: 'hora'
+    hours: 'horas'
+    day: 'día'
+    days: 'días'
+
+# --- Verificación en dos pasos (apagada) -----------------------------------
+two_factor:
+    code_created: '&aTu código secreto es %code. Lo puedes escanear aquí: %url'
+    confirmation_required: 'Confirma tu código con /2fa confirm <código>'
+    code_required: 'Manda tu código de dos pasos con /2fa code <código>'
+    already_enabled: 'Ya tienes prendida la verificación en dos pasos.'
+    enable_error_no_code: 'No hay ningún código generado o ya se venció. Usa /2fa add'
+    enable_success: 'Listo, prendí la verificación en dos pasos en tu cuenta.'
+    enable_error_wrong_code: 'Ese código no es, o ya se venció. Usa /2fa add'
+    not_enabled_error: 'No tienes prendida la verificación en dos pasos. Usa /2fa add'
+    removed_success: 'Listo, le quité la verificación en dos pasos a tu cuenta.'
+    invalid_code: '&cEse código no es.'
+
+# --- Validación de comandos ------------------------------------------------
+command:
+    player_only: '&cEse comando solo funciona dentro del juego.'
+    player_only_alternative: '&cEse comando solo funciona dentro del juego. Desde consola usa %alternative.'
+    failed_to_parse: '&cNo entendí ese comando de AuthMe.'
+    unknown: '&cEse comando no existe.'
+    incorrect_arguments: '&cLe faltan o le sobran datos a ese comando.'
+    did_you_mean: '&e¿Querías decir &f%cmd&e?'
+    see_help: '&eUsa &f/%cmd&e para ver la ayuda.'
+    detailed_help: '&eAyuda completa: &f/%cmd'
+
+# --- Comandos de administración --------------------------------------------
+admin:
+    force_login:
+        player_offline: '&cEse jugador tiene que estar conectado.'
+        forbidden: '&cNo puedes forzar la entrada de %name.'
+        success: '&aListo, metí a %name.'
+    accounts:
+        ip_not_found: '&cEsa IP no está en la base de datos.'
+        single_account: '&a%name solo tiene una cuenta.'
+        no_last_ip: '&cNo sé cuál fue la última IP de ese jugador.'
+    email_show: '&aCorreo de %name: %email'
+    antibot:
+        status: '&aAntiBot: %status'
+        override_enabled: '&aPrendí AntiBot a mano.'
+        override_disabled: '&aApagué AntiBot a mano.'
+        invalid_mode: '&cEse modo de AntiBot no existe.'
+    reload:
+        db_type_change: '&eOjo: el tipo de base de datos no se puede cambiar con /authme reload.'
+        error: '&cAlgo falló al recargar AuthMe.'
+    spawn:
+        set_success: '&aListo, puse aquí el spawn.'
+        set_fail: '&cNo se pudo poner el spawn. Intenta otra vez.'
+        first_set_success: '&aListo, puse aquí el spawn de los que entran por primera vez.'
+        first_set_fail: '&cNo se pudo poner el primer spawn. Intenta otra vez.'
+        not_defined: '&cNo hay spawn definido. Ponlo con /authme setspawn.'
+        first_not_defined: '&cNo hay primer spawn definido. Ponlo con /authme setfirstspawn.'
+
+# --- Modo premium ----------------------------------------------------------
+#  Este servidor es no premium (online_mode: false), así que esto no se usa.
+#  Va traducido por si alguien lo prende.
+premium:
+  feature_disabled: '&cEl modo premium no está prendido en este servidor.'
+  account_not_found: '&cNo encontré ninguna cuenta premium con tu nombre.'
+  already_enabled: '&eYa tienes el modo premium prendido.'
+  enable_success: '&a¡Listo! Ya no vas a tener que escribir contraseña.'
+  not_enabled: '&eNo tienes el modo premium prendido.'
+  disable_success: '&aApagué tu modo premium. Vuelves a entrar con contraseña.'
+  error: '&cAlgo falló al revisar tu cuenta premium. Intenta más tarde.'
+  admin:
+    not_registered: '&c%name no está registrado.'
+    already_enabled: '&e%name ya tiene el modo premium prendido.'
+    account_not_found: '&cNo encontré ninguna cuenta de Mojang para %name.'
+    enable_success: '&aPrendí el modo premium de %name.'
+    not_enabled: '&e%name no tiene el modo premium prendido.'
+    disable_success: '&aApagué el modo premium de %name.'
+    impostor_kicked: '&eAlguien entró como %name con otro UUID y lo saqué.'
+    kick_reason: '&cUn admin cambió la configuración premium de tu cuenta. Vuelve a entrar.'
+    pending: '&eFalta verificar el premium de %name. Tiene que reconectarse.'
+  pending_kick: '&eVuelve a entrar para confirmar que la cuenta de Mojang es tuya.'
+  pending_fail: '&cNo se pudo verificar tu cuenta premium. Entra con tu contraseña.'

@@ -1,0 +1,50 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Cambia settings.yml y vuelve a correr `mc build`.
+# ===========================================================================
+#  GSit sirve para sentarse en escalones, losas y alfombras. Funciona en
+#  Bedrock vía Geyser sin nada extra: el jugador se monta en una entidad
+#  invisible, que es algo que Geyser traduce bien.
+# ===========================================================================
+
+Lang:
+  # GSit trae es_es incluido (verificado en el jar 3.7.0). Lo fijamos para
+  # que no use en_us, que es su default.
+  lang: es_es
+  # Que use el idioma del SERVIDOR: así todos leen lo mismo.
+  # (GSit lo trae en true, o sea el del cliente.)
+  client-lang: false
+
+Options:
+  # Las versiones las fijamos nosotros y se revisan con `mc update`.
+  check-for-update: false
+  # No hagas daño al pararse: sería un bug raro, no una gracia.
+  get-up-damage: false
+  # Agacharse para levantarse es lo que todo mundo intenta primero.
+  get-up-sneak: true
+  # Te levanta donde estás, no te regresa a donde te sentaste.
+  get-up-return: false
+  # Si alguien rompe el bloque donde estás sentado, te paras.
+  get-up-break: true
+  # No dejar sentarse en lugares inseguros (en el aire, dentro de bloques).
+  allow-unsafe: false
+  center-block: true
+
+  Sit:
+    # GSit trae solo escalones, losas y alfombras. Le agregamos las camas y
+    # los troncos, que es donde la gente intenta sentarse en una casa.
+    SitMaterials:
+    - "#stairs"
+    - "#slabs"
+    - "#carpets"
+    - "#wool_carpets"
+    - "moss_carpet"
+    - "pale_moss_carpet"
+    - "snow"
+    # Solo en la mitad de abajo del escalón o la losa: sentarse en el aire
+    # arriba de una losa se ve mal.
+    bottom-part-only: true
+    # Solo con la mano vacía. Si no, cada vez que pones un bloque sobre un
+    # escalón te sentarías en lugar de construir. Esto importa MUCHO en
+    # Bedrock, donde el toque es menos preciso.
+    empty-hand-only: true

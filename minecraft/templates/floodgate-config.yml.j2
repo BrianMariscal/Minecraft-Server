@@ -1,0 +1,74 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Cambia settings.yml y vuelve a correr `mc build`.
+# ===========================================================================
+#  Floodgate es lo que deja entrar a los jugadores de Bedrock sin cuenta de
+#  Java, y lo que permite vincular una cuenta de Bedrock con una de Java para
+#  que las dos sean el MISMO personaje.
+# ===========================================================================
+
+# La llave que comparten Geyser y Floodgate. La genera Floodgate solo en su
+# primer arranque. No la borres ni la subas a git.
+key-file-name: key.pem
+
+# Floodgate le pone este prefijo al nombre de los jugadores de Bedrock para
+# que no choquen con nombres de Java. Un gamertag "Pepe" entra como ".Pepe".
+#
+# OJO: por esto hay que ajustar los caracteres permitidos en AuthMe
+# (ver authme-config.yml) o los de Bedrock no pueden registrarse.
+username-prefix: "{{ prefijo_bedrock }}"
+
+# Los gamertags de Xbox pueden traer espacios; Floodgate los cambia por _.
+# `mc whitelist add --bedrock` hace la misma conversión para que la whitelist
+# tenga exactamente el nombre que el servidor va a ver.
+replace-spaces: true
+
+# Floodgate usa el idioma del sistema (inglés en el VPS). Lo fijamos: trae
+# es_MX incluido (verificado en el jar 2.2.5).
+default-locale: {{ geyser_locale }}
+
+disconnect:
+  invalid-key: "No pude verificar tu conexión. Entra por la dirección de Bedrock del servidor."
+  invalid-arguments-length: "Esperaba {} datos y llegaron {}. Avísale a un admin: hay que actualizar Geyser."
+
+player-link:
+  # --- Vinculación LOCAL de cuentas Java <-> Bedrock --------------------
+  enabled: true
+
+  # false: no obligamos a vincular para entrar. Quien solo juega en Bedrock
+  # entra normal; vincular es opcional y sirve para quien juega en las dos.
+  require-link: false
+
+  # ESTA es la clave de la vinculación local. Floodgate la trae en false, o
+  # sea que usaría el servidor global de GeyserMC. La prendemos para que los
+  # vínculos vivan en NUESTRA base de datos, en el VPS: funciona sin internet
+  # hacia GeyserMC, y los datos no salen de aquí.
+  #
+  # Para que esto no truene, `mc build` instala el jar
+  # floodgate-sqlite-database.jar en plugins/floodgate/. Sin ese jar,
+  # Floodgate falla al arrancar.
+  enable-own-linking: true
+
+  # Deja usar /linkaccount y /unlinkaccount. Guía para los jugadores en
+  # docs/vincular-cuentas.md.
+  allowed: true
+
+  # Segundos que dura el código de vinculación. Floodgate usa 300 (5 min).
+  # Lo dejamos: alcanza de sobra para cambiar de dispositivo sin prisas.
+  link-code-timeout: 300
+
+  # SQLite: un archivo en el volumen del servidor, sin servidor de base de
+  # datos aparte. Para 15 jugadores sobra, y entra en los respaldos.
+  type: sqlite
+
+  # Lo apagamos a propósito. El vínculo global es un servicio de GeyserMC
+  # donde la gente vincula una vez y sirve en todos los servidores; cómodo,
+  # pero manda los datos afuera y aquí ya tenemos la base local. Además, si
+  # se quedara prendido, el vínculo global podría pelearse con el nuestro.
+  enable-global-linking: false
+
+metrics:
+  enabled: true
+
+# No cambies esto: lo usa Floodgate para migrar el archivo si cambia de forma.
+config-version: 3

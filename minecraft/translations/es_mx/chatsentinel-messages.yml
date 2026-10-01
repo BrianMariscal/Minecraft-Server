@@ -1,0 +1,67 @@
+# ===========================================================================
+#  ChatSentinel — mensajes en español de México
+# ===========================================================================
+#  ChatSentinel trae una sección `es`, pero está a medias: cuatro claves se
+#  quedaron en inglés y el resto viene sin acentos ("continuas", "seras
+#  muteado", "coincidio", "esta silenciado"). Esta es nuestra versión.
+#  La copia `mc build` a plugins/ChatSentinel/messages.yml.
+#
+#  OJO con los nombres de clave: ChatSentinel usa guion bajo en casi todas
+#  (blocked_message) pero guion normal en notify-enabled y notify-disabled.
+#  No los "arregles": así los busca el plugin.
+# ===========================================================================
+
+# ChatSentinel trae "en" y elige idioma según el cliente. Lo fijamos en "es"
+# para que todos lean lo mismo en español de México.
+default: "es"
+
+langs:
+  es:
+    # --- Lo que de verdad se usa en este servidor ----------------------
+    # Solo están activos el flood, las mayúsculas y la espera entre
+    # mensajes (ver chatsentinel-config.yml). El resto va traducido por si
+    # algún día se prende algo.
+    flood_warn_message: "&8[&bChat&8] &7Cálmala con el mensaje, salió larguísimo."
+    capitalization_warn_message: "&8[&bChat&8] &7No grites, te lo puse en minúsculas."
+    cooldown_warn_message: "&8[&bChat&8] &7Espérate %cooldown% segundos para el siguiente."
+
+    # --- Mensajes de módulos apagados ---------------------------------
+    blocked_message: "&8[&bChat&8] &7Eso no se puede escribir: &f%word%&7."
+    blacklist_warn_message: "&8[&bChat&8] &7Eso no se puede escribir: &f%word%&7."
+    security_warn_message: "&8[&bChat&8] &7Tu mensaje se parece a algo que bloqueamos."
+    advertising_warn_message: "&8[&bChat&8] &7Aquí no se anda anunciando otros servers: &f%word%&7."
+    offense_warn_message: "&8[&bChat&8] &7Eso no se puede escribir: &f%word%&7."
+    custom_warn_message: "&8[&bChat&8] &7Eso no se puede escribir: &f%word%&7."
+    syntax_warn_message: "&8[&bChat&8] &7Ese comando está mal escrito."
+    similarity_warn_message: "&8[&bChat&8] &7Ya escribiste algo muy parecido. Parecido: %similarity%"
+    filtered: "&8[&bChat&8] &7Tu mensaje traía caracteres que no se permiten."
+    no_move_chat_warn_message: "&8[&bChat&8] &7Camina al menos %distance% bloques antes de escribir."
+    cancellation_fallback: "&8[&bChat&8] &7Bloqueé tu mensaje por &f%module%&7."
+
+    # --- Silenciar el chat (solo admins) ------------------------------
+    server_muted: "&8[&bChat&8] &7El chat está silenciado ahorita."
+    server_mute_enabled: "&7%player% silenció el chat. Razón: &f%reason%"
+    server_mute_disabled: "&7%player% volvió a abrir el chat. Razón: &f%reason%"
+
+    # --- Limpiar el chat (solo admins) -------------------------------
+    cleared: "&7%player% limpió el chat. Razón: &f%reason%"
+    clear_bypass_notice: "&7%player% limpió el chat, pero a ti no te lo limpié. Razón: &f%reason%"
+    clear_sender_summary: "&7Limpié el chat de %cleared% jugadores; me salté %bypassed% con permiso."
+
+    # --- Comandos (solo admins) --------------------------------------
+    reload: "&8[&bChat&8] &aListo, recargué la configuración."
+    help: |-
+      &bComandos de ChatSentinel:
+      &f/chatsentinel help &8- &7Muestra esta ayuda
+      &f/chatsentinel reload &8- &7Recarga la configuración
+    unknown_command: "&cEse comando no existe. Usa /chatsentinel help."
+    no_permission: "&cNo tienes permiso para eso."
+    notify-enabled: "&aTe voy a avisar de lo que filtre el chat."
+    notify-disabled: "&7Ya no te aviso de lo que filtre el chat."
+
+    # --- Autocorrección (apagada en el config) -----------------------
+    correction_warn_message: "&8[&bChat&8] &7Te corregí una palabra. Usa &f/autocorrect off &7si no quieres."
+    correction_enabled: "&aPrendí la autocorrección."
+    correction_disabled: "&7Apagué la autocorrección."
+    correction_usage: "&cSe usa así: /autocorrect [on|off|toggle]"
+    correction_console_only: "&cEso solo se puede desde el juego."

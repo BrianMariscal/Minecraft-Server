@@ -1,0 +1,69 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Cambia settings.yml y vuelve a correr `mc build`.
+# ===========================================================================
+#  LuckPerms maneja los permisos y los grupos. En este servidor hay dos:
+#    default  -> todo mundo
+#    admin    -> los que están en `admins:` de settings.yml
+#
+#  Los grupos y sus permisos NO se definen aquí: LuckPerms los guarda en su
+#  base de datos. `mc build` genera el guion de comandos para crearlos en
+#  minecraft/generated/mensajes/luckperms-grupos.txt, y `mc admin add` los
+#  aplica por RCON.
+# ===========================================================================
+
+# H2: base de datos en un archivo, dentro del volumen del servidor. Para 15
+# jugadores sobra, entra en los respaldos y no hay que levantar un MySQL.
+storage-method: h2
+
+# Sin servidor de permisos compartido: este es el único servidor.
+split-storage:
+  enabled: false
+messaging-service: none
+sync-minutes: -1
+
+# Un solo servidor, así que todos los permisos aplican en todos lados.
+server: global
+# No hace falta que el nombre del servidor cambie nada.
+use-server-uuid-cache: false
+
+# --- Comportamiento --------------------------------------------------------
+# Con online_mode: false (servidor no premium), LuckPerms tiene que amarrar
+# los permisos al UUID offline que genera el propio servidor. Si esto se
+# quedara en false, al reiniciar se perderían los permisos de todos.
+use-vault-server: false
+
+# Que los permisos de un jugador se apliquen en cuanto entra, sin esperar.
+# Importa con AuthMe de por medio: el jugador entra, se registra y debe
+# tener sus permisos listos.
+apply-default-negated-permissions-before-wildcards: false
+
+# --- Prefijos en el chat ---------------------------------------------------
+# El prefijo del grupo admin lo usa EssentialsX Chat con {PREFIX}.
+# Se define en el guion de grupos, no aquí.
+meta-formatting:
+  prefix:
+    format: "%s"
+    start-spacer: ""
+    middle-spacer: " "
+    end-spacer: ""
+  suffix:
+    format: "%s"
+    start-spacer: ""
+    middle-spacer: " "
+    end-spacer: ""
+
+# --- Varios ----------------------------------------------------------------
+# Las versiones las fijamos nosotros y se revisan con `mc update`.
+# (LuckPerms no tiene avisador de versión, pero sí telemetría opcional.)
+auto-op: false
+# Nada de "wildcard" por defecto: un permiso se da a propósito o no se da.
+apply-wildcards: true
+apply-regex: true
+apply-shorthand: true
+
+# El log de cambios de permisos: útil para saber quién le dio op a quién.
+log-notify: true
+
+# Comandos de LuckPerms en la consola y en el juego.
+commands-allow-invalid-usernames: false

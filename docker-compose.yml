@@ -1,0 +1,195 @@
+# ===========================================================================
+#  Minecraft HD — los tres contenedores del servidor
+# ===========================================================================
+#  minecraft   el servidor en sí (Paper + los plugins)
+#  respaldos   saca un respaldo cada 6 horas sin apagar el servidor
+#  pagos-bot   el bot de Discord que cobra la mensualidad del VPS
+#
+#  Todo lo configurable sale de settings.yml y de .env. Si algo aquí te
+#  parece un número mágico, búscalo en settings.yml: casi seguro está ahí.
+#
+#  Levantar:  mc start      (o docker compose up -d)
+#  Revisar:   mc status     (o docker compose ps)
+# ===========================================================================
+
+name: minecraft-hd
+
+services:
+  # -------------------------------------------------------------------- #
+  #  El servidor de Minecraft
+  # -------------------------------------------------------------------- #
+  minecraft:
+    # Versión FIJADA, nunca :latest. Minecraft 26.x exige Java 25.
+    # Para cambiarla usa `mc update`, que revisa primero qué plugin la
+    # soporta antes de dejarte.
+    image: itzg/minecraft-server:2026.9.2-java25
+    container_name: mc-hd-servidor
+    restart: unless-stopped
+    # Para poder escribir en la consola con `docker attach`.
+    tty: true
+    stdin_open: true
+
+    ports:
+      # Java, TCP.
+      - "25565:25565/tcp"
+      # Bedrock, UDP. Ojo con el /udp: sin eso no entra nadie de Bedrock.
+      - "19132:19132/udp"
+      # Mapa web de BlueMap.
+      - "8100:8100/tcp"
+      # RCON NO se publica a propósito: vive solo en la red interna de
+      # Docker, donde lo alcanzan `mc` y el contenedor de respaldos.
+      # Si lo abres a internet, cualquiera con la contraseña es dueño del
+      # servidor.
+
+    environment:
+      # --- Lo que la imagen necesita saber ---
+      EULA: "TRUE"
+      TYPE: "PAPER"
+      VERSION: "26.1.2"
+      MEMORY: "6G"
+      # Flags de Aikar: el recolector de basura de Java afinado para
+      # Minecraft. Hace que los tirones sean más cortos y predecibles.
+      USE_AIKAR_FLAGS: "true"
+      TZ: "${TZ:-America/Mexico_City}"
+
+      # --- server.properties lo generamos nosotros ---
+      # Sin esto, la imagen de itzg sobrescribiría nuestro archivo con sus
+      # propios valores en cada arranque y perderíamos el MOTD, la whitelist
+      # y los ajustes de rendimiento.
+      SKIP_SERVER_PROPERTIES: "true"
+
+      # --- Consola remota ---
+      ENABLE_RCON: "true"
+      RCON_PASSWORD: "${RCON_PASSWORD:?Falta RCON_PASSWORD en .env. Corre `mc setup`.}"
+      RCON_PORT: "25575"
+
+      # --- El logo ---
+      # Si existe logo/logo.png, la imagen lo convierte a 64x64 y lo usa
+      # como icono del servidor. Si no existe, arranca igual sin icono.
+      ICON: "/logo/logo.png"
+      OVERRIDE_ICON: "true"
+
+      # --- Lo que NO queremos que haga la imagen ---
+      # Los plugins los baja y verifica `mc build` con su sha256. Si
+      # dejáramos que la imagen los bajara sola, no tendríamos versiones
+      # fijas ni verificación.
+      SKIP_SUDO: "false"
+      # Que el servidor se pare bien al hacer `mc stop`: guarda el mundo
+      # antes de apagarse.
+      STOP_SERVER_ANNOUNCE_DELAY: "10"
+      # Que corra con el mismo usuario que el dueño de la carpeta, para que
+      # los archivos que genere los puedas leer y respaldar sin sudo.
+      UID: "${UID:-1000}"
+      GID: "${GID:-1000}"
+
+    volumes:
+      # Los datos del servidor: mundo, plugins, logs, bases de datos.
+      - ./data:/data
+      # El logo, de solo lectura.
+      - ./logo:/logo:ro
+
+    healthcheck:
+      # mc-health viene en la imagen de itzg: contesta cuando el servidor
+      # ya acepta jugadores, no nada más cuando el proceso existe.
+      test: ["CMD", "mc-health"]
+      # Con 5 datapacks grandes el primer arranque genera mucho mundo, así
+      # que le damos 5 minutos de gracia antes de empezar a checar.
+      start_period: 5m
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+    # Si el servidor se cae, que no se lleve al VPS entero.
+    deploy:
+      resources:
+        limits:
+          memory: 7G
+
+  # -------------------------------------------------------------------- #
+  #  Respaldos automáticos
+  # -------------------------------------------------------------------- #
+  respaldos:
+    image: itzg/mc-backup:2026.9.3
+    container_name: mc-hd-respaldos
+    restart: unless-stopped
+    # Esperamos a que el servidor esté SANO, no nada más encendido: un
+    # respaldo a medio arranque no sirve de nada.
+    depends_on:
+      minecraft:
+        condition: service_healthy
+
+    environment:
+      TZ: "${TZ:-America/Mexico_City}"
+      # Cada 6 horas.
+      BACKUP_INTERVAL: "6h"
+      # Se borran los de más de 7 días.
+      PRUNE_BACKUPS_DAYS: "7"
+
+      # --- En caliente, sin apagar el servidor ---
+      # El contenedor manda `save-off` y `save-all` por RCON, copia, y luego
+      # `save-on`. Nadie se desconecta.
+      RCON_HOST: "minecraft"
+      RCON_PORT: "25575"
+      RCON_PASSWORD: "${RCON_PASSWORD:?Falta RCON_PASSWORD en .env}"
+      # Si no hay nadie conectado, no tiene caso respaldar lo mismo otra vez.
+      PAUSE_IF_NO_PLAYERS: "true"
+
+      # --- Qué se respalda ---
+      # Todo /data: el mundo, las configs de los plugins, la base de datos
+      # de CoreProtect, la de AuthMe y la de vinculación de Floodgate.
+      SRC_DIR: "/data"
+      # Lo que NO tiene caso guardar: se regenera solo y pesa mucho.
+      EXCLUDES: "*.jar,cache,logs,libraries,versions,plugins/BlueMap/bluemap/web,plugins/dynmap"
+      # Un tar comprimido por respaldo.
+      BACKUP_METHOD: "tar"
+      TAR_COMPRESS_METHOD: "gzip"
+      DEST_DIR: "/backups"
+      # Nombre con fecha y hora, que es de donde `mc backup list` saca el id.
+      BACKUP_NAME: "world"
+
+      # --- Copia fuera del VPS (apagada por defecto) ---
+      # Para prenderla, mira docs/respaldos.md.
+      RCLONE_REMOTE: "${RCLONE_REMOTE:-}"
+      RCLONE_DEST_DIR: "${RCLONE_DEST_DIR:-}"
+
+    volumes:
+      # Solo lectura: un respaldo jamás debe poder escribir en el mundo.
+      - ./data:/data:ro
+      - ./backups:/backups
+      # La base de datos del bot de pagos también entra a los respaldos.
+      - ./pagos-datos:/pagos-datos:ro
+
+  # -------------------------------------------------------------------- #
+  #  Bot de pagos del VPS
+  # -------------------------------------------------------------------- #
+  pagos-bot:
+    build:
+      context: .
+      dockerfile: packages/pagos_bot/Dockerfile
+    image: minecraft-hd/pagos-bot:1.0.0
+    container_name: mc-hd-pagos
+    restart: unless-stopped
+
+    environment:
+      TZ: "${TZ:-America/Mexico_City}"
+      PAGOS_BOT_TOKEN: "${PAGOS_BOT_TOKEN:?Falta PAGOS_BOT_TOKEN en .env. Ve docs/bot-pagos.md.}"
+      PAGOS_GUILD_ID: "${PAGOS_GUILD_ID:?Falta PAGOS_GUILD_ID en .env}"
+      PAGOS_CANAL_ID: "${PAGOS_CANAL_ID:?Falta PAGOS_CANAL_ID en .env}"
+      # Dónde vive la base de datos dentro del contenedor.
+      PAGOS_DB: "/datos/pagos.sqlite"
+
+    volumes:
+      # settings.yml de solo lectura: el bot lee su configuración de ahí,
+      # pero no tiene por qué poder cambiarla.
+      - ./settings.yml:/app/settings.yml:ro
+      # Su base de datos, en un volumen aparte para que entre a los respaldos.
+      - ./pagos-datos:/datos
+
+    healthcheck:
+      # El bot escribe un archivo con la hora cada minuto mientras está
+      # conectado a Discord. Si deja de hacerlo, algo se atoró.
+      test: ["CMD", "python", "-m", "pagos_bot.salud"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

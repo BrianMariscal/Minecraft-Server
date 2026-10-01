@@ -1,0 +1,156 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Cambia settings.yml y vuelve a correr `mc build`.
+# ===========================================================================
+#  EssentialsX es el que da /home, /sethome, /spawn, /tpa, /back y /msg.
+#  Todo funciona desde Bedrock vía Geyser sin ningún mod de cliente.
+#
+#  Solo escribimos lo que nos aparta del default. EssentialsX rellena el
+#  resto al arrancar.
+# ===========================================================================
+
+# --- Idioma ----------------------------------------------------------------
+# EssentialsX trae messages_es.properties, pero es español de España ("vale",
+# "tío", voseo raro). `mc build` deja NUESTRA versión corregida en
+# plugins/Essentials/messages_es.properties, y EssentialsX da prioridad al
+# archivo de su carpeta sobre el del jar.
+locale: es
+# Que use el idioma del SERVIDOR, no el del cliente: así todos leen los
+# mismos mensajes en español de México y no una mezcla.
+per-player-locale: false
+
+# --- Teletransporte --------------------------------------------------------
+# EssentialsX usa 0 para los dos (sin espera). Lo dejamos: entre amigos no
+# hace falta castigar el /home con una cuenta regresiva.
+teleport-cooldown: 0
+teleport-delay: 0
+# 4 segundos de invulnerabilidad al llegar: evita morir por caer en un
+# bloque que todavía no cargó, que en celular pasa seguido.
+teleport-invulnerability: 4
+# Busca un lugar seguro al teletransportar. Importante con Terralith, que
+# genera cuevas grandes justo donde a veces está tu casa.
+teleport-safety: true
+teleport-passenger-dismount: true
+teleport-to-center: true
+
+# --- /back -----------------------------------------------------------------
+# EssentialsX lo trae en false. Lo PRENDEMOS: es lo que hace que /back te
+# regrese al lugar donde te morías, no nada más al último /tp.
+# Era un requisito explícito del proyecto.
+register-back-in-listener: true
+# Al salir de la cárcel o de un freeze, manda a donde estaba.
+teleport-when-freed: back
+
+# --- /tpa ------------------------------------------------------------------
+# EssentialsX usa 120 s y 5 peticiones. Lo dejamos: con 15 jugadores no hay
+# necesidad de apretar más.
+tpa-accept-cancellation: 120
+tpa-max-requests: 5
+
+# --- /home y /sethome ------------------------------------------------------
+# EssentialsX trae default 3. Subimos a 5 para el grupo default: con
+# Terralith y Towns and Towers da ganas de guardar más lugares.
+# Los admins tienen 25 (ver mensajes/luckperms-grupos.txt).
+sethome-multiple:
+  default: 5
+  admin: 25
+# Si alguien hace /home sin tener casa, lo manda al spawn en lugar de
+# dejarlo con un error.
+spawn-if-no-home: true
+# Pedir confirmación antes de sobrescribir una casa: en celular es
+# facilísimo escribir /sethome sobre la casa buena.
+confirm-home-overwrite: true
+
+# --- /spawn ----------------------------------------------------------------
+# false por defecto, y así se queda: solo vas al spawn si tú escribes /spawn.
+spawn-on-join: false
+# Al morir, reaparece en su cama si tiene, no en el spawn. Es lo vanilla.
+respawn-at-home: false
+respawn-at-home-bed: true
+
+# --- Mensajes de muerte ----------------------------------------------------
+# true: deja pasar los mensajes de muerte VANILLA tal cual, sin cambiarlos.
+# Así cada cliente los traduce a su idioma, que es justo lo que queremos.
+death-messages: true
+# No mandamos el resumen de información después de morir: es ruido.
+send-info-after-death: false
+
+# --- Entradas y salidas ----------------------------------------------------
+#  Cortas y en gris, para que no estorben. Los códigos & son los clásicos,
+#  que Geyser traduce bien a Bedrock.
+#  {PLAYER} lo rellena EssentialsX con el nombre del jugador.
+custom-join-message: "&8+ &7{PLAYER}"
+custom-quit-message: "&8- &7{PLAYER}"
+# Si alguien se cambió el nombre, EssentialsX puede avisar distinto.
+# "none" = usa el mismo mensaje de arriba, que es lo que queremos.
+custom-new-username-message: "none"
+
+# Nadie se entera de quién entra o sale si hay mucha gente. Con máximo
+# {{ max_jugadores }} jugadores esto nunca se activa, pero lo dejamos
+# explícito: -1 es "siempre avisar".
+hide-join-quit-messages-above: -1
+
+# --- La primera vez que alguien entra --------------------------------------
+newbies:
+  # EssentialsX trae "&dWelcome {DISPLAYNAME}&d to the server!" en inglés.
+  announce-format: "&7{DISPLAYNAME} &7llegó por primera vez, denle la bienvenida."
+  # Que los nuevos aparezcan en el spawn normal, no en uno aparte.
+  spawnpoint: none
+  # Sin kit de inicio: empezamos todos desde cero, como en vanilla.
+  kit: ''
+
+# --- Chat ------------------------------------------------------------------
+chat:
+  # 0 = chat global. Con un solo mundo compartido no tiene sentido partirlo.
+  radius: 0
+
+  # El formato por defecto de EssentialsX es '<{DISPLAYNAME}> {MESSAGE}'.
+  # Nosotros usamos formatos POR GRUPO de LuckPerms para que los admins
+  # lleven su etiqueta y nadie más.
+  #
+  # Los códigos & son los clásicos de Minecraft, no MiniMessage: son los que
+  # Geyser traduce bien a Bedrock. Nada de degradados a propósito, que
+  # Bedrock los aplana a un solo color y se ve peor.
+  format: '{PREFIX}&7{DISPLAYNAME} &8» &f{MESSAGE}'
+
+  group-formats:
+    # `Nombre » mensaje`: nombre en gris claro, » en gris oscuro, mensaje en
+    # blanco. Discreto, legible en Java y en Bedrock.
+    default: '&7{DISPLAYNAME} &8» &f{MESSAGE}'
+    # Los admins llevan una etiqueta chica en azul suave, sin gritar.
+    admin: '&b[Admin] &7{DISPLAYNAME} &8» &f{MESSAGE}'
+
+  # Las preguntas con ? y los gritos con ! no nos hacen falta: el chat ya es
+  # global. Apagarlos evita que alguien escriba "?" sin querer y salga raro.
+  question-enabled: false
+  shout-default: false
+  persist-shout: false
+
+# --- Mensajes privados -----------------------------------------------------
+# /msg y /r. El formato lo define messages_es.properties (ver más abajo);
+# aquí solo nos aseguramos de que el espía de chat sea discreto.
+socialspy-messages: true
+socialspy-uses-displaynames: true
+
+# --- AFK -------------------------------------------------------------------
+# EssentialsX marca AFK a los 300 s (5 min). Lo dejamos.
+auto-afk: 300
+# -1 = nunca expulsa por AFK. Entre amigos no hay razón para sacar a nadie.
+auto-afk-timeout: -1
+# Congelar al jugador AFK rompería las granjas que se dejan corriendo.
+freeze-afk-players: false
+cancel-afk-on-move: true
+
+# --- Varios ----------------------------------------------------------------
+# Las versiones las fijamos nosotros y se revisan con `mc update`.
+update-check: false
+# El prefijo/sufijo lo pone LuckPerms; que EssentialsX lo refleje en el
+# nombre que se ve arriba del jugador y en el tab.
+change-displayname: true
+add-prefix-suffix: true
+# No mostrar en /help comandos que el jugador no puede usar.
+hide-permissionless-help: true
+non-ess-in-help: true
+# Que el dinero no exista: no tenemos economía en este servidor.
+# (EssentialsX la trae encendida y solo ensucia el /help.)
+command-costs: {}

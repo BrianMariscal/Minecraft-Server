@@ -1,0 +1,171 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Cambia settings.yml y vuelve a correr `mc build`.
+# ===========================================================================
+#  AuthMe es LO MÁS IMPORTANTE de la seguridad de este servidor.
+#
+#  Como el servidor es no premium (online-mode: false), Mojang no verifica a
+#  nadie: cualquiera puede conectarse diciendo que se llama como tú. AuthMe
+#  es lo que hace que tu personaje sea tuyo: te registras con una contraseña
+#  (/register) y entras con ella (/login).
+#
+#  Solo escribimos lo que nos aparta del default; AuthMe rellena el resto.
+# ===========================================================================
+
+DataSource:
+    # SQLite: un archivo en el volumen del servidor, sin base de datos
+    # aparte. Para 15 jugadores sobra, y entra en los respaldos.
+    backend: SQLITE
+    caching: true
+
+settings:
+    # --- Idioma -----------------------------------------------------------
+    # AuthMe trae messages_es.yml, pero es español de España. `mc build` deja
+    # NUESTRA versión corregida en plugins/AuthMe/messages/messages_es.yml;
+    # AuthMe da prioridad al archivo de su carpeta sobre el del jar.
+    messagesLanguage: es
+    # Que use el idioma del SERVIDOR, no el del cliente: así todos leen los
+    # mismos mensajes y no una mezcla de español e inglés.
+    perPlayerLocale: false
+
+    serverName: "{{ nombre }}"
+    useAsyncTasks: true
+
+    sessions:
+        # AuthMe las trae apagadas. Las PRENDEMOS con 10 minutos: si a alguien
+        # se le cae el internet (pasa seguido en celular), al reconectar dentro
+        # de esos 10 minutos entra sin volver a escribir la contraseña. La
+        # sesión está amarrada a la IP, así que no es un hoyo de seguridad.
+        enabled: true
+        timeout: 10
+
+    restrictions:
+        # --- EL AJUSTE CRÍTICO PARA BEDROCK -------------------------------
+        # AuthMe trae '[a-zA-Z0-9_]*', que NO incluye el punto. Floodgate le
+        # pone un punto adelante al nombre de los jugadores de Bedrock
+        # (.Pepe), así que con el default AuthMe los rechazaba con "nombre
+        # inválido" y NO PODÍAN REGISTRARSE.
+        #
+        # Agregamos el punto a los caracteres permitidos. Si cambias
+        # seguridad.prefijo_bedrock en settings.yml, esto se regenera solo.
+        allowedNicknameCharacters: '[a-zA-Z0-9_{{ prefijo_bedrock | replace(".", "\\.") }}]*'
+        # El punto del prefijo cuenta como carácter, así que el nombre de
+        # Bedrock más largo puede llegar a 17. Si dejamos 16, un gamertag de
+        # 16 caracteres no entra.
+        minNicknameLength: 3
+        maxNicknameLength: 17
+
+        # Los comandos que SÍ se pueden usar antes de entrar. Dejamos los de
+        # AuthMe y nada más: así nadie puede jugar sin registrarse.
+        allowCommands:
+        - /login
+        - /l
+        - /register
+        - /reg
+        - /captcha
+        - /help
+
+        # Antes de hacer /login no puedes moverte, hablar ni usar el
+        # inventario. Es lo que evita que alguien entre con tu nombre y se
+        # lleve tus cosas mientras tú no estás.
+        allowChat: false
+        allowMovement: false
+        ProtectInventoryBeforeLogIn: true
+        # El chat se oculta hasta que entras: así no ves conversaciones
+        # ajenas desde la pantalla de login.
+        hideChat: true
+
+        # AuthMe usa 30 s para los dos. Lo subimos a
+        # {{ authme.timeout_login }} porque escribir una contraseña en el
+        # teclado de un celular con una mano toma más tiempo.
+        loginTimeout: {{ authme.timeout_login }}
+        registerTimeout: {{ authme.timeout_login }}
+
+        # AuthMe permite 1 registro por IP. Lo subimos a 3: en una casa con
+        # varios jugadores (hermanos, roomies) todos salen con la misma IP y
+        # con el default solo el primero podía registrarse.
+        maxRegPerIp: 3
+        maxJoinPerIp: 0
+        maxLoginPerIp: 0
+
+        # Te saca si escribes mal la contraseña, en lugar de dejarte
+        # intentando para siempre.
+        kickOnWrongPassword: true
+        # No expulsamos a quien no está registrado: queremos que se registre,
+        # no que lo echen.
+        kickNonRegistered: false
+        ForceSingleSession: true
+
+        # Guarda dónde te salió y ahí te regresa al entrar, en lugar de
+        # mandarte al spawn cada vez.
+        SaveQuitLocation: true
+        teleportUnAuthedToSpawn: false
+        noTeleport: false
+
+        # Que el spawn lo decida EssentialsX (el /setspawn que pusimos),
+        # no AuthMe.
+        spawnPriority: essentials,authme,default
+
+        # AuthMe trae '[!-~]*' (cualquier ASCII imprimible). Lo dejamos: con
+        # contraseñas entre amigos no hace falta apretar más, y restringirlo
+        # solo frustra a quien usa un teclado de celular.
+        allowedPasswordCharacters: '[!-~]*'
+        DenyTabCompleteBeforeLogin: true
+        # No le digas a nadie qué otras cuentas comparten su IP.
+        displayOtherAccounts: false
+
+    GameMode:
+        # No forzamos el modo de juego al entrar: si un admin andaba en
+        # creativo, sigue en creativo.
+        ForceSurvivalMode: false
+
+    security:
+        minPasswordLength: {{ authme.min_password }}
+        passwordMaxLength: {{ authme.max_password }}
+        # AuthMe trae SHA256. BCRYPT es mucho más lento de romper por fuerza
+        # bruta, que es justo lo que quieres de un hash de contraseñas.
+        # Es el que AuthMe recomienda para instalaciones nuevas.
+        passwordHash: BCRYPT
+        bCryptLog2Rounds: 10
+        # Contraseñas que no se permiten por obvias. Agregamos algunas en
+        # español a la lista que ya trae AuthMe.
+        unsafePasswords:
+        - '123456'
+        - '12345'
+        - '54321'
+        - '123456789'
+        - password
+        - qwerty
+        - help
+        - contrasena
+        - contraseña
+        - minecraft
+        - '{{ nombre | lower | replace(" ", "") }}'
+
+    captcha:
+        useCaptcha: true
+        # Después de {{ authme.max_intentos }} intentos fallidos, pide un
+        # captcha. Es lo que para a un bot que anda probando contraseñas.
+        maxLoginTry: {{ authme.max_intentos }}
+        captchaLength: 5
+        captchaCooldown: 30
+
+    registration:
+        enabled: true
+        # force: true = no puedes hacer NADA hasta registrarte. Es el punto
+        # de tener AuthMe.
+        force: true
+        # PASSWORD = /register contraseña contraseña. Sin correo: pedir
+        # email entre amigos es un trámite de a gratis.
+        type: PASSWORD
+        # Cada 5 segundos le recuerda al que no se ha registrado qué escribir.
+        messageInterval: 5
+
+Email:
+    # Sin recuperación por correo: no hay servidor de email configurado y
+    # para 15 jugadores el admin puede resetear a mano con /unregister.
+    recoveryPasswordLength: 8
+
+Hooks:
+    # No usamos Vault ni plugins de economía.
+    useEssentialsMotd: false

@@ -34,6 +34,16 @@ plugins:
     sha256: "21570aff9ce17d6983928e8552777760e1ede5050026b04c686b0ae112e6fd7e"
     nota: "Deja entrar a Bedrock sin cuenta de Java y maneja /linkaccount. sha256 verificado contra la API de GeyserMC."
 
+  floodgate_sqlite:
+    nombre: "Floodgate SQLite database"
+    version: "2.2.5-b138"
+    archivo: "floodgate-sqlite-database.jar"
+    url: "https://download.geysermc.org/v2/projects/floodgatedb/versions/2.2.5/builds/138/downloads/sqlite"
+    sha256: "df4ae91e452f7124f11b97d625357b00b13208c056e68c5473e1599b1e443317"
+    # Floodgate carga sus add-ons desde su propia carpeta, no desde plugins/.
+    subcarpeta: "floodgate"
+    nota: "Base de datos local para la vinculacion de cuentas (/linkaccount). Sin este jar, enable-own-linking truena. sha256 verificado contra la API de GeyserMC."
+
   viaversion:
     nombre: "ViaVersion"
     version: "5.12.0"
@@ -41,6 +51,22 @@ plugins:
     url: "https://cdn.modrinth.com/data/P1OZGk5p/versions/FaishMnD/ViaVersion-5.12.0.jar"
     sha256: "c4d512fa9760fa41d17abaedde12aa1f4c9bde920d0a992fe0fc016962f126be"
     nota: "Tolera clientes de Java mas nuevos que el servidor."
+
+  vault:
+    nombre: "VaultUnlocked"
+    version: "2.20.3"
+    archivo: "VaultUnlocked-2.20.3.jar"
+    url: "https://cdn.modrinth.com/data/ayRaM8J7/versions/qZgRzoYs/VaultUnlocked-2.20.3.jar"
+    sha256: "fbc6651aca11e13376c115df66eeffa79592e79517be398299aa6beb49c22695"
+    nota: "API de permisos que EssentialsX necesita para leer los grupos y prefijos de LuckPerms. Sin esto, el formato de chat por grupo y la etiqueta [Admin] NO funcionan: EssentialsX lo avisa al arrancar. Es el fork mantenido de Vault; su plugin.yml se llama 'Vault', asi que EssentialsX lo detecta igual."
+
+  packetevents:
+    nombre: "PacketEvents"
+    version: "2.14.0+spigot"
+    archivo: "packetevents-spigot-2.14.0.jar"
+    url: "https://cdn.modrinth.com/data/HYKaKraK/versions/m78nFxYg/packetevents-spigot-2.14.0.jar"
+    sha256: "060087c58ec268eae7dd0eb1f17ac3bea1eaadda1693414141ff64e506091bd7"
+    nota: "Lo necesita AuthMe para dos cosas de seguridad: proteger el inventario antes de que entres (ProtectInventoryBeforeLogIn) y bloquear el autocompletado (DenyTabCompleteBeforeLogin). Sin este jar, AuthMe las apaga solo y lo avisa al arrancar."
 
   essentialsx:
     nombre: "EssentialsX"

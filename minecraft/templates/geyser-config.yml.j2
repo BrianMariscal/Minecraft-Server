@@ -1,0 +1,84 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Cambia settings.yml y vuelve a correr `mc build`.
+# ===========================================================================
+#  Geyser traduce el protocolo de Bedrock a Java: es lo que deja entrar a
+#  quien juega en celular, tablet, Windows 10/11 o consola.
+#  Solo escribimos lo que nos aparta del default; el resto lo rellena Geyser.
+# ===========================================================================
+
+bedrock:
+  # 0.0.0.0 = escucha en todas las interfaces del contenedor. El firewall del
+  # VPS es el que decide quién llega (ver docs/vps.md).
+  address: 0.0.0.0
+  port: {{ puerto_bedrock }}
+  # raknet es el transporte normal de Bedrock, por UDP.
+  transport: raknet
+
+java:
+  # Como Geyser corre DENTRO del mismo Paper (no es un proxy aparte), no hay
+  # que decirle a qué servidor conectarse: ya está adentro. Por eso en Spigot
+  # esta sección solo tiene auth-type.
+  #
+  # Geyser trae `online`. Lo cambiamos a `floodgate` porque el servidor es no
+  # premium: Floodgate es el que le da identidad a cada jugador de Bedrock y
+  # el que maneja la vinculación de cuentas con /linkaccount.
+  auth-type: floodgate
+
+motd:
+  # --- Que Bedrock vea EXACTAMENTE el mismo MOTD que Java ----------------
+  # passthrough-motd le dice a Geyser que copie el MOTD del servidor de Java
+  # en lugar de inventar el suyo. Así no hay dos textos que mantener.
+  passthrough-motd: true
+  passthrough-player-counts: true
+  # Estos dos solo se usan si el servidor de Java no contesta el ping. Los
+  # ponemos iguales al MOTD de settings.yml para que, aunque Paper esté
+  # arrancando, en la lista de Bedrock se vea bien.
+  primary-motd: "{{ motd_1 | legacy }}"
+  secondary-motd: "{{ motd_2 | legacy }}"
+  max-players: {{ max_jugadores }}
+  integrated-ping-passthrough: true
+  ping-passthrough-interval: 3
+
+gameplay:
+  # El nombre que aparece arriba en la pantalla de pausa de Bedrock.
+  server-name: "{{ nombre }}"
+  # Geyser trae `crosshair`, que dibuja el cooldown de ataque alrededor de
+  # la mirilla. En celular la mirilla es chiquita y no se alcanza a ver, así
+  # que usamos `hotbar`, que lo pone arriba de la barra de ítems.
+  # Los únicos valores válidos son: crosshair, hotbar y disabled.
+  cooldown-type: hotbar
+  command-suggestions: true
+  # Las coordenadas se muestran si el gamerule del servidor lo permite.
+  show-coordinates: true
+  # Geyser lo trae en false. Lo dejamos: el andamiaje de Bedrock (poner
+  # bloques mirando al vacío) no existe en Java y confunde más que ayuda.
+  disable-bedrock-scaffolding: false
+  emotes-enabled: true
+  # Los logros de Xbox exigen que el servidor esté en modo online. Como somos
+  # no premium, esto se queda apagado o Bedrock no deja entrar.
+  xbox-achievements-enabled: false
+  # Las cabezas de mob y de jugador (del datapack more mob heads y de
+  # wandering trades) se renderizan como bloques reales en Bedrock gracias a
+  # esto. Si se apagara, los de Bedrock verían cabezas invisibles.
+  max-visible-custom-skulls: 128
+  custom-skull-render-distance: 32
+  enable-custom-content: true
+  enable-integrated-pack: true
+
+# --- Idioma ----------------------------------------------------------------
+# Geyser trae es_MX incluido (verificado en el jar 2.11.3). Con esto, todos
+# los mensajes DE GEYSER (formularios, errores de conexión, avisos) le salen
+# en español de México a los jugadores de Bedrock.
+# El default de Geyser es `system`, que seguiría el idioma del VPS (inglés).
+default-locale: {{ geyser_locale }}
+
+advanced:
+  # Dónde está la llave que comparten Geyser y Floodgate. La genera Floodgate
+  # sola en su primer arranque; nosotros no la tocamos.
+  floodgate-key-file: key.pem
+  bedrock:
+    # Geyser usa 1400. 1200 aguanta mejor las redes móviles con MTU chico,
+    # que es justo desde donde juega la gente en celular.
+    mtu: 1200
+    compression-level: 6

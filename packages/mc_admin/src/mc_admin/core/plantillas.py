@@ -14,31 +14,39 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateNotFound
 from jinja2 import TemplateSyntaxError as JinjaSyntaxError
 
-from mc_admin.config import Settings
+from mc_admin.config import Secretos, Settings
 from mc_admin.errores import ErrorDeConfig
 
 # Plantilla -> ruta de salida relativa a minecraft/generated/.
 # La ruta de salida es también la ruta DENTRO de la carpeta de datos del
 # servidor, así `mc build` solo copia respetando el árbol.
 SALIDAS: dict[str, str] = {
+    # --- Servidor ---------------------------------------------------------
     "server.properties.j2": "server.properties",
     "paper-global.yml.j2": "config/paper-global.yml",
     "paper-world-defaults.yml.j2": "config/paper-world-defaults.yml",
     "spigot.yml.j2": "spigot.yml",
     "bukkit.yml.j2": "bukkit.yml",
+    # --- Crossplay --------------------------------------------------------
     "geyser-config.yml.j2": "plugins/Geyser-Spigot/config.yml",
     "floodgate-config.yml.j2": "plugins/floodgate/config.yml",
+    # --- Jugabilidad ------------------------------------------------------
     "essentials-config.yml.j2": "plugins/Essentials/config.yml",
+    "essentials-motd.txt.j2": "plugins/Essentials/motd.txt",
     "authme-config.yml.j2": "plugins/AuthMe/config.yml",
-    "discordsrv-config.yml.j2": "plugins/DiscordSRV/config.yml",
     "axgraves-config.yml.j2": "plugins/AxGraves/config.yml",
+    "gsit-config.yml.j2": "plugins/GSit/config.yml",
+    "skinsrestorer-config.yml.j2": "plugins/SkinsRestorer/config.yml",
+    # --- Permisos, chat y registro ---------------------------------------
     "luckperms-config.yml.j2": "plugins/LuckPerms/config.yml",
-    "bluemap-core.conf.j2": "plugins/BlueMap/core.conf",
-    "bluemap-webserver.conf.j2": "plugins/BlueMap/webserver.conf",
     "chatsentinel-config.yml.j2": "plugins/ChatSentinel/config.yml",
     "coreprotect-config.yml.j2": "plugins/CoreProtect/config.yml",
-    "skinsrestorer-config.yml.j2": "plugins/SkinsRestorer/config.yml",
-    "gsit-config.yml.j2": "plugins/GSit/config.yml",
+    # --- Discord ----------------------------------------------------------
+    "discordsrv-config.yml.j2": "plugins/DiscordSRV/config.yml",
+    # --- Mapa web ---------------------------------------------------------
+    "bluemap-core.conf.j2": "plugins/BlueMap/core.conf",
+    "bluemap-webserver.conf.j2": "plugins/BlueMap/webserver.conf",
+    # --- Referencia para humanos (no las lee ningún plugin) --------------
     "bienvenida.txt.j2": "mensajes/bienvenida.txt",
     "luckperms-grupos.txt.j2": "mensajes/luckperms-grupos.txt",
 }
@@ -86,7 +94,11 @@ def _minimessage_a_legacy(texto: str) -> str:
     }
     for k, v in simples.items():
         resultado = resultado.replace(k, v)
-    return resultado
+    # Cerrar <bold> dentro de un color deja §r§r pegados. Es inofensivo pero
+    # ensucia el archivo y confunde al leerlo, así que los juntamos en uno.
+    resultado = re.sub(r"(?:§r){2,}", "§r", resultado)
+    # Un §r al final no hace nada: el mensaje ya se acabó.
+    return resultado.removesuffix("§r")
 
 
 def _yaml_str(valor: Any) -> str:
@@ -118,11 +130,15 @@ def crear_entorno(carpeta_templates: Path) -> Environment:
     return entorno
 
 
-def construir_contexto(settings: Settings) -> dict[str, Any]:
+def construir_contexto(settings: Settings, secretos: Secretos) -> dict[str, Any]:
     """Arma el diccionario que ven todas las plantillas.
 
     Las plantillas NO reciben el objeto Settings crudo: les damos un contexto
     plano y explícito, para que se lea de un golpe qué dato usa cada config.
+
+    Los secretos (token de Discord, IDs de canal) entran aquí porque algunas
+    configs de plugins los piden dentro del archivo. Por eso todo lo generado
+    vive en minecraft/generated/, que está ignorada por git.
     """
     s = settings
     motd_legacy_1 = _minimessage_a_legacy(s.servidor.motd.linea_1)
@@ -168,11 +184,24 @@ def construir_contexto(settings: Settings) -> dict[str, Any]:
         "discord": s.discord.model_dump(),
         # Versiones
         "version_minecraft": s.versiones.minecraft,
+        # Admins, para el guion de grupos de LuckPerms.
+        "admins": list(s.admins),
+        # Zona horaria: la usan DiscordSRV y el bot de pagos.
+        "zona_horaria": s.pagos.zona_horaria,
+        # --- Secretos -----------------------------------------------------
+        # Van a archivos dentro de minecraft/generated/, que git ignora.
+        "rcon_password": secretos.rcon_password,
+        "discord_token": secretos.discord_token,
+        "discord_canal_chat": secretos.discord_channel_chat or "000000000000000000",
+        "discord_canal_consola": secretos.discord_channel_consola or "000000000000000000",
     }
 
 
 def renderizar_todo(
-    settings: Settings, carpeta_templates: Path, solo: str | None = None
+    settings: Settings,
+    secretos: Secretos,
+    carpeta_templates: Path,
+    solo: str | None = None,
 ) -> list[ArchivoGenerado]:
     """Renderiza todas las plantillas (o una sola, si pasas `solo`).
 
@@ -181,7 +210,7 @@ def renderizar_todo(
             una variable que no existe en el contexto.
     """
     entorno = crear_entorno(carpeta_templates)
-    contexto = construir_contexto(settings)
+    contexto = construir_contexto(settings, secretos)
     salidas = {solo: SALIDAS[solo]} if solo else SALIDAS
 
     generados: list[ArchivoGenerado] = []
@@ -206,3 +235,25 @@ def renderizar_todo(
         generados.append(ArchivoGenerado(destino, contenido))
 
     return generados
+
+
+# --------------------------------------------------------------------------- #
+#  Traducciones propias
+# --------------------------------------------------------------------------- #
+#  Archivo en minecraft/translations/es_mx/  ->  ruta dentro de la carpeta de
+#  datos del servidor.
+#
+#  Estas NO pasan por Jinja2: son archivos fijos que `mc build` copia tal cual.
+#  Casi todos los plugins le dan prioridad al archivo de su propia carpeta
+#  sobre el que viene dentro del jar.
+TRADUCCIONES: dict[str, str] = {
+    # EssentialsX 2.22 movió los idiomas a su subcarpeta `messages/`. Si lo
+    # dejas en la raíz del plugin, EssentialsX lo "convierte" y lo mueve él
+    # solo, de paso rompiendo el formato. Verificado arrancando el servidor.
+    "essentials-messages_es.properties": "plugins/Essentials/messages/messages_es.properties",
+    "authme-messages_es.yml": "plugins/AuthMe/messages/messages_es.yml",
+    "coreprotect-language.yml": "plugins/CoreProtect/language.yml",
+    "axgraves-messages.yml": "plugins/AxGraves/messages.yml",
+    "chatsentinel-messages.yml": "plugins/ChatSentinel/messages.yml",
+    "discordsrv-messages.yml": "plugins/DiscordSRV/messages.yml",
+}

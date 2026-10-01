@@ -1,0 +1,113 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Cambia settings.yml y vuelve a correr `mc build`.
+# ===========================================================================
+#  Guion de comandos de LuckPerms para dejar los dos grupos como queremos.
+#
+#  `mc build` lo genera y `mc start` lo aplica por RCON la primera vez.
+#  También lo puedes pegar a mano en la consola si quieres revisarlo antes.
+#  Correrlo dos veces no rompe nada: LuckPerms ignora lo que ya está.
+# ===========================================================================
+
+# --- Grupo default: todo mundo --------------------------------------------
+lp creategroup default
+lp group default meta setweight 1
+
+# Lo básico de EssentialsX que pediste para todos.
+lp group default permission set essentials.home true
+lp group default permission set essentials.sethome true
+lp group default permission set essentials.sethome.multiple true
+lp group default permission set essentials.sethome.multiple.default true
+lp group default permission set essentials.delhome true
+lp group default permission set essentials.renamehome true
+lp group default permission set essentials.spawn true
+lp group default permission set essentials.tpa true
+lp group default permission set essentials.tpaccept true
+lp group default permission set essentials.tpdeny true
+lp group default permission set essentials.tpacancel true
+lp group default permission set essentials.back true
+# Volver al lugar donde te moriste: esto es lo que hace que /back sirva
+# después de morir, no solo después de un /tp.
+lp group default permission set essentials.back.ondeath true
+lp group default permission set essentials.msg true
+lp group default permission set essentials.msg.color false
+lp group default permission set essentials.r true
+lp group default permission set essentials.afk true
+lp group default permission set essentials.list true
+lp group default permission set essentials.me true
+lp group default permission set essentials.help true
+lp group default permission set essentials.rules true
+lp group default permission set essentials.motd true
+lp group default permission set essentials.ignore true
+lp group default permission set essentials.seen true
+lp group default permission set essentials.suicide true
+
+# Sentarse con GSit.
+lp group default permission set gsit.sit true
+lp group default permission set gsit.lay true
+lp group default permission set gsit.crawl true
+lp group default permission set gsit.spin true
+lp group default permission set gsit.use.sit true
+
+# Cambiar su skin (servidor no premium).
+lp group default permission set skinsrestorer.command true
+lp group default permission set skinsrestorer.command.set true
+lp group default permission set skinsrestorer.command.clear true
+lp group default permission set skinsrestorer.command.update true
+
+# Vincular su cuenta de Java con la de Bedrock.
+lp group default permission set floodgate.command.linkaccount true
+lp group default permission set floodgate.command.unlinkaccount true
+
+# Abrir tumbas (incluidas las ajenas: aquí compartimos todo).
+lp group default permission set axgraves.use true
+
+# Ver el mapa web.
+lp group default permission set bluemap.webapp true
+
+# Esto NO se da: borrar las tumbas de otros o saltarse el anti-spam.
+lp group default permission set axgraves.admin false
+lp group default permission set chatsentinel.bypass false
+
+# --- Grupo admin ----------------------------------------------------------
+lp creategroup admin
+lp group admin meta setweight 100
+# La etiqueta que sale en el chat. EssentialsX la mete con {PREFIX}.
+# Azul suave y chiquita: que se note quién es admin sin que grite.
+lp group admin meta setprefix 100 "&b[Admin] "
+# Hereda todo lo del grupo default.
+lp group admin parent add default
+
+# Permisos de administración.
+lp group admin permission set essentials.* true
+lp group admin permission set essentials.sethome.multiple.admin true
+lp group admin permission set coreprotect.* true
+lp group admin permission set chunky.* true
+lp group admin permission set bluemap.* true
+lp group admin permission set axgraves.admin true
+lp group admin permission set skinsrestorer.admincommand true
+lp group admin permission set authme.admin.* true
+lp group admin permission set chatsentinel.admin true
+lp group admin permission set chatsentinel.bypass true
+lp group admin permission set geyser.command.* true
+lp group admin permission set floodgate.command.* true
+lp group admin permission set discordsrv.admin true
+lp group admin permission set luckperms.* true
+
+# Ojo con estos: dan poder de verdad.
+lp group admin permission set minecraft.command.whitelist true
+lp group admin permission set minecraft.command.gamemode true
+lp group admin permission set minecraft.command.gamerule true
+lp group admin permission set minecraft.command.kick true
+lp group admin permission set minecraft.command.ban true
+
+{% if admins %}
+# --- Los admins de settings.yml -------------------------------------------
+{% for admin in admins %}
+lp user {{ admin }} parent add admin
+{% endfor %}
+{% else %}
+# --- Sin admins todavía ---------------------------------------------------
+# La lista `admins:` de settings.yml está vacía. Agrégate con:
+#     mc admin add TuNombreDeJava
+{% endif %}

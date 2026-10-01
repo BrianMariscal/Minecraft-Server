@@ -1,0 +1,163 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Cambia settings.yml y vuelve a correr `mc build`.
+# ===========================================================================
+#  config/paper-world-defaults.yml: valores por defecto para TODOS los mundos.
+#  Paper también reescribe este archivo y le borra los comentarios en cada
+#  arranque; la copia comentada es la de minecraft/generated/.
+#
+#  ---------------------------------------------------------------------
+#  Filosofía de este archivo: el control de lag va SOLO por configuración.
+#  No hay ni un plugin que borre mobs. Y lo que ajustamos NO toca a los
+#  aldeanos, los illagers, los mobs con nombre, las raids ni las granjas:
+#  ahí es justo donde los servidores suelen romper el juego técnico.
+#  ---------------------------------------------------------------------
+#  Referencia: https://docs.papermc.io/paper/reference/world-configuration/
+# ===========================================================================
+
+_version: 31
+
+entities:
+  spawning:
+    # Paper lo trae en true. Así cada jugador tiene su propio presupuesto de
+    # mobs en lugar de uno global para todo el servidor: con {{ max_jugadores }}
+    # jugadores repartidos en el mapa, las granjas de mobs de cada quien
+    # siguen rindiendo aunque otro esté al otro lado del mundo.
+    per-player-mob-spawns: true
+
+    # Paper lo trae en false y así se queda. Si se prendiera, los mobs de
+    # las granjas (los que están guardados en un cuarto de matanza) contarían
+    # contra el límite de spawn y la granja se ahogaría sola.
+    count-all-mobs-for-spawning: false
+
+    # Los spawn-limits y ticks-per-spawn se quedan en -1, o sea heredando
+    # bukkit.yml. Ahí es donde los ajustamos (ver bukkit.yml), para tener un
+    # solo lugar donde buscarlos.
+
+  behavior:
+    # Paper lo trae en false. Lo dejamos igual: los pigmen de los portales
+    # del Nether tienen que soltar XP y botín para que las granjas de oro y
+    # de XP del Nether funcionen. Ponerlo en true las mata.
+    nerf-pigmen-from-nether-portals: false
+
+    # false por defecto, y así se queda: las patrullas de saqueadores tienen
+    # que seguir apareciendo para que haya raids.
+    pillager-patrols:
+      disable: false
+
+    # Paper lo trae en -1 (sin límite). Juntar los orbes de XP hasta 16 baja
+    # muchísimo el conteo de entidades en una granja de XP sin que pierdas
+    # ni un punto de experiencia: se suman, no se borran.
+    experience-merge-max-value: 16
+
+    # Paper lo trae en false. Lo dejamos: los zombis tienen que poder
+    # convertir aldeanos para poder curarlos y bajar los precios.
+    zombie-villager-infection-chance: default
+
+  armor-stands:
+    # Paper los tickea por defecto. Los armor stands de decoración no
+    # necesitan tick, pero el datapack "armor statues" los usa y apagarlo
+    # rompería las poses. Lo dejamos encendido.
+    tick: true
+    # Esto SÍ lo apagamos: buscar colisiones de entidades contra cada armor
+    # stand es caro y no afecta a nada que usemos. Es el único ajuste de
+    # armor stands que hacemos y no cambia su apariencia ni sus poses.
+    do-collision-entity-lookups: false
+
+  tracking-range-y:
+    # Paper lo trae apagado. Lo prendemos con valores conservadores para no
+    # mandar por la red entidades que están decenas de bloques arriba o abajo
+    # del jugador. Ayuda mucho en el Nether y en granjas verticales, y no
+    # cambia en nada la lógica del servidor: solo lo que se le manda al
+    # cliente. A los de Bedrock les ayuda todavía más, que suelen jugar en
+    # celular.
+    enabled: true
+    player: default
+    animal: 64
+    monster: 64
+    display: default
+    misc: 48
+    other: 48
+
+chunks:
+  # Paper usa 10s. Lo subimos para que los chunks de las granjas no se
+  # descarguen y recarguen todo el tiempo cuando alguien pasa cerca: ese
+  # ciclo es más caro que dejarlos cargados un rato más.
+  delay-chunk-unloads-by: 30s
+
+  # Paper usa 24. Con 4 vCores podemos guardar más chunks por tick y hacer
+  # los autosaves más cortos, que es cuando se siente el tironcito.
+  max-auto-save-chunks-per-tick: 32
+
+  entity-per-chunk-save-limit:
+    # Paper deja todo en -1 (sin límite). Ponemos topes SOLO a proyectiles y
+    # orbes, que son los que se acumulan por miles cuando algo se descompone
+    # (una granja de flechas atorada, un dispensador en bucle). Nada de esto
+    # toca mobs, aldeanos ni ítems.
+    arrow: 1000
+    ender_pearl: 100
+    experience_orb: 1000
+    fireball: 200
+    small_fireball: 200
+    snowball: 200
+
+collisions:
+  # Paper usa 8. Lo dejamos: bajarlo rompe los criaderos de aldeanos y las
+  # granjas que apilan mobs a propósito.
+  max-entity-collisions: 8
+  # false por defecto y así se queda: el daño por amontonamiento mataría a
+  # los mobs apilados de las granjas.
+  allow-player-cramming-damage: false
+
+hopper:
+  # Paper lo trae en true. Lo dejamos: es el comportamiento vanilla que
+  # esperan los relojes de hopper y varios diseños de ordenadores de ítems.
+  cooldown-when-full: true
+  # false por defecto. Si se prendiera, se ahorraría CPU pero se romperían
+  # los plugins que escuchan movimiento de ítems, incluido CoreProtect.
+  disable-move-event: false
+
+misc:
+  # VANILLA por defecto. Lo cambiamos a ALTERNATE_CURRENT, una
+  # reimplementación del polvo de redstone que da EXACTAMENTE el mismo
+  # resultado que vanilla pero mucho más rápida en circuitos grandes.
+  # Es la que usan los servidores técnicos; no cambia ningún comportamiento
+  # observable, solo el costo en CPU.
+  redstone-implementation: ALTERNATE_CURRENT
+  # false por defecto, y así se queda: cambiarlo altera el comportamiento de
+  # las perlas de ender y rompería los diseños de transporte con perlas.
+  legacy-ender-pearl-behavior: false
+
+environment:
+  # Paper usa 65536 para los dos. Los dejamos igual: bajarlos hace que el
+  # agua y la lava dejen de fluir en construcciones grandes, y eso rompe
+  # granjas de cultivos y ascensores de agua.
+  max-block-ticks: 65536
+  max-fluid-ticks: 65536
+  # false por defecto. Optimizar explosiones cambia cómo se calcula el daño
+  # de la TNT, y eso rompe los cañones y las granjas de TNT.
+  optimize-explosions: false
+
+tick-rates:
+  # Paper usa 1 para los dos. Lo dejamos: si se ralentiza el tick de la
+  # tierra de cultivo, los cultivos crecen distinto y las granjas de
+  # cultivos rinden menos.
+  dry-farmland: 1
+  wet-farmland: 1
+  grass-spread: 1
+  mob-spawner: 1
+  behavior:
+    villager:
+      # Paper usa -1 (cada tick). Revalidar los puntos de interés del
+      # aldeano es de lo más caro que hay cuando tienes muchos. Ponerlo en
+      # 60 ticks (3 s) baja el costo sin que se note: los aldeanos siguen
+      # encontrando su estación de trabajo y su cama, nada más la revisan
+      # cada 3 segundos en lugar de 20 veces por segundo.
+      validatenearbypoi: 60
+
+  sensor:
+    villager:
+      # Paper usa 40. Lo subimos un poco por la misma razón. Esto NO afecta
+      # el comercio, la cura de zombis ni los criaderos: es solo el sensor
+      # que busca puntos de interés secundarios.
+      secondarypoisensor: 80

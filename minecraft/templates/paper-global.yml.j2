@@ -1,0 +1,103 @@
+# ===========================================================================
+#  GENERADO POR `mc build` — NO LO EDITES A MANO
+#  Cambia settings.yml y vuelve a correr `mc build`.
+# ===========================================================================
+#  OJO: Paper reescribe este archivo en CADA arranque y le borra todos los
+#  comentarios (verificado contra Paper 26.1.2). La copia comentada que estás
+#  leyendo vive en minecraft/generated/ y es la que se versiona en git; la que
+#  está dentro de data/ va a aparecer sin comentarios y con las claves
+#  ordenadas alfabéticamente. Es normal.
+#
+#  Aquí solo escribimos lo que nos aparta del valor por defecto de Paper.
+#  Lo que no aparezca, Paper lo rellena solo.
+#  Referencia: https://docs.papermc.io/paper/reference/global-configuration/
+# ===========================================================================
+
+# Versión del formato. La lee Paper para migrar el archivo si cambia de forma.
+_version: 31
+
+messages:
+  kick:
+    # authentication-servers-down, flying-player y flying-vehicle los dejamos
+    # como vienen: Paper usa <lang:...>, o sea que cada cliente los traduce a
+    # su propio idioma. Traducirlos a mano aquí se los pondría en español
+    # incluso a quien juega en inglés.
+    # connection-throttle SÍ viene en inglés hardcodeado, así que lo cambiamos.
+    connection-throttle: "<yellow>Aguanta un segundito y vuelve a entrar.</yellow>"
+  # Por defecto: "I'm sorry, but you do not have permission to perform this
+  # command...". Largo y en inglés.
+  no-permission: "<red>No tienes permiso para eso.</red>"
+
+chunk-loading-basic:
+  # Paper manda 75 chunks/s. Con máximo {{ max_jugadores }} jugadores podemos
+  # ser más generosos: cargan más rápido al volar con elytra o al explorar, y
+  # al VPS le sobra red.
+  player-max-chunk-send-rate: 100.0
+
+chunk-system:
+  # Paper usa -1 (automático). Con 4 vCores fijamos 2 hilos de I/O para que el
+  # pregen de Chunky no se pelee con el hilo principal del servidor.
+  io-threads: 2
+
+packet-limiter:
+  overrides:
+    # Paper permite 5 paquetes/s de "colocar receta". Geyser traduce los clics
+    # del libro de recetas de Bedrock a este paquete y los manda más seguido,
+    # así que con el límite default a los de Bedrock les tiraba las recetas.
+    minecraft:place_recipe:
+      action: DROP
+      interval: 4.0
+      max-packet-rate: 40.0
+
+player-auto-save:
+  # Paper usa -1 (hereda el autosave de bukkit.yml, 5 min). Con pocos
+  # jugadores guardar cada 2 minutos no cuesta nada y si el VPS se cae se
+  # pierde menos progreso.
+  rate: 2400
+
+spam-limiter:
+  # Paper corta a los 300 paquetes. Los jugadores de Bedrock mandan sus
+  # comandos por el chat vía Geyser y el límite default los pescaba de a gratis.
+  incoming-packet-threshold: 500
+
+unsupported-settings:
+  # ---------------------------------------------------------------------
+  #  Redstone técnica. Paper apaga esto por default porque técnicamente son
+  #  bugs de Mojang; aquí los queremos a propósito para las granjas.
+  # ---------------------------------------------------------------------
+{% if duplicacion_pistones %}
+  # Duplicación con pistones: TNT, alfombras y rieles. Es la base de las
+  # granjas de TNT y de los duplicadores de rieles.
+  allow-piston-duplication: true
+  # Los pistones sin cabeza son la otra mitad de varios duplicadores.
+  allow-headless-pistons: true
+{% else %}
+  allow-piston-duplication: false
+  allow-headless-pistons: false
+{% endif %}
+{% if duplicacion_portal_end %}
+  # Duplicación de arena y grava con portal del End: deja que un bloque que
+  # cae dentro del portal se teletransporte de forma "insegura", que es
+  # justo el comportamiento que hace el duplicado.
+  allow-unsafe-end-portal-teleportation: true
+{% else %}
+  allow-unsafe-end-portal-teleportation: false
+{% endif %}
+  # Estos SÍ se quedan apagados: son hoyos de seguridad de verdad (romper
+  # bloques a distancia, ítems con componentes gigantes) y no los necesita
+  # ninguna granja.
+  allow-permanent-block-break-exploits: false
+  perform-username-validation: true
+
+watchdog:
+  # Paper avisa a los 5 s y repite cada 5. Con 5 datapacks grandes el arranque
+  # y los primeros chunks tardan más, así que subimos el umbral para no llenar
+  # el log de falsas alarmas. El aviso sigue encendido para enterarnos si de
+  # verdad se atora.
+  early-warning-delay: 20000
+  early-warning-every: 10000
+
+update-checker:
+  # Las versiones las fijamos nosotros en settings.yml y manifest.yml, y se
+  # revisan con `mc update`. El avisador de Paper solo ensucia la consola.
+  enabled: false

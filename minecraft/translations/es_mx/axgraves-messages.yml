@@ -1,0 +1,68 @@
+# ===========================================================================
+#  AxGraves — mensajes en español de México
+# ===========================================================================
+#  El jar de AxGraves solo trae inglés. Esta es nuestra traducción.
+#  La copia `mc build` a plugins/AxGraves/messages.yml.
+#
+#  Notas de estilo:
+#   - Códigos & clásicos, no degradados: Geyser los traduce bien a Bedrock.
+#   - Tono corto y normal, como lo diría un amigo. Nada de "Por favor,
+#     proceda a...".
+# ===========================================================================
+
+# Lo que flota arriba de la tumba. %player%, %despawn-time%, %item%, %xp%
+# los rellena AxGraves.
+hologram:
+- '&7☠ &f%player% &7☠'
+- '&8Se va en &7%despawn-time%'
+- '&8%item% cosas &7| &8%xp% de XP'
+
+help:
+- ' '
+- '&8[&bTumbas&8] &7Comandos'
+- ' &8» &f/tumbas reload &8| &7Recarga la configuración'
+- ' &8» &f/tumbas list &8| &7Lista las tumbas que hay ahora'
+- ' &8» &f/tumbas tp &8| &7Te lleva a tu última tumba'
+- ' '
+
+# Título de la ventana al abrir una tumba.
+gui-name: '&8Tumba de %player%'
+
+# Si el servidor se reinició y ya no sabe de quién era la tumba.
+unknown-player: 'alguien'
+
+reload:
+  success: '&aListo, recargué la configuración.'
+  failed: '&cNo pude recargar: algo está mal en &f%file%&c. Revisa la consola.'
+
+interact:
+  # Solo se usa si en settings.yml pones tumbas.cualquiera_puede_abrir: false.
+  not-your-grave: '&cEsa tumba no es tuya.'
+
+death-message:
+  # Lo dejamos apagado: los mensajes de muerte vanilla ya dicen lo necesario
+  # y cada cliente los traduce a su idioma.
+  enabled: false
+  message: '&7Te morías en &f%world% %x%, %y%, %z%&7.'
+
+grave-list:
+  header: '&8===&b Tumbas &8==='
+  grave: '&b[Ir] &f%player% &8- &7%world% %x%, %y%, %z% &8(%time%)'
+  no-graves: '&7No hay ninguna tumba ahora mismo.'
+
+commands:
+  invalid-value: '&cEse valor no sirve: &f%value%'
+  invalid-command: '&cEse comando no existe. Escribe /tumbas para ver los que sí.'
+  missing-argument: '&cTe falta decir &f%value%&c.'
+  no-permission: '&cNo tienes permiso para eso.'
+  out-of-range: '&f%number% &ctiene que estar entre &f%min% &cy &f%max%&c.'
+  player-only: '&cEse comando solo funciona dentro del juego.'
+  invalid-player: '&cNo encuentro a &f%player%&c.'
+  invalid-selector: '&cEse selector no se puede usar aquí.'
+
+# Apagado en el config: las versiones las fijamos nosotros y se revisan con
+# `mc update`. Lo dejamos traducido por si alguien lo prende.
+update-notifier: '&7Hay una versión nueva de AxGraves. &8(ahora: &f%current%&8, nueva: &f%latest%&8)'
+
+# No cambies esto: lo usa AxGraves para migrar el archivo si cambia de forma.
+version: 6
