@@ -81,6 +81,9 @@ ignore = [
     # N818 quiere que las excepciones terminen en "Error". Las nuestras EMPIEZAN
     # con Error porque el código está en español: ErrorDeConfig, ErrorDeRcon.
     "N818",
+    # RUF001 se queja de los emojis que usamos en los estados del bot
+    # (➖ junto a ✅ 🕓 ❌). Son a propósito: así se ven parejos en Discord.
+    "RUF001",
 ]
 
 [tool.ruff.lint.per-file-ignores]
