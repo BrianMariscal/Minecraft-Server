@@ -1,0 +1,40 @@
+# Ganchos que corren antes de cada commit.
+# Instalación: uv run pre-commit install
+minimum_pre_commit_version: "4.0.0"
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        # Los templates de Jinja2 no son YAML válido hasta que se renderizan.
+        exclude: ^minecraft/templates/
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=512"]
+      - id: detect-private-key
+
+  # Detección de secretos: evita que un token de Discord llegue a git.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.3
+    hooks:
+      - id: ruff-check
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (estricto)
+        entry: uv run mypy packages
+        language: system
+        types: [python]
+        pass_filenames: false

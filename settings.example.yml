@@ -1,0 +1,213 @@
+# ===========================================================================
+#  Minecraft HD — ÚNICA fuente de configuración editable
+# ===========================================================================
+#  Edita este archivo y corre `mc build` para regenerar todas las configs
+#  del servidor y de los plugins. Nunca edites a mano lo que hay en
+#  minecraft/generated/: se sobrescribe en cada build.
+#
+#  Los secretos (tokens, contraseñas, IDs de Discord) NO van aquí.
+#  Van en .env — mira .env.example.
+# ===========================================================================
+
+# --- Identidad del servidor ------------------------------------------------
+servidor:
+  nombre: "Minecraft HD"
+
+  # MOTD de dos líneas, lo que se ve en la lista de servidores.
+  # Usa códigos MiniMessage; Geyser los traduce bien a Bedrock.
+  # Evitamos degradados porque Bedrock los aplana a un solo color.
+  motd:
+    linea_1: "<#4FB0C6><bold>Minecraft HD</bold></#4FB0C6>"
+    linea_2: "<#9BA8AB>Conéctate y diviértete</#9BA8AB>"
+
+  max_jugadores: 15
+  dificultad: "normal"      # peaceful | easy | normal | hard
+  modo_juego: "survival"
+  pvp: true
+
+  # Semilla del mundo. Vacío = aleatoria (se fija en el primer arranque).
+  # Para regenerar el mundo usa `mc world reset`, no cambies esto a mano.
+  semilla: ""
+
+  # El logo va en logo/logo.png. Si no existe, el servidor arranca igual.
+  logo: "logo/logo.png"
+
+# --- Versiones fijadas -----------------------------------------------------
+#  Investigado y verificado el 2026-09-30. NO uses LATEST.
+#  Minecraft 26.1.2 es la versión más reciente que TODAS las piezas de este
+#  proyecto soportan con releases estables. El cuello de botella es
+#  EssentialsX 2.22.0, cuyo último release soporta hasta 26.1.2.
+#  Detalle completo en docs/versiones.md. Para revisar si ya hay algo nuevo:
+#  `mc update`.
+versiones:
+  minecraft: "26.1.2"
+  # Minecraft 26.x exige Java 25.
+  imagen_servidor: "itzg/minecraft-server:2026.9.2-java25"
+  imagen_respaldos: "itzg/mc-backup:2026.9.3"
+
+# --- Recursos --------------------------------------------------------------
+#  VPS de referencia: 8 GB RAM / 4 vCores. Dejamos ~2 GB al sistema,
+#  a los contenedores del bot y de respaldos, y al caché de disco.
+recursos:
+  memoria: "6G"
+  # Flags de Aikar: GC predecible, pensado para servidores de Minecraft.
+  flags_aikar: true
+
+# --- Rendimiento -----------------------------------------------------------
+rendimiento:
+  view_distance: 10
+  simulation_distance: 8
+
+# --- Puertos ---------------------------------------------------------------
+#  Solo estos tres se abren en el firewall. Ver docs/vps.md.
+puertos:
+  java: 25565         # TCP
+  bedrock: 19132      # UDP
+  bluemap: 8100       # TCP (mapa web)
+  rcon: 25575         # TCP — NO lo expongas a internet, solo red de Docker
+
+# --- Idioma ----------------------------------------------------------------
+idioma:
+  codigo: "es_mx"
+  # Locale que Geyser le muestra por defecto a los jugadores de Bedrock.
+  geyser_locale: "es_mx"
+
+# --- Seguridad (servidor no premium) ---------------------------------------
+seguridad:
+  # Sin cuentas premium: la identidad la da AuthMe, no Mojang.
+  online_mode: false
+  whitelist: true
+  mensaje_kick_whitelist: "Todavía no estás en la lista. Pídele a un admin que te agregue."
+
+  # Floodgate le pone un punto adelante al nombre de los jugadores de
+  # Bedrock (.Pepe). AuthMe debe aceptar ese punto o no podrán registrarse.
+  prefijo_bedrock: "."
+
+  authme:
+    min_password: 5
+    max_password: 40
+    # Intentos de login antes de expulsar.
+    max_intentos: 4
+    # Segundos para registrarse/entrar antes de que te saque.
+    timeout_login: 90
+
+# --- Mundo: datapacks ------------------------------------------------------
+#  Todos usan bloques vanilla a propósito, para que Bedrock los vea bien
+#  vía Geyser sin packs de recursos del cliente.
+mundo:
+  # Radio en bloques para `mc pregen`. 3000 ≈ 113k chunks, ~2-4 GB de mundo.
+  radio_pregen: 3000
+  # Un solo jugador dormido adelanta la noche.
+  dormir_con_un_jugador: true
+
+# --- Redstone técnica y granjas -------------------------------------------
+tecnico:
+  # Duplicación de TNT, alfombras y rieles con pistones.
+  duplicacion_pistones: true
+  # Duplicación de arena y grava con portal del End.
+  duplicacion_portal_end: true
+
+# --- Respaldos -------------------------------------------------------------
+respaldos:
+  # Cada 6 horas, en caliente (vía RCON, sin apagar el servidor).
+  intervalo: "6h"
+  # Días que se conservan antes de borrarse.
+  conservar_dias: 7
+  # Copia fuera del VPS con rclone. Desactivada por defecto;
+  # para prenderla ve docs/respaldos.md.
+  remoto:
+    activo: false
+    destino: ""           # ej. "gdrive:minecraft-hd" o "b2:minecraft-hd"
+
+# --- Discord (DiscordSRV) --------------------------------------------------
+#  El token y los IDs van en .env, no aquí.
+discord:
+  activo: true
+  # Canal de consola solo para admins. Déjalo apagado si no lo necesitas.
+  canal_consola: false
+  avisar_encendido_apagado: true
+
+# --- Chat ------------------------------------------------------------------
+chat:
+  # `Nombre » mensaje`: nombre en gris claro, mensaje en blanco.
+  formato_default: "<#C9D1D3>{nombre}</#C9D1D3> <#6E797C>»</#6E797C> <white>{mensaje}</white>"
+  formato_admin: "<#7FA6B8>[Admin]</#7FA6B8> <#C9D1D3>{nombre}</#C9D1D3> <#6E797C>»</#6E797C> <white>{mensaje}</white>"
+  # Entradas y salidas cortas, en gris.
+  entrada: "<#6E797C>+ {nombre}</#6E797C>"
+  salida: "<#6E797C>- {nombre}</#6E797C>"
+  primera_vez: "<#9BA8AB>{nombre} llegó por primera vez, denle la bienvenida.</#9BA8AB>"
+  # Recordatorio periódico. Apagado por defecto: nada de spam de consejos.
+  recordatorio:
+    activo: false
+    cada_minutos: 60
+  anti_spam:
+    activo: true
+    # Segundos mínimos entre mensajes.
+    segundos_entre_mensajes: 2
+    # Porcentaje de mayúsculas que se considera grito.
+    max_mayusculas_pct: 70
+    # Sin filtro de groserías: aquí nos hablamos como somos.
+    filtro_groserias: false
+
+# --- Tumbas (AxGraves) -----------------------------------------------------
+#  Se iba a usar AngelChest, pero su último release estable (13.9.4) es de
+#  enero 2025 y no soporta Minecraft 26.x; lo único probado en 26.x es un
+#  release candidate. AxGraves 1.32.1 es estable, soporta 26.1.2 y cubre lo
+#  mismo. Detalle en docs/versiones.md.
+tumbas:
+  duracion_minutos: 60
+  guardar_xp: true
+  # Cualquiera puede abrir la tumba de cualquiera: compartimos todo.
+  cualquiera_puede_abrir: true
+
+# --- Bot de pagos del VPS --------------------------------------------------
+#  El token (PAGOS_BOT_TOKEN) y los IDs de canal van en .env.
+#  Guía: docs/bot-pagos.md
+pagos:
+  activo: true
+  zona_horaria: "America/Mexico_City"
+  # Día del mes en que se paga el VPS. Si pones 31 y el mes es corto,
+  # el bot usa el último día del mes.
+  dia_de_pago: 5
+  # Monto TOTAL del VPS en pesos mexicanos.
+  monto_total_mxn: "450.00"
+  # "iguales" divide el total entre todos los participantes.
+  # "personalizado" usa el campo `monto_mxn` de cada participante.
+  reparto: "iguales"
+
+  # PENDIENTE DE LLENAR: pon aquí a la banda.
+  # `discord_id` es el ID numérico del usuario (clic derecho > Copiar ID,
+  # con el modo desarrollador prendido). Ver docs/bot-pagos.md.
+  participantes:
+    - nombre: "CAMBIAME"
+      discord_id: 000000000000000000
+      # monto_mxn: "150.00"   # solo si reparto = "personalizado"
+
+  # Quién paga el VPS y confirma los pagos de los demás.
+  tesorero:
+    nombre: "CAMBIAME"
+    discord_id: 000000000000000000
+
+  # Rol de Discord que también puede usar los comandos de administración.
+  # Déjalo en 0 si solo el tesorero debe poder.
+  rol_admin_id: 0
+
+  avisos:
+    # Días antes del día de pago para el primer aviso.
+    dias_antes: 3
+    # Después de la fecha, recordar cada N días a los que faltan.
+    cada_dias_despues: 2
+
+# --- Administradores del servidor de Minecraft -----------------------------
+#  PENDIENTE DE LLENAR. Van al grupo `admin` de LuckPerms y a ops.
+#  También puedes manejarlos con `mc admin add <jugador>`.
+admins: []
+
+# --- Whitelist -------------------------------------------------------------
+#  PENDIENTE DE LLENAR. También puedes usar `mc whitelist add <jugador>`
+#  y `mc whitelist add <jugador> --bedrock`.
+whitelist:
+  # Nombres de Minecraft Java, tal cual.
+  java: []
+  # Gamertags de Xbox SIN el punto de Floodgate: `mc` se lo pone solo.
+  bedrock: []

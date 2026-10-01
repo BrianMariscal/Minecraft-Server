@@ -1,0 +1,44 @@
+# Secretos: NUNCA entran a git.
+.env
+*.env
+!.env.example
+
+# Configs generadas por `mc build` a partir de templates + settings.yml.
+minecraft/generated/
+
+# Datos del servidor y respaldos (los crea Docker en runtime).
+data/
+backups/
+plugins/
+world*/
+
+# El logo lo pone cada quien; ver logo/README.md.
+logo/logo.png
+
+# Base de datos del bot de pagos.
+*.sqlite
+*.sqlite3
+*.db
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# Herramientas
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

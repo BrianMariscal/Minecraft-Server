@@ -1,0 +1,237 @@
+# ===========================================================================
+#  Plugins y datapacks de Minecraft HD — todo fijado y verificable
+# ===========================================================================
+#  Cada entrada trae nombre, version, archivo, url y sha256. `mc build`
+#  descarga, compara el sha256 y SOLO entonces copia el archivo a su lugar.
+#  Si un sha256 no coincide, el build falla: o cambiaron el archivo arriba,
+#  o la descarga se corrompio. Nunca se instala algo sin verificar.
+#
+#  Todo esto se resolvio y se verifico el 2026-09-30 contra Minecraft 26.1.2.
+#  Para revisar si hay versiones nuevas: `mc update`.
+#
+#  NO edites este archivo a mano para subir una version: usa `mc update`,
+#  que recalcula el sha256 por ti y te muestra que cambiaria antes de aplicar.
+# ===========================================================================
+
+# Version de Minecraft contra la que se verifico esta lista.
+# `mc doctor` avisa si no coincide con versiones.minecraft de settings.yml.
+compatible_con: "26.1.2"
+
+plugins:
+  geyser:
+    nombre: "Geyser-Spigot"
+    version: "2.11.3-b1247"
+    archivo: "Geyser-Spigot.jar"
+    url: "https://download.geysermc.org/v2/projects/geyser/versions/2.11.3/builds/1247/downloads/spigot"
+    sha256: "6fed2d9711e2db3c365508ec10db36d06a0199abd226159d23d57f82662fd7a6"
+    nota: "Puente para que entren jugadores de Bedrock. sha256 verificado contra la API de GeyserMC."
+
+  floodgate:
+    nombre: "floodgate-spigot"
+    version: "2.2.5-b141"
+    archivo: "floodgate-spigot.jar"
+    url: "https://download.geysermc.org/v2/projects/floodgate/versions/2.2.5/builds/141/downloads/spigot"
+    sha256: "21570aff9ce17d6983928e8552777760e1ede5050026b04c686b0ae112e6fd7e"
+    nota: "Deja entrar a Bedrock sin cuenta de Java y maneja /linkaccount. sha256 verificado contra la API de GeyserMC."
+
+  viaversion:
+    nombre: "ViaVersion"
+    version: "5.12.0"
+    archivo: "ViaVersion-5.12.0.jar"
+    url: "https://cdn.modrinth.com/data/P1OZGk5p/versions/FaishMnD/ViaVersion-5.12.0.jar"
+    sha256: "c4d512fa9760fa41d17abaedde12aa1f4c9bde920d0a992fe0fc016962f126be"
+    nota: "Tolera clientes de Java mas nuevos que el servidor."
+
+  essentialsx:
+    nombre: "EssentialsX"
+    version: "2.22.0"
+    archivo: "EssentialsX-2.22.0.jar"
+    url: "https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsX-2.22.0.jar"
+    sha256: "bda4685105977fca2e209820a9f0ad24275bd103390a03236f38e59bfdac58e6"
+    nota: "Base de EssentialsX: /home, /sethome, /tpa, /back, /msg."
+
+  essentialsx_chat:
+    nombre: "EssentialsXChat"
+    version: "2.22.0"
+    archivo: "EssentialsXChat-2.22.0.jar"
+    url: "https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsXChat-2.22.0.jar"
+    sha256: "e5b0211f98af1eaba712d9294997639a39209db1fc842394a0923820073ec65a"
+    nota: "Formato del chat. Depende de EssentialsX."
+
+  essentialsx_spawn:
+    nombre: "EssentialsXSpawn"
+    version: "2.22.0"
+    archivo: "EssentialsXSpawn-2.22.0.jar"
+    url: "https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsXSpawn-2.22.0.jar"
+    sha256: "dd5377c4c921b9b67814209f4f6646ffbb959729003e721ec5e63c47c7c010b8"
+    nota: "/spawn y /setspawn. Depende de EssentialsX."
+
+  luckperms:
+    nombre: "LuckPerms"
+    version: "v5.5.71-bukkit"
+    archivo: "LuckPerms-Bukkit-5.5.71.jar"
+    url: "https://cdn.modrinth.com/data/Vebnzrzj/versions/b0mk8uS6/LuckPerms-Bukkit-5.5.71.jar"
+    sha256: "49cecb66fa1fd22a133039a490e9c1e5095a238e7cd66eb9d2a16fe6c897550d"
+    nota: "Permisos y grupos (default y admin)."
+
+  authme:
+    nombre: "AuthMe"
+    version: "6.0.1"
+    archivo: "AuthMe-6.0.1-Paper.jar"
+    url: "https://github.com/AuthMe/AuthMeReloaded/releases/download/6.0.1/AuthMe-6.0.1-Paper.jar"
+    sha256: "7704335e9e73a634d9d926344f77897f4c74f78f82453a59f5aa0f8d2722450a"
+    nota: "Login con /register y /login. Jar de Paper. Imprescindible en servidor no premium."
+
+  coreprotect:
+    nombre: "CoreProtect"
+    version: "24.1"
+    archivo: "CoreProtect-CE-24.1.jar"
+    url: "https://cdn.modrinth.com/data/Lu3KuzdV/versions/3sehX6Sg/CoreProtect-CE-24.1.jar"
+    sha256: "a2acef7c06ef201355cef07d591a6055dfed358ad768faaaaaf4e276865ecc97"
+    nota: "Registra y revierte cambios de bloques. Guarda en SQLite."
+
+  skinsrestorer:
+    nombre: "SkinsRestorer"
+    version: "15.12.6"
+    archivo: "SkinsRestorer.jar"
+    url: "https://cdn.modrinth.com/data/TsLS8Py5/versions/ziIzW16f/SkinsRestorer.jar"
+    sha256: "a85b4a370f988741c9a38f4d0498262edacbf3220314790ac1c127461996359c"
+    nota: "Skins para cuentas no premium."
+
+  gsit:
+    nombre: "GSit"
+    version: "3.7.0"
+    archivo: "GSit-3.7.0.jar"
+    url: "https://cdn.modrinth.com/data/GOHbQGyX/versions/gnY5Flgo/GSit-3.7.0.jar"
+    sha256: "143d38509f49c40b214887ad3c682c8db7fdd81c610787d0186d65f51256f4d2"
+    nota: "Sentarse en bloques y escaleras."
+
+  axgraves:
+    nombre: "AxGraves"
+    version: "1.32.1"
+    archivo: "AxGraves-1.32.1.jar"
+    url: "https://cdn.modrinth.com/data/Cz6msz34/versions/UlEYAsey/AxGraves-1.32.1.jar"
+    sha256: "06358594c2ee3032bdddbe473b7605c23b48631c6b41161f1b0f63db992dfc78"
+    nota: "Tumbas al morir. Sustituye a AngelChest, que no tiene release estable para 26.x."
+
+  discordsrv:
+    nombre: "DiscordSRV"
+    version: "1.30.5"
+    archivo: "DiscordSRV-Build-1.30.5.jar"
+    url: "https://cdn.modrinth.com/data/UmLGoGij/versions/ATlquwiT/DiscordSRV-Build-1.30.5.jar"
+    sha256: "ef2fa1f2eb146c7c77412b7190a7dd33f1fc91282683fe45407739554c8aefef"
+    nota: "Puente de chat con Discord."
+
+  chunky:
+    nombre: "Chunky"
+    version: "1.5.3"
+    archivo: "Chunky-Bukkit-1.5.3.jar"
+    url: "https://cdn.modrinth.com/data/fALzjamp/versions/MdY6JATr/Chunky-Bukkit-1.5.3.jar"
+    sha256: "530d2c7430a96a39957391b7088be144daa3108f7665896d1c23aa8dd4af32f3"
+    nota: "Pregeneracion del mundo."
+
+  bluemap:
+    nombre: "BlueMap"
+    version: "5.28-paper"
+    archivo: "bluemap-5.28-paper.jar"
+    url: "https://cdn.modrinth.com/data/swbUV1cr/versions/pILlMIlN/bluemap-5.28-paper.jar"
+    sha256: "4cfb4a9963132d5be0a9db031a28a98e9df92deed37ebb0756d3a7dd8721ab98"
+    nota: "Mapa web del mundo en su propio puerto."
+
+  chatsentinel:
+    nombre: "ChatSentinel"
+    version: "2.0.3"
+    archivo: "ChatSentinel.jar"
+    url: "https://cdn.modrinth.com/data/d1aRSTsI/versions/uWt04znt/ChatSentinel.jar"
+    sha256: "b074bfdce98506b644b972a9dc8a31f5a5eb8e7ed91ebd2bf1dca752166b0886"
+    nota: "Anti-spam: flood y mayusculas. Filtro de groserias apagado."
+
+datapacks:
+  terralith:
+    nombre: "Terralith"
+    version: "2.6.2"
+    archivo: "Terralith_26.1_v2.6.2.zip"
+    url: "https://cdn.modrinth.com/data/8oi3bsk5/versions/f1lDwn23/Terralith_26.1_v2.6.2.zip"
+    sha256: "70ad75acafc5be0b2f3a4bdb8fbb80c7877a07c0c7e436ccf663bdf14863ad19"
+    nota: "Biomas de superficie con bloques vanilla."
+
+  incendium:
+    nombre: "Incendium"
+    version: "5.4.12"
+    archivo: "Incendium_26.1_v5.4.12_UNSUPPORTED.zip"
+    url: "https://cdn.modrinth.com/data/ZVzW5oNS/versions/l721IuKU/Incendium_26.1_v5.4.12_UNSUPPORTED.zip"
+    sha256: "d96a5e4a7f3cbe991e2a305aa5c34e5381b64af4e8b25801ff4bdb84bb49886a"
+    nota: "Rediseno del Nether. Canal alpha y nombre _UNSUPPORTED: es como Stardust Labs publica la version datapack; el changelog dice 'Supports 26.1'."
+
+  nullscape:
+    nombre: "Nullscape"
+    version: "1.2.20"
+    archivo: "Nullscape_26.1_v1.2.20.zip"
+    url: "https://cdn.modrinth.com/data/LPjGiSO4/versions/3UlARIGL/Nullscape_26.1_v1.2.20.zip"
+    sha256: "0561ee8ad42182d2bc9951f9504ae8b902585af49c210e6c4cbd189bda7ad16c"
+    nota: "Rediseno del End."
+
+  dungeons_and_taverns:
+    nombre: "Dungeons and Taverns"
+    version: "5.2.0"
+    archivo: "Dungeons and Taverns v5.2.0.zip"
+    url: "https://cdn.modrinth.com/data/tpehi7ww/versions/ohqJT0pv/Dungeons%20and%20Taverns%20v5.2.0.zip"
+    sha256: "b22c0f3cc5f8d4d4854cf611c98fa83637be7bc20720be964c52bc8479af14d3"
+    nota: "Estructuras subterraneas y tabernas."
+
+  towns_and_towers:
+    nombre: "Towns and Towers"
+    version: "26.1-datapack"
+    archivo: "t_and_t-datapack-26.x.zip"
+    url: "https://cdn.modrinth.com/data/DjLobEOy/versions/E39wx2BN/t_and_t-datapack-26.x.zip"
+    sha256: "7c42456d404f4c93a827ebc28c2fb3ad911ba15e39268510d422552a4d2939ad"
+    nota: "Aldeas y puestos de saqueadores mas variados."
+# ---------------------------------------------------------------------------
+#  Vanilla Tweaks
+# ---------------------------------------------------------------------------
+#  vanillatweaks.net no da URLs fijas: hay que mandar un POST con la lista de
+#  packs y te devuelve un link con un id aleatorio. Lo bueno es que el ZIP que
+#  entrega SI es byte a byte identico en cada generacion (verificado el
+#  2026-09-30 generandolo dos veces), asi que su sha256 si se puede fijar.
+#
+#  `mc build` manda el POST, baja el ZIP, verifica `sha256_zip`, lo descomprime
+#  y verifica el sha256 de cada datapack de adentro contra `packs`. Si cualquiera
+#  falla, no se instala nada.
+#
+#  Dos packs que pediste NO existen para 26.x y quedaron fuera:
+#    - "invisible item frames": ya no esta ni en datapacks ni en crafting tweaks.
+#    - "right click harvest": ya no lo publican.
+#  Ver docs/versiones.md.
+vanilla_tweaks:
+  version_mc: "26.1"
+  url: "https://vanillatweaks.net/assets/server/zipdatapacks.php"
+  # Cuerpo exacto del POST. El orden importa para que el ZIP salga identico.
+  seleccion:
+    "Decorative/Cosmetic":
+      - "armor statues"
+      - "more mob heads"
+      - "wandering trades"
+    "Gameplay Changes":
+      - "anti enderman grief"
+    "Convenience":
+      - "timber"
+  # sha256 del ZIP contenedor que devuelve vanillatweaks.net.
+  sha256_zip: "b8b1a600e3db506f2ff08c096e186554d98863fa66a8f9c27304b503da326aed"
+  # Cada datapack de adentro, con su sha256. El nombre tiene que coincidir
+  # exacto: asi detectamos si Vanilla Tweaks subio una version nueva.
+  packs:
+    - archivo: "armor statues v2.8.22 (MC 26.1).zip"
+      sha256: "9fcbb5875c40c7616a9c8200b5db4cef53d9fe157da8b9d4682ad31c8ba2b448"
+      nota: "Poses y ajustes finos de armor stands. Funciona en Bedrock por el libro de recetas."
+    - archivo: "more mob heads v2.19.1 (MC 26.1).zip"
+      sha256: "58f977bda12d097cb66fed3188f3cff1bb303569c740ba47c19d8f0d262e4611"
+      nota: "Los mobs sueltan su cabeza al morir."
+    - archivo: "wandering trades v1.7.15 (MC 26.1).zip"
+      sha256: "1d8daa416b7bd3068377bec9e3ce7efa2c50bb07d4318aa979420374ffd49079"
+      nota: "El comerciante errante vende cabezas de jugador y de mob."
+    - archivo: "anti enderman grief v1.1.16 (MC 26.1).zip"
+      sha256: "f8c39b0ea1147a24f61c7945612ce9332303606ebc5157d4211c149a85ccb0ad"
+      nota: "Los endermans dejan de levantar bloques."
+    - archivo: "timber v2.1.19 (MC 26.1).zip"
+      sha256: "2c1aa2b8105834408679656ce760069e3cebeb08825befd026013daaeb870654"
+      nota: "Tala de arbol completo. Datapack en vez de plugin: es vanilla puro, asi que Bedrock lo ve perfecto via Geyser."

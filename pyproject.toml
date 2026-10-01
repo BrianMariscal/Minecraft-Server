@@ -1,0 +1,133 @@
+# ---------------------------------------------------------------------------
+# Raíz del workspace de uv para el proyecto "Minecraft HD".
+#
+# Este archivo NO es un paquete instalable: solo agrupa los paquetes de
+# packages/ y centraliza la configuración de ruff, mypy y pytest para que
+# cada paquete herede exactamente las mismas reglas.
+# ---------------------------------------------------------------------------
+[project]
+name = "minecraft-hd"
+version = "1.0.0"
+description = "Servidor de Minecraft HD: CLI de administración y bot de pagos del VPS"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mc-admin",
+    "pagos-bot",
+]
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+mc-admin = { workspace = true }
+pagos-bot = { workspace = true }
+
+[dependency-groups]
+# Herramientas de desarrollo compartidas por todo el workspace.
+dev = [
+    "ruff>=0.14.0",
+    "mypy>=1.14.0",
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+    "pytest-cov>=6.0.0",
+    "types-PyYAML>=6.0.12",
+    "pre-commit>=4.0.0",
+]
+
+# ---------------------------------------------------------------------------
+# ruff: lint + formato. Reemplaza a black, isort y flake8.
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["packages/mc_admin/src", "packages/pagos_bot/src"]
+extend-exclude = ["minecraft/generated"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort (orden de imports)
+    "N",        # pep8-naming
+    "UP",       # pyupgrade
+    "B",        # flake8-bugbear
+    "A",        # builtins sombreados
+    "C4",       # comprehensions
+    "DTZ",      # datetime sin zona horaria (crítico para el bot de pagos)
+    "T20",      # prohíbe print() fuera de la capa CLI
+    "SIM",      # simplificaciones
+    "PTH",      # usa pathlib en lugar de os.path
+    "RUF",      # reglas propias de ruff
+    "ANN",      # exige type hints
+    "ASYNC",    # errores comunes de asyncio
+    "S",        # bandit: seguridad
+    "LOG",      # uso correcto de logging
+    "G",        # formato de mensajes de logging
+    "RET",      # returns redundantes
+    "ARG",      # argumentos sin usar
+    "TRY",      # manejo de excepciones
+]
+ignore = [
+    "ANN401",   # permitimos Any en firmas de decoradores de Typer/discord.py
+    "TRY003",   # mensajes largos en excepciones: los queremos explicativos y en español
+    "S101",     # assert: lo usamos en tests
+    # EM101/EM102 piden sacar el mensaje a una variable antes de lanzar. Aquí no
+    # aplica: nuestras excepciones (ErrorMc y sus hijas) reciben el mensaje como
+    # primer argumento a propósito, porque ES el texto que se le muestra al
+    # usuario. Obligar a una variable temporal en cada raise solo agrega ruido.
+    "EM101",
+    "EM102",
+    # N818 quiere que las excepciones terminen en "Error". Las nuestras EMPIEZAN
+    # con Error porque el código está en español: ErrorDeConfig, ErrorDeRcon.
+    "N818",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# La capa CLI es la ÚNICA que puede escribir a la terminal (vía Rich).
+"packages/mc_admin/src/mc_admin/cli/*" = ["T20"]
+# En tests relajamos type hints y seguridad.
+"packages/*/tests/*" = ["ANN", "S", "ARG", "DTZ"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mc_admin", "pagos_bot"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+# ---------------------------------------------------------------------------
+# mypy en modo estricto para todo el código propio.
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+warn_no_return = true
+disallow_any_generics = true
+no_implicit_reexport = true
+show_error_codes = true
+pretty = true
+mypy_path = ["packages/mc_admin/src", "packages/pagos_bot/src"]
+explicit_package_bases = true
+exclude = ["minecraft/generated"]
+
+[[tool.mypy.overrides]]
+# Librerías de terceros sin stubs completos.
+module = ["discord.*", "mcrcon.*", "apscheduler.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# En tests permitimos funciones sin anotar.
+module = ["tests.*", "*.tests.*"]
+disallow_untyped_defs = false
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["packages/mc_admin/tests", "packages/pagos_bot/tests"]
+pythonpath = ["packages/mc_admin/src", "packages/pagos_bot/src"]
+addopts = "-q --strict-markers --strict-config"
+asyncio_mode = "auto"
+filterwarnings = ["error"]
