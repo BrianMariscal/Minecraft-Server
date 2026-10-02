@@ -159,6 +159,28 @@ _RE_RUIDO = re.compile(
     r"(§.|&[0-9a-fk-or]|<[^>]{1,40}>|\{[^}]{1,40}\}|%[a-z_]{1,40}%|https?://\S+)",
     re.IGNORECASE,
 )
+
+# Identificadores, que NO son mensajes y hay que quitar antes de contar.
+#
+# Sin esto el detector marcaba 94 líneas, y TODAS eran falsos positivos:
+# nombres de permisos (`essentials.back.ondeath`), claves de configuración
+# (`aliases: now-in-commands.yml`) y comandos de consola. Un detector que
+# grita 94 veces sin razón es un detector que nadie va a volver a correr.
+_RE_IDENTIFICADORES = re.compile(
+    r"""(
+        \b[\w-]+\.(?:yml|yaml|json|txt|properties|jar|zip|png|conf|dat)\b  # un archivo
+      | \b[a-z][\w]*(?:\.[\w*]+)+\b                                      # algo.con.puntos
+      | \b\w+[-_]\w[\w-]*\b                                              # kebab_o-snake
+    )""",
+    re.IGNORECASE | re.VERBOSE,
+)
+
+# Líneas que son comandos de consola, no mensajes para nadie.
+_RE_COMANDO = re.compile(
+    r"^\s*(?:lp|co|coreprotect|luckperms|execute|gamerule|whitelist|op|deop"
+    r"|chunky|geyser|floodgate|essentials|mc)\s",
+    re.IGNORECASE,
+)
 # Al menos dos palabras inglesas en la misma línea para marcarla: con una sola
 # nos llenaríamos de falsos positivos por claves de configuración.
 MINIMO_PALABRAS = 2
@@ -179,10 +201,16 @@ class LineaSospechosa:
 
 
 def palabras_inglesas_en(linea: str) -> list[str]:
-    """Devuelve las palabras inglesas que encuentra en una línea."""
-    if _RE_CLAVE_YAML.match(linea):
+    """Devuelve las palabras inglesas que encuentra en una línea.
+
+    Antes de contar, saca todo lo que no es un mensaje: códigos de color,
+    marcadores, nombres de archivo, identificadores con puntos o guiones y
+    las líneas que son comandos de consola.
+    """
+    if _RE_CLAVE_YAML.match(linea) or _RE_COMANDO.match(linea):
         return []
     limpia = _RE_RUIDO.sub(" ", linea)
+    limpia = _RE_IDENTIFICADORES.sub(" ", limpia)
     if _RE_SOLO_SIMBOLOS.match(limpia):
         return []
     tokens = re.findall(r"[A-Za-z']{2,}", limpia)

@@ -25,7 +25,12 @@ TIMEOUT = 10
 TIMEOUT_LARGO = 120
 
 # Paper contesta "TPS from last 1m, 5m, 15m: 20.0, 19.98, 19.95" con colores.
-_RE_TPS = re.compile(r"(\d+\.?\d*)")
+#
+# OJO: NO se pueden tomar los números en orden de aparición. Los "1m, 5m, 15m"
+# del encabezado son números también, así que el primero que aparece es el 1
+# de "1m" y leeríamos 1 TPS con el servidor perfecto. Hay que cortar en el
+# ":" y tomar los números de DESPUÉS.
+_RE_TPS = re.compile(r"(\d+\.\d+|\d+)")
 _RE_CODIGOS_COLOR = re.compile(r"§.")
 
 
@@ -124,16 +129,24 @@ def mandar_varios(conexion: Conexion, comandos: list[str], timeout: int = TIMEOU
 
 
 def leer_tps(conexion: Conexion) -> float | None:
-    """Pregunta los TPS al servidor. None si no se pudo."""
+    """Pregunta los TPS al servidor. None si no se pudo.
+
+    Devuelve el promedio del último minuto, que es el que de verdad dice si
+    el servidor va mal AHORA.
+    """
     try:
         respuesta = mandar(conexion, "tps")
     except ErrorDeRcon:
         return None
-    numeros = _RE_TPS.findall(respuesta)
+
+    # Nos quedamos con lo que va después del ":", para no confundir el
+    # "1m, 5m, 15m" del encabezado con los TPS.
+    cola = respuesta.split(":", 1)[1] if ":" in respuesta else respuesta
+    numeros = _RE_TPS.findall(cola)
     if not numeros:
         return None
     try:
-        # El primero es el promedio del último minuto, el que importa.
+        # El tope de 20 es por si Paper reporta 20.01 por redondeo.
         return min(float(numeros[0]), 20.0)
     except ValueError:  # pragma: no cover
         return None

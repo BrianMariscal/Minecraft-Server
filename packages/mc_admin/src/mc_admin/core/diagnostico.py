@@ -63,9 +63,19 @@ class Reporte:
 #  Chequeos
 # --------------------------------------------------------------------------- #
 
-# El servidor pide 6 GB; con menos de 8 GB en el host se va a pelear con el
-# sistema, el bot de pagos y el contenedor de respaldos.
-RAM_MINIMA_GB = 7.0
+# Cuánta RAM hay que dejarle a lo demás, APARTE de lo que pide el servidor.
+#
+# El heap que pides (MEMORY=6G) no es todo lo que gasta Java: encima van los
+# metaspace, los buffers de red y el stack de cada hilo, fácil 1 GB más. Y
+# luego el sistema, el bot de pagos y el contenedor de respaldos.
+#
+# Con 2 GB de colchón va bien. Con menos, funciona pero el VPS va a andar
+# justo, así que lo avisamos: en el VPS de referencia (8 GB con MEMORY=6G)
+# quedan como 1 GB libres, y eso es bueno saberlo antes de que empiece a
+# irse a swap.
+COLCHON_COMODO_GB = 2.0
+# Debajo de este colchón ya no arranca bien: lo marcamos como error.
+COLCHON_MINIMO_GB = 1.0
 # Un mundo pregenerado de radio 3000 más 7 días de respaldos pesa fácil 20 GB.
 DISCO_MINIMO_GB = 15.0
 # Debajo de 18 TPS ya se siente el lag al minar y al pelear.
@@ -91,21 +101,26 @@ def revisar_memoria(ram_total_gb: float | None, memoria_pedida: str) -> Hallazgo
     if ram_total_gb is None:
         return Hallazgo("Memoria", Nivel.AVISO, "no pude leer la RAM de esta máquina")
     pedida_gb = float(memoria_pedida[:-1]) / (1024 if memoria_pedida.endswith("M") else 1)
-    if ram_total_gb < pedida_gb + 1:
+    libre = ram_total_gb - pedida_gb
+
+    if libre < COLCHON_MINIMO_GB:
         return Hallazgo(
             "Memoria",
             Nivel.MAL,
             f"el servidor pide {memoria_pedida} y la máquina solo tiene "
             f"{ram_total_gb:.1f} GB en total",
             f"Bájale a recursos.memoria en settings.yml (prueba "
-            f"{max(1, int(ram_total_gb) - 2)}G) o súbele RAM al VPS.",
+            f"{max(1, int(ram_total_gb - COLCHON_COMODO_GB))}G) o súbele RAM al VPS.",
         )
-    if ram_total_gb < RAM_MINIMA_GB:
+    if libre < COLCHON_COMODO_GB:
         return Hallazgo(
             "Memoria",
             Nivel.AVISO,
-            f"{ram_total_gb:.1f} GB de RAM; el servidor pide {memoria_pedida}",
-            "Va a funcionar, pero queda poco margen para el bot y los respaldos.",
+            f"{ram_total_gb:.1f} GB de RAM y el servidor pide {memoria_pedida}: "
+            f"quedan {libre:.1f} GB para todo lo demás",
+            "Va a funcionar, pero queda justo. Encima del heap, Java gasta "
+            "como 1 GB más, y luego van el sistema, el bot de pagos y los "
+            "respaldos. Si ves al VPS irse a swap, bájale a recursos.memoria.",
         )
     return Hallazgo(
         "Memoria",

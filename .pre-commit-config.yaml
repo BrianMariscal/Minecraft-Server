@@ -7,6 +7,12 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        # Los .properties de Java NO se pueden limpiar: un espacio al final
+        # SÍ significa algo. Por ejemplo, en el archivo de EssentialsX:
+        #   chatTypeLocal=<dark_aqua>[L] <- separa la etiqueta del mensaje
+        #   listGroupTag=<primary>{0}<reset>: <- separa el grupo de los nombres
+        # Sin ese espacio sale "[L]Pepe » hola" y "Admins:Ana".
+        exclude: \.properties$
       - id: end-of-file-fixer
       - id: check-yaml
         # Los templates de Jinja2 no son YAML válido hasta que se renderizan.

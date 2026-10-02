@@ -89,6 +89,15 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # La capa CLI es la ÚNICA que puede escribir a la terminal (vía Rich).
 "packages/mc_admin/src/mc_admin/cli/*" = ["T20"]
+# Los generadores de traducciones son herramientas que se corren a mano
+# cuando se actualiza un plugin, no código del servidor. Imprimen a la
+# terminal a propósito (es su salida) y no arrastran la ceremonia de tipos
+# del resto del proyecto.
+# E501 también: estos archivos traen tablas de traducción donde partir una
+# línea a la mitad de una frase en español la hace ilegible.
+"minecraft/translations/es_mx/herramientas/*" = [
+    "T20", "ANN", "PTH", "SIM115", "D", "E501",
+]
 # En tests relajamos type hints y seguridad.
 "packages/*/tests/*" = ["ANN", "S", "ARG", "DTZ"]
 
@@ -120,9 +129,25 @@ module = ["discord.*", "mcrcon.*", "apscheduler.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-# En tests permitimos funciones sin anotar.
-module = ["tests.*", "*.tests.*"]
+# --- Los tests se revisan, pero con menos ceremonia ---------------------
+#  Siguen pasando por mypy (ahí es donde se atrapan los errores de verdad),
+#  nada más les apagamos tres cosas que en un test son ruido y no un bug:
+#
+#  - `union-attr`: un test hace `mes.cuota_de(1).estado` porque SABE que
+#    existe; meter un `assert ... is not None` antes de cada aserción no
+#    aporta nada y tapa lo que el test de verdad verifica.
+#  - `no-untyped-def`: un test no necesita anotar sus fixtures.
+#  - `import-not-found`: `ayudas.py` es un módulo hermano que pytest resuelve
+#    poniendo la carpeta de tests en sys.path; mypy no lo sabe.
+module = [
+    "tests.*",
+    "*.tests.*",
+    "conftest",
+    "ayudas",
+]
 disallow_untyped_defs = false
+disallow_untyped_calls = false
+disable_error_code = ["union-attr", "no-untyped-def", "import-not-found", "type-arg"]
 
 # ---------------------------------------------------------------------------
 # pytest

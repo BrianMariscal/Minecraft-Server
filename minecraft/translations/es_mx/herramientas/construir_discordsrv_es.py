@@ -1,11 +1,12 @@
-# -*- coding: utf-8 -*-
 """Arma messages.yml de DiscordSRV en español de México.
 
 Parte del messages/es.yml que trae el jar (que está completo y decente) y le
 aplica nuestros cambios: el formato de chat igual al del juego y los textos
 en español de México en vez de España.
 """
+
 import sys
+
 import yaml
 
 RUTA_ES = "dsrv_msg_es.yml"
@@ -31,6 +32,7 @@ datos["DiscordToMinecraftChatMessageFormatNoRole"] = (
 )
 datos["DiscordToMinecraftMessageReplyFormat"] = " (le contesta a %name%)"
 
+
 # --------------------------------------------------------------------------
 #  Entradas, salidas, muertes y logros.
 #  El jar dice "Entró al servidor" con mayúscula a media frase.
@@ -38,6 +40,7 @@ datos["DiscordToMinecraftMessageReplyFormat"] = " (le contesta a %name%)"
 def texto_autor(clave, texto):
     """Cambia el nombre del autor del embed sin tocar el resto."""
     datos[clave]["Embed"]["Author"]["Name"] = texto
+
 
 texto_autor("MinecraftPlayerJoinMessage", "%username% se conectó")
 texto_autor("MinecraftPlayerLeaveMessage", "%username% se desconectó")
@@ -50,7 +53,9 @@ texto_autor("MinecraftPlayerAchievementMessage", "%username% consiguió el progr
 # --------------------------------------------------------------------------
 #  Avisos de encendido y apagado.
 # --------------------------------------------------------------------------
-datos["DiscordChatChannelServerStartupMessage"] = ":white_check_mark: **Ya está prendido el servidor**"
+datos["DiscordChatChannelServerStartupMessage"] = (
+    ":white_check_mark: **Ya está prendido el servidor**"
+)
 datos["DiscordChatChannelServerShutdownMessage"] = ":octagonal_sign: **Se apagó el servidor**"
 
 CABECERA = """\
@@ -81,7 +86,8 @@ CABECERA = """\
 
 with open(SALIDA, "w", encoding="utf-8") as f:
     f.write(CABECERA)
-    yaml.safe_dump(datos, f, allow_unicode=True, sort_keys=False, width=200,
-                   default_flow_style=False)
+    yaml.safe_dump(
+        datos, f, allow_unicode=True, sort_keys=False, width=200, default_flow_style=False
+    )
 
 print(f"escrito {SALIDA}: {len(datos)} claves de primer nivel", file=sys.stderr)

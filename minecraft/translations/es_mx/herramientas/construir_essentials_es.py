@@ -1,11 +1,13 @@
-# -*- coding: utf-8 -*-
 """Arma messages_es.properties en español de México para EssentialsX.
 
 Parte del es_ES que trae el jar, le completa las claves que faltan, traduce
 las que quedaron idénticas al inglés y corrige lo que suena a España o a
 traducción automática.
 """
-import re, sys
+
+import re
+import sys
+
 
 def cargar(p):
     orden, datos = [], {}
@@ -20,6 +22,7 @@ def cargar(p):
         datos[k] = v
     return orden, datos
 
+
 en_orden, EN = cargar("ess_en.properties")
 _, ES = cargar("ess_es.properties")
 
@@ -27,31 +30,90 @@ _, ES = cargar("ess_es.properties")
 # <primary>, <secondary> y los colores son MiniMessage; <command> lo
 # sustituye EssentialsX con el nombre real del comando.
 NO_TOCAR = {
-    "command", "primary", "secondary", "reset", "st", "i", "b", "u",
-    "gray", "white", "black", "red", "dark_red", "green", "dark_green",
-    "blue", "dark_blue", "aqua", "dark_aqua", "yellow", "gold",
-    "light_purple", "dark_purple", "italic", "bold", "underlined",
-    "strikethrough", "obfuscated", "newline", "click", "hover",
+    "command",
+    "primary",
+    "secondary",
+    "reset",
+    "st",
+    "i",
+    "b",
+    "u",
+    "gray",
+    "white",
+    "black",
+    "red",
+    "dark_red",
+    "green",
+    "dark_green",
+    "blue",
+    "dark_blue",
+    "aqua",
+    "dark_aqua",
+    "yellow",
+    "gold",
+    "light_purple",
+    "dark_purple",
+    "italic",
+    "bold",
+    "underlined",
+    "strikethrough",
+    "obfuscated",
+    "newline",
+    "click",
+    "hover",
 }
 
 # Nombres de argumento que SÍ se traducen dentro de los textos de uso.
 ARGUMENTOS = {
-    "player": "jugador", "playername": "jugador", "otherplayer": "otro jugador",
-    "other player": "otro jugador", "target": "objetivo",
-    "world": "mundo", "message": "mensaje", "msg": "mensaje",
-    "name": "nombre", "new name": "nombre nuevo", "nickname": "apodo",
-    "reason": "motivo", "amount": "cantidad", "number": "cantidad",
-    "item": "item", "itemname": "item", "itemid": "id del item",
-    "kitname": "kit", "kit": "kit", "warp": "warp", "jailname": "jaula",
-    "seconds": "segundos", "radius": "radio", "speed": "velocidad",
-    "type": "tipo", "mob": "mob", "mob type": "tipo de mob",
-    "args": "argumentos", "price": "precio", "delay": "espera",
-    "expire time": "tiempo", "datediff": "tiempo",
-    "line number": "fila", "text": "texto", "meta": "meta",
-    "value": "valor", "owner": "propietario", "texture": "textura",
-    "channel": "canal", "duration": "tiempo", "description": "texto",
-    "page": "hoja", "to": "para", "address": "ip",
-    "x": "x", "y": "y", "z": "z", "yaw": "yaw", "pitch": "pitch",
+    "player": "jugador",
+    "playername": "jugador",
+    "otherplayer": "otro jugador",
+    "other player": "otro jugador",
+    "target": "objetivo",
+    "world": "mundo",
+    "message": "mensaje",
+    "msg": "mensaje",
+    "name": "nombre",
+    "new name": "nombre nuevo",
+    "nickname": "apodo",
+    "reason": "motivo",
+    "amount": "cantidad",
+    "number": "cantidad",
+    "item": "item",
+    "itemname": "item",
+    "itemid": "id del item",
+    "kitname": "kit",
+    "kit": "kit",
+    "warp": "warp",
+    "jailname": "jaula",
+    "seconds": "segundos",
+    "radius": "radio",
+    "speed": "velocidad",
+    "type": "tipo",
+    "mob": "mob",
+    "mob type": "tipo de mob",
+    "args": "argumentos",
+    "price": "precio",
+    "delay": "espera",
+    "expire time": "tiempo",
+    "datediff": "tiempo",
+    "line number": "fila",
+    "text": "texto",
+    "meta": "meta",
+    "value": "valor",
+    "owner": "propietario",
+    "texture": "textura",
+    "channel": "canal",
+    "duration": "tiempo",
+    "description": "texto",
+    "page": "hoja",
+    "to": "para",
+    "address": "ip",
+    "x": "x",
+    "y": "y",
+    "z": "z",
+    "yaw": "yaw",
+    "pitch": "pitch",
 }
 
 # El mismo regex de EssentialsX, para comprobar que cada nombre que ponemos
@@ -60,8 +122,10 @@ RE_ARG_VALIDO = re.compile(r"^[A-Za-z |]+$")
 
 RE_TAG = re.compile(r"<([^<>]+)>")
 
+
 def traducir_argumentos(texto):
     """Traduce <player> -> <jugador> sin tocar las etiquetas de color."""
+
     def reemplazo(m):
         dentro = m.group(1)
         if dentro.lower() in NO_TOCAR or dentro.startswith("/"):
@@ -71,7 +135,9 @@ def traducir_argumentos(texto):
             partes = [ARGUMENTOS.get(p.strip().lower(), p) for p in dentro.split("|")]
             return "<" + "|".join(partes) + ">"
         return "<" + ARGUMENTOS.get(dentro.lower(), dentro) + ">"
+
     salida = RE_TAG.sub(reemplazo, texto)
+
     # [player] y [reason] entre corchetes también son argumentos opcionales.
     def corchetes(m):
         dentro = m.group(1)
@@ -79,17 +145,21 @@ def traducir_argumentos(texto):
             partes = [ARGUMENTOS.get(p.strip().lower(), p) for p in dentro.split("|")]
             return "[" + "|".join(partes) + "]"
         return "[" + ARGUMENTOS.get(dentro.lower(), dentro) + "]"
+
     salida = re.sub(r"\[([^\[\]]+)\]", corchetes, salida)
     # Ultima pasada para los argumentos compuestos que los dos reemplazos de
     # arriba no parten, como [player\:], [player/message...] o <[player\:]name>.
     # Es seguro hacerlo por palabra completa: ningun subcomando de EssentialsX
     # se llama "player", "name" ni "message".
     for ingles, espanol in (
-        ("players", "jugadores"), ("player", "jugador"),
-        ("message", "mensaje"), ("name", "nombre"),
+        ("players", "jugadores"),
+        ("player", "jugador"),
+        ("message", "mensaje"),
+        ("name", "nombre"),
     ):
         salida = re.sub(rf"\b{ingles}\b", espanol, salida)
     return salida
+
 
 print("script listo", file=sys.stderr)
 
@@ -109,7 +179,6 @@ A_MANO = {
     "invalidHomeName": "<dark_red>Ese nombre de casa no sirve.",
     "homeConfirmation": "<primary>Ya tienes una casa que se llama<secondary> {0}<primary>.\n<primary>Vuelve a escribir el comando para reemplazarla.",
     "homeRenamed": "<gray>La casa<secondary> {0} <gray>ahora se llama<secondary> {1}<gray>.",
-
     # --- Teletransporte --------------------------------------------------
     "teleporting": "<primary>Teletransportando...",
     "teleportationCommencing": "<primary>Ahí voy...",
@@ -134,17 +203,14 @@ A_MANO = {
     "teleportTop": "<primary>Teletransportando hasta arriba.",
     "backUsageMsg": "<primary>Volviendo a donde estabas.",
     "noLocationFound": "<dark_red>No hay ningún lugar al que volver.",
-
     # --- Spawn -----------------------------------------------------------
     "spawnSet": "<primary>Dejé el spawn del grupo<secondary> {0}<primary> aquí.",
-
     # --- Teletransporte aleatorio (/tpr) ---------------------------------
     "tprSuccess": "<primary>Te mandé a un lugar al azar.",
     "tprSuccessDone": "<primary>Listo, caíste en un lugar al azar.",
     "tprOtherUser": "<primary>Mandando a<secondary> {0}<primary> a un lugar al azar.",
     "tprNoPermission": "<dark_red>No tienes permiso para ir a ese lugar.",
     "tprNotExist": "<dark_red>Ese destino al azar no existe.",
-
     # --- Mensajes privados: `Pepe → tú: mensaje` -------------------------
     # EssentialsX usa {0} para quien manda, {1} para quien recibe y {2} para
     # el mensaje. Nosotros ponemos la flecha y los colores del chat.
@@ -159,7 +225,6 @@ A_MANO = {
     "socialSpyMutedPrefix": "<white>[<primary>SS<white>] <gray>(callado) <reset>",
     "socialSpyMsgFormat": "<gray>{0} <secondary>→ <gray>{1}<reset>: <white>{2}",
     "socialSpyCmdFormat": "<gray>{0}: {1}",
-
     # --- Errores comunes -------------------------------------------------
     "noPerm": "<dark_red>No tienes el permiso <secondary>{0}<dark_red>.",
     "noAccessCommand": "<dark_red>No tienes permiso para ese comando.",
@@ -172,21 +237,17 @@ A_MANO = {
     "unmuteNotify": "<secondary>{0} <primary>le quitó el silencio a<secondary> {1}<primary>.",
     "warpNotExist": "<dark_red>Ese warp no existe.",
     "warps": "<primary>Warps:<reset> {0}",
-
     # --- Baneos (los ve quien intenta entrar) ----------------------------
     "banIpJoin": "Tu IP está baneada de este servidor. Razón: {0}",
     "tempbanJoin": "Estás baneado de este servidor por {0}. Razón: {1}",
-
     # --- Cárcel ----------------------------------------------------------
     "jailedPlayersEmpty": "<primary>No hay nadie en la cárcel.",
     "jailedPlayersList": "<primary>En la cárcel:<reset> {0}",
-
     # --- Kits ------------------------------------------------------------
     "kitCost": " <gray><i>({0})<reset>",
     "kitDelay": "<st>{0}<reset>",
     "kitItem": "<primary>- <white>{0}",
     "createKitSeparator": "<st>-----------------------",
-
     # --- Chat local y varios ---------------------------------------------
     "localFormat": "<dark_aqua>[L] <reset><{0}> {1}",
     "localNoOne": "",
@@ -204,24 +265,20 @@ A_MANO = {
     "signFormatSuccess": "<dark_blue>[{0}]",
     "sudoRun": "<primary>Obligando a<secondary> {0} <primary>a correr:<reset> /{1}",
     "timeSetWorldPermission": "<dark_red>No tienes permiso para cambiar la hora del mundo ''{0}''.",
-
     # --- /whois ----------------------------------------------------------
     "whoisPlaytime": "<primary> - Tiempo jugado:<reset> {0}",
     "whoisUuid": "<primary> - UUID:<reset> {0}",
     "whoisWhitelist": "<primary> - En la whitelist:<reset> {0}",
     "whoisCommandDescription": "Muestra información básica de un jugador.",
-
     # --- Correo interno --------------------------------------------------
     "mailFormat": "<primary>[<reset>{0}<primary>] <reset>{1}",
     "mailFormatNew": "<primary>[<reset>{0}<primary>] <primary>[<reset>{1}<primary>] <reset>{2}",
     "mailFormatNewRead": "<primary>[<reset>{0}<primary>] <primary>[<reset>{1}<primary>] <gray><i>{2}",
     "mailFormatNewTimed": "<primary>[<yellow>⚠<primary>] <primary>[<reset>{0}<primary>] <primary>[<reset>{1}<primary>] <reset>{2}",
     "mailFormatNewReadTimed": "<primary>[<yellow>⚠<primary>] <primary>[<reset>{0}<primary>] <primary>[<reset>{1}<primary>] <gray><i>{2}",
-
     # --- Ayuda -----------------------------------------------------------
     "helpLine": "<primary>/{0}<reset>: {1}",
     "commandHelpLineUsage": "{0} <primary>- {1}",
-
     # --- Avisos del servidor (consola) -----------------------------------
     "versionOutputFine": "<primary>{0} versión: <green>{1}",
     "versionOutputWarn": "<primary>{0} versión: <secondary>{1}",
@@ -230,7 +287,6 @@ A_MANO = {
     "serverUnsupportedDumbPlugins": "<dark_red>Traes plugins que se sabe que dan guerra con EssentialsX y con otros plugins.",
     "serverUnsupportedLimitedApi": "<red>Este servidor tiene la API recortada. EssentialsX va a funcionar, pero algunas cosas se van a desactivar.",
     "serverUnsupportedMods": "<dark_red>Este servidor no soporta bien los plugins de Bukkit. No mezcles plugins de Bukkit con mods de Forge o Fabric.",
-
     # --- Otras descripciones de comandos ---------------------------------
     "jailedplayersCommandDescription": "Lista a todos los que están en la cárcel.",
     "tprCommandUsage2Description": "Te manda a un lugar al azar del mundo que digas",
@@ -244,18 +300,20 @@ A_MANO = {
 #  {0}/{1} que EssentialsX rellena, o trae pegado el texto de otra clave.
 #  Verificado comparando contra messages.properties del mismo jar.
 # --------------------------------------------------------------------------
-A_MANO.update({
-    # El jar se comio el {1} (el mensaje que intento mandar).
-    "mutedUserSpeaks": "{0} quiso hablar, pero est\u00e1 silenciado: {1}",
-    # El jar tiene aqui pegado "/<command> <nombre>.", que es texto de un
-    # CommandUsage. Es un error de copiado en su archivo es.
-    "muteNotifyFor": "<secondary>{0} <primary>silenci\u00f3 a<secondary> {1}<primary> por<secondary> {2}<primary>.",
-    # El jar se comio el {0} (a quien no puedes sudar).
-    "sudoExempt": "<dark_red>No puedes usar sudo con <secondary>{0}<dark_red>.",
-    # El jar se comio el {0} (el mundo) en los dos.
-    "weatherStorm": "<primary>Pusiste tormenta en<secondary> {0}<primary>.",
-    "weatherSun": "<primary>Pusiste sol en<secondary> {0}<primary>.",
-})
+A_MANO.update(
+    {
+        # El jar se comio el {1} (el mensaje que intento mandar).
+        "mutedUserSpeaks": "{0} quiso hablar, pero est\u00e1 silenciado: {1}",
+        # El jar tiene aqui pegado "/<command> <nombre>.", que es texto de un
+        # CommandUsage. Es un error de copiado en su archivo es.
+        "muteNotifyFor": "<secondary>{0} <primary>silenci\u00f3 a<secondary> {1}<primary> por<secondary> {2}<primary>.",
+        # El jar se comio el {0} (a quien no puedes sudar).
+        "sudoExempt": "<dark_red>No puedes usar sudo con <secondary>{0}<dark_red>.",
+        # El jar se comio el {0} (el mundo) en los dos.
+        "weatherStorm": "<primary>Pusiste tormenta en<secondary> {0}<primary>.",
+        "weatherSun": "<primary>Pusiste sol en<secondary> {0}<primary>.",
+    }
+)
 
 # --------------------------------------------------------------------------
 #  Correcciones generales sobre el español de España que trae el jar.
@@ -282,6 +340,14 @@ ARREGLOS = [
     (r"\bse ha agotado\b", "se acabó"),
     (r"\bdenegada\b", "rechazada"),
     (r"\bdenegado\b", "rechazado"),
+    # El espanol del jar escribe "item" sin acento. En los TEXTOS si lleva
+    # (es "itema" en ingles, "item" en espanol se acentua). Ojo: esto NO
+    # toca los textos de uso, que se generan del ingles aparte y necesitan
+    # nombres de argumento sin acentos.
+    (r"\bitem\b", "\u00edtem"),
+    (r"\bitems\b", "\u00edtems"),
+    (r"\bItem\b", "\u00cdtem"),
+    (r"\bItems\b", "\u00cdtems"),
 ]
 
 # --------------------------------------------------------------------------
@@ -315,9 +381,11 @@ ARGUMENTOS_DEL_JAR = {
 
 def normalizar_argumentos_del_jar(texto):
     """Cambia los nombres acentuados por su equivalente sin acento."""
+
     def reemplazo(m):
         abre, dentro, cierra = m.group(1), m.group(2), m.group(3)
         return abre + ARGUMENTOS_DEL_JAR.get(dentro, dentro) + cierra
+
     return re.sub(r"([<\[])([^<>\[\]]+)([>\]])", reemplazo, texto)
 
 
@@ -329,8 +397,13 @@ def aplicar_arreglos(texto):
 
 def construir():
     salida = {}
-    estadisticas = {"a_mano": 0, "completadas": 0, "arregladas": 0,
-                    "del_jar": 0, "uso_del_ingles": 0}
+    estadisticas = {
+        "a_mano": 0,
+        "completadas": 0,
+        "arregladas": 0,
+        "del_jar": 0,
+        "uso_del_ingles": 0,
+    }
     for clave in en_orden:
         if clave in A_MANO:
             salida[clave] = A_MANO[clave]
@@ -426,6 +499,7 @@ CABECERA = """\
 # ===========================================================================
 
 """
+
 
 def validar_argumentos():
     """Comprueba que cada nombre de argumento siga cumpliendo el regex de
