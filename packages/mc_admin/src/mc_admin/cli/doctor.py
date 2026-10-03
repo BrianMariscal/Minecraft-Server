@@ -72,8 +72,11 @@ def doctor(
         # --- Puertos ------------------------------------------------------ #
         p = ctx.settings.puertos
         ocupados = puertos.ocupados([p.java, p.bluemap], [p.bedrock])
+        servidor = ctx.compose.estado_de("minecraft") if disponible else None
         for h in diag.revisar_puertos(
-            ocupados, {"Java": p.java, "BlueMap": p.bluemap, "Bedrock": p.bedrock}
+            ocupados,
+            {"Java": p.java, "BlueMap": p.bluemap, "Bedrock": p.bedrock},
+            servidor_encendido=servidor is not None and servidor.corriendo,
         ):
             reporte.agregar(h)
 

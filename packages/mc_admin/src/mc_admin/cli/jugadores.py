@@ -97,7 +97,7 @@ def _avisar_de_registrarse(nombre: str) -> None:
 
 
 def _xuid_de(gamertag: str, xuid: str | None) -> int:
-    """El XUID que nos dieron o, si no, el que conozca la API de GeyserMC."""
+    """El XUID que nos dieron o, si no, el que encuentre infra.xbox."""
     if xuid:
         return core.validar_xuid(xuid)
     consola.paso(f"Buscando el XUID de {gamertag}...")
@@ -106,8 +106,8 @@ def _xuid_de(gamertag: str, xuid: str | None) -> int:
         raise ErrorDeConfig(
             f"no encontré el XUID de '{gamertag}'",
             pista=(
-                "La búsqueda automática solo conoce a quien ya entró alguna vez a\n"
-                "un servidor con Geyser. Consíguelo así:\n"
+                "Revisa que el gamertag esté bien escrito (el de Xbox, tal cual).\n"
+                "Si está bien, consíguelo a mano:\n"
                 f"  1. Entra a https://www.cxkes.me/xbox/xuid y busca '{gamertag}'.\n"
                 "  2. Copia el número de 'XUID (DEC)'.\n"
                 f'  3. mc whitelist add "{gamertag}" --bedrock --xuid <ese número>'

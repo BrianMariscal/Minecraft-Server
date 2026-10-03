@@ -13,6 +13,8 @@ from pathlib import Path
 import yaml
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
+from ruamel.yaml.error import CommentMark
+from ruamel.yaml.tokens import CommentToken
 
 from mc_admin.core.plantillas import ArchivoGenerado
 from mc_admin.errores import ErrorDeConfig, ErrorDeEntorno
@@ -170,6 +172,8 @@ def actualizar_settings(raiz: Path, cambios: dict[str, list[str] | dict[str, int
     yaml_rt.preserve_quotes = True
     # settings.yml indenta las listas dos espacios bajo su clave.
     yaml_rt.indent(mapping=2, sequence=4, offset=2)
+    # Sin esto parte en dos los formatos del chat y otras líneas largas.
+    yaml_rt.width = 4096
 
     with ruta.open(encoding="utf-8") as f:
         doc = yaml_rt.load(f)
@@ -187,7 +191,10 @@ def actualizar_settings(raiz: Path, cambios: dict[str, list[str] | dict[str, int
             msg = f"settings.yml no tiene la clave '{ruta_clave}'"
             raise ErrorDeConfig(msg)
         # Lista nueva ordenada sin distinguir mayúsculas, como la deja `core`.
-        nodo[hoja] = CommentedMap(valor) if isinstance(valor, dict) else CommentedSeq(valor)
+        viejo = nodo[hoja]
+        nuevo = CommentedMap(valor) if isinstance(valor, dict) else CommentedSeq(valor)
+        nodo[hoja] = nuevo
+        _rescatar_comentario_siguiente(nodo, hoja, viejo, nuevo)
 
     flujo = io.StringIO()
     yaml_rt.dump(doc, flujo)
@@ -202,6 +209,47 @@ def actualizar_settings(raiz: Path, cambios: dict[str, list[str] | dict[str, int
         ) from exc
 
     escribir_si_cambio(ruta, texto)
+
+
+def _rescatar_comentario_siguiente(
+    nodo: CommentedMap, hoja: str, viejo: object, nuevo: CommentedMap | CommentedSeq
+) -> None:
+    """Deja en su lugar el comentario que va arriba de la clave siguiente.
+
+    ruamel guarda ese comentario en dos sitios según el valor de `hoja`: si es
+    de una línea (`[]`, `{}`), colgado de la clave siguiente; si es una lista
+    o mapa en bloque, al final de su último elemento. Al reemplazar el valor
+    hay que pasarlo de un sitio al otro o se pierde.
+    """
+    claves = list(nodo)
+    i = claves.index(hoja)
+    if i + 1 >= len(claves):
+        return
+    siguiente = claves[i + 1]
+
+    texto = ""
+    previo = nodo.ca.items.get(siguiente)
+    if previo and previo[1]:
+        texto = "".join(" " * t.start_mark.column + t.value.lstrip(" ") for t in previo[1])
+        previo[1] = None
+    elif isinstance(viejo, (CommentedMap, CommentedSeq)) and len(viejo):
+        ultimo = list(viejo)[-1] if isinstance(viejo, CommentedMap) else len(viejo) - 1
+        fila = viejo.ca.items.get(ultimo) or []
+        token = next((t for t in fila if t is not None), None)
+        if token is not None:
+            texto = token.value.removeprefix("\n")
+    if not texto.strip():
+        return
+
+    if not len(nuevo):
+        previo = nodo.ca.items.setdefault(siguiente, [None, None, None, None])
+        previo[1] = [CommentToken(texto, CommentMark(0), None)]
+        return
+    token = CommentToken("\n" + texto, CommentMark(0), None)
+    if isinstance(nuevo, CommentedMap):
+        nuevo.ca.items[list(nuevo)[-1]] = [None, None, token, None]
+    else:
+        nuevo.ca.items[len(nuevo) - 1] = [token, None]
 
 
 def escribir_whitelist(carpeta_datos: Path, entradas: list[dict[str, str]]) -> bool:

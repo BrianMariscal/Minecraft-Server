@@ -5,6 +5,7 @@ from __future__ import annotations
 import socket
 from contextlib import closing
 
+from mc_admin.core.diagnostico import DUENO_DESCONOCIDO
 from mc_admin.infra.registro import obtener
 
 log = obtener("puertos")
@@ -33,10 +34,10 @@ def ocupados(puertos_tcp: list[int], puertos_udp: list[int]) -> dict[int, str]:
 
     for puerto in puertos_tcp:
         if not _intentar_escuchar(puerto, socket.SOCK_STREAM):
-            resultado[puerto] = duenos.get(puerto, "otro proceso")
+            resultado[puerto] = duenos.get(puerto, DUENO_DESCONOCIDO)
     for puerto in puertos_udp:
         if not _intentar_escuchar(puerto, socket.SOCK_DGRAM):
-            resultado[puerto] = duenos.get(puerto, "otro proceso")
+            resultado[puerto] = duenos.get(puerto, DUENO_DESCONOCIDO)
 
     return resultado
 

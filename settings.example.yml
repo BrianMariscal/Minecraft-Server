@@ -242,10 +242,13 @@ pagos:
 # --- Administradores del servidor de Minecraft -----------------------------
 #  Van al grupo `admin` de LuckPerms, a ops y a la whitelist (solos, no
 #  hace falta ponerlos también abajo). Mejor con `mc admin add <jugador>`.
-admins: []
+admins:
+  - AdminJava
+  - AdminBedrock
 #  Admins que juegan en Bedrock (gamertag, sin el punto). Mejor con
 #  `mc admin add "Gamer Tag" --bedrock`: también los mete a la whitelist.
-admins_bedrock: []
+admins_bedrock:
+  - AdminBedrock
 
 # --- Whitelist -------------------------------------------------------------
 #  PENDIENTE DE LLENAR. También puedes usar `mc whitelist add <jugador>`
@@ -254,7 +257,13 @@ whitelist:
   # Nombres de Minecraft Java, tal cual.
   java: []
   # Gamertags de Xbox SIN el punto de Floodgate: `mc` se lo pone solo.
-  bedrock: []
+  bedrock:
+    - AdminBedrock
+    - JugadorBedrock2
+    - JugadorBedrock4
   # El XUID de Xbox de cada gamertag de arriba. Lo llena `mc whitelist add
   # --bedrock` solo; ve docs/administrar.md si te lo pide.
-  xuid: {}
+  xuid:
+    AdminBedrock: 1234567890123456
+    JugadorBedrock2: 1234567890123457
+    JugadorBedrock4: 1234567890123459

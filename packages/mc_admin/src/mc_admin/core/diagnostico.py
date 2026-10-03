@@ -155,17 +155,38 @@ def revisar_disco(libre_gb: float | None, radio_pregen: int) -> Hallazgo:
     return Hallazgo("Disco", Nivel.BIEN, f"{libre_gb:.1f} GB libres")
 
 
-def revisar_puertos(ocupados: dict[int, str], esperados: dict[str, int]) -> list[Hallazgo]:
+# Lo que reporta infra.puertos cuando no puede leer de quién es un puerto.
+DUENO_DESCONOCIDO = "otro proceso"
+
+
+def revisar_puertos(
+    ocupados: dict[int, str],
+    esperados: dict[str, int],
+    *,
+    servidor_encendido: bool = False,
+) -> list[Hallazgo]:
     """¿Están libres los puertos que necesitamos?
 
     `ocupados` mapea puerto -> quién lo tiene. Si el que lo tiene es nuestro
     propio contenedor, está bien: significa que el servidor ya anda.
+
+    Con el servidor encendido, Docker publica los puertos con `docker-proxy`,
+    que es de root: sin sudo no se ve su nombre y llega DUENO_DESCONOCIDO.
+    En ese caso el dueño es nuestro contenedor.
     """
     hallazgos: list[Hallazgo] = []
     for servicio, puerto in esperados.items():
         quien = ocupados.get(puerto)
         if quien is None:
             hallazgos.append(Hallazgo(f"Puerto {puerto} ({servicio})", Nivel.BIEN, "libre"))
+        elif servidor_encendido and quien in (DUENO_DESCONOCIDO, "docker-proxy"):
+            hallazgos.append(
+                Hallazgo(
+                    f"Puerto {puerto} ({servicio})",
+                    Nivel.BIEN,
+                    "lo usa el servidor, que está encendido",
+                )
+            )
         elif "minecraft" in quien.lower() or "mc-" in quien.lower():
             hallazgos.append(
                 Hallazgo(

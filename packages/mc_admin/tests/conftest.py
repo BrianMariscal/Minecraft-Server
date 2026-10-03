@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from mc_admin.infra.archivos import actualizar_settings
+
 # La raíz del proyecto de verdad: de ahí copiamos settings.yml y las
 # plantillas, para que los tests prueben los archivos REALES y no una
 # maqueta que se desincroniza.
@@ -27,6 +29,17 @@ def proyecto(tmp_path: Path) -> Iterator[Path]:
     shutil.copy(RAIZ_REAL / "settings.yml", destino / "settings.yml")
     shutil.copy(RAIZ_REAL / ".env.example", destino / ".env.example")
     shutil.copytree(RAIZ_REAL / "minecraft", destino / "minecraft", dirs_exist_ok=True)
+    # El settings.yml real ya trae a la banda; los tests parten sin nadie.
+    actualizar_settings(
+        destino,
+        {
+            "admins": [],
+            "admins_bedrock": [],
+            "whitelist.java": [],
+            "whitelist.bedrock": [],
+            "whitelist.xuid": {},
+        },
+    )
     yield destino
 
 

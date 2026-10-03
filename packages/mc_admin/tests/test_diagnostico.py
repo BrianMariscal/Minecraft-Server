@@ -10,6 +10,7 @@ import pytest
 
 from mc_admin.core import diagnostico as diag
 from mc_admin.core.diagnostico import (
+    DUENO_DESCONOCIDO,
     Nivel,
     Reporte,
     revisar_disco,
@@ -94,6 +95,21 @@ class TestPuertos:
         hallazgos = revisar_puertos({25565: "mc-hd-servidor"}, {"Java": 25565})
         assert hallazgos[0].nivel is Nivel.BIEN
         assert "nosotros" in hallazgos[0].detalle
+
+    def test_docker_proxy_sin_nombre_con_servidor_encendido(self) -> None:
+        """Sin sudo no se ve el dueño; con el servidor prendido es nuestro."""
+        hallazgos = revisar_puertos(
+            {25565: DUENO_DESCONOCIDO}, {"Java": 25565}, servidor_encendido=True
+        )
+        assert hallazgos[0].nivel is Nivel.BIEN
+
+    def test_dueno_desconocido_con_servidor_apagado_es_malo(self) -> None:
+        hallazgos = revisar_puertos({25565: DUENO_DESCONOCIDO}, {"Java": 25565})
+        assert hallazgos[0].nivel is Nivel.MAL
+
+    def test_otro_proceso_con_nombre_sigue_mal_aunque_este_encendido(self) -> None:
+        hallazgos = revisar_puertos({25565: "nginx"}, {"Java": 25565}, servidor_encendido=True)
+        assert hallazgos[0].nivel is Nivel.MAL
 
     def test_reconoce_el_nombre_de_la_imagen(self) -> None:
         hallazgos = revisar_puertos({25565: "java (minecraft)"}, {"Java": 25565})

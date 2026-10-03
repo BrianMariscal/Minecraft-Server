@@ -154,9 +154,11 @@ PALABRAS_INGLESAS: frozenset[str] = frozenset(
 # Hint de que el valor NO es texto para el jugador, sino configuración.
 _RE_CLAVE_YAML = re.compile(r"^\s*[A-Za-z0-9_.\-]+\s*:\s*$")
 _RE_SOLO_SIMBOLOS = re.compile(r"^[\W\d_]*$", re.UNICODE)
-# Códigos de color y marcadores que no cuentan como palabras.
+# Códigos de color, marcadores y sintaxis de comandos entre corchetes
+# (`[a:item]`, `[arguments]`), que se escriben tal cual y no se traducen.
 _RE_RUIDO = re.compile(
-    r"(§.|&[0-9a-fk-or]|<[^>]{1,40}>|\{[^}]{1,40}\}|%[a-z_]{1,40}%|https?://\S+)",
+    r"(§.|&[0-9a-fk-or]|<[^>]{1,40}>|\{[^}]{1,40}\}|\[[^\]\s]{1,40}\]|%[a-z_]{1,40}%"
+    r"|https?://\S+)",
     re.IGNORECASE,
 )
 
