@@ -21,9 +21,17 @@ log = obtener("docker")
 SERVICIO_MINECRAFT = "minecraft"
 SERVICIO_RESPALDOS = "respaldos"
 SERVICIO_PAGOS = "pagos-bot"
-# Un arranque de Paper con datapacks grandes puede tardar bastante.
+SERVICIO_RESPALDOS_REMOTO = "respaldos-remoto"
+# Los perfiles que existen en el compose. Para APAGAR los nombramos todos:
+# si algo estuvo prendido y luego lo apagaste en settings.yml, su contenedor
+# seguiría corriendo y `compose down` sin el perfil ni lo vería.
+PERFILES = ("pagos", "remoto")
 TIMEOUT_NORMAL = 120
-TIMEOUT_ARRANQUE = 300
+# La primera vez baja las imágenes (~1 GB) y construye la del bot. En un VPS
+# con internet lento eso pasa de 5 minutos fácil.
+TIMEOUT_ARRANQUE = 900
+# El apagado tiene stop_grace_period: 2m en el compose; le damos de sobra.
+TIMEOUT_APAGADO = 300
 
 
 @dataclass(frozen=True, slots=True)
@@ -161,16 +169,27 @@ class Compose:
         return self.correr("config", "--quiet")
 
     def arrancar(self, servicios: list[str] | None = None) -> None:
-        self.correr("up", "-d", *(servicios or []), timeout=TIMEOUT_ARRANQUE)
+        """`up -d --build`: crea o RECREA lo que haya cambiado.
+
+        `--build` reconstruye la imagen del bot si cambió su código (con el
+        caché de Docker, si no cambió nada tarda un segundo). Y `up`, a
+        diferencia de `restart`, vuelve a leer .env y el compose.
+        """
+        self.correr(
+            "up",
+            "-d",
+            "--build",
+            "--remove-orphans",
+            *(servicios or []),
+            timeout=TIMEOUT_ARRANQUE,
+        )
 
     def apagar(self, servicios: list[str] | None = None) -> None:
         if servicios:
-            self.correr("stop", *servicios, timeout=TIMEOUT_ARRANQUE)
-        else:
-            self.correr("down", timeout=TIMEOUT_ARRANQUE)
-
-    def reiniciar(self, servicios: list[str] | None = None) -> None:
-        self.correr("restart", *(servicios or []), timeout=TIMEOUT_ARRANQUE)
+            self.correr("stop", *servicios, timeout=TIMEOUT_APAGADO)
+            return
+        perfiles = [arg for p in PERFILES for arg in ("--profile", p)]
+        self.correr(*perfiles, "down", timeout=TIMEOUT_APAGADO)
 
     def estado(self) -> list[EstadoServicio]:
         """Lee el estado de todos los servicios con `compose ps --format json`."""

@@ -3,10 +3,6 @@
 Este bot le recuerda a la banda que toca pagar el VPS, lleva la cuenta de
 quién ya pagó y avisa cuando ya está cubierto.
 
-**Es un bot DISTINTO al de DiscordSRV.** Necesita su propia aplicación en
-Discord y su propio token. Si usas el mismo, ninguno de los dos funciona
-bien.
-
 ---
 
 ## 1. Crear la aplicación
@@ -72,12 +68,19 @@ O a mano:
 PAGOS_BOT_TOKEN=el-token-de-ESTE-bot
 PAGOS_GUILD_ID=1234567890123456789
 PAGOS_CANAL_ID=9876543210987654321
+# Opcional, ver "Alertas de caída del servidor":
+ALERTAS_CANAL_ID=
 ```
 
-### En `settings.yml`
+### En `settings.yml` (solo para el primer arranque)
 
-Esta es la parte que **hay que llenar a mano**, porque son los datos de tu
-banda. Busca la sección `pagos`:
+La sección `pagos` de `settings.yml` es el **punto de partida**: la primera
+vez que arranca, el bot la copia a su base de datos. **De ahí en adelante
+todo se cambia desde Discord** (`/miembro` y `/ajustes`, más abajo) y
+`settings.yml` ya no se vuelve a leer para esto. Solo `activo` y
+`zona_horaria` siguen saliendo de ahí.
+
+Así se ve:
 
 ```yaml
 pagos:
@@ -156,6 +159,16 @@ Cuando todos pagan, el bot manda:
 
 Y deja de molestar hasta el mes que entra.
 
+### Lo que se queda debiendo no se olvida
+
+Si octubre se cierra con alguien sin pagar, al cambiar a noviembre esa
+deuda **sigue ahí**:
+
+- `/pagos` la enseña en "⏳ Pendiente de meses anteriores".
+- El recordatorio tardío de octubre sigue saliendo cada `cada_dias_despues`
+  días, mencionando solo a quien falta, hasta que se pague o el tesorero lo
+  exima (`/eximir @persona mes:2026-10`).
+
 ### Marcar que ya pagaste
 
 Dos formas:
@@ -165,12 +178,23 @@ Dos formas:
 
 Cualquiera de las dos te pone en **🕓 por confirmar** y le avisa al tesorero.
 
+El pago se anota en el **mes más viejo que debas**: primero se salda lo
+atrasado. Si ya estás al corriente y el aviso previo del mes que viene ya
+salió (con `dia_de_pago: 2` sale el 30 del mes anterior), cuenta como pago
+**adelantado** de ese mes.
+
+Si ya avisaste y el tesorero todavía no confirma, picarle otra vez no lo
+vuelve a etiquetar: el bot nada más te recuerda que está pendiente.
+
 ### Confirmar
 
 El tesorero (o quien tenga el rol configurado) confirma con:
 
-- **El botón "✅ Sí me llegó"**
-- **`/confirmar @persona`**
+- **El botón "✅ Sí me llegó"**, que sigue funcionando aunque el bot se
+  haya reiniciado (los botones de antes de la versión 1.1 no: esos te
+  piden usar `/confirmar`).
+- **`/confirmar @persona`**, que confirma lo más viejo que esa persona
+  tenga pendiente. Para un mes en concreto: `/confirmar @persona mes:2026-10`.
 
 Hasta que no se confirma, ese dinero **no cuenta como juntado**. Es a
 propósito: si el tesorero no lo vio, el dinero no está.
@@ -183,92 +207,100 @@ propósito: si el tesorero no lo vio, el dinero no está.
 
 | Comando | Qué hace |
 |---|---|
-| `/pagos` | Cómo va el mes: quién pagó, quién falta, cuánto se juntó |
-| `/pague` | Avisas que ya pagaste tu parte |
-| `/historial` | Los meses anteriores y quién pagó cada uno |
+| `/pagos` | La tarjeta del mes: quién pagó, quién falta, cuánto se juntó y lo atrasado |
+| `/pague` | Avisas que ya pagaste tu parte (igual que el botón "💸 Ya pagué") |
+| `/historial` | Los meses anteriores y quién quedó debiendo |
 
-### Solo para el tesorero
+### Para el tesorero (o el rol de admin del cobro)
+
+**Pagos**
 
 | Comando | Qué hace |
 |---|---|
-| `/confirmar @persona` | Confirmas que te llegó su pago |
-| `/desmarcar @persona` | La regresas a pendiente (se equivocó, se devolvió el pago) |
-| `/eximir @persona` | Este mes no le toca pagar, y no cuenta como que debe |
+| `/confirmar @persona [mes]` | Te llegó su pago (sin `mes`: lo más viejo que deba) |
+| `/desmarcar @persona [mes]` | La regresas a pendiente (se equivocó, se devolvió el pago) |
+| `/eximir @persona [mes]` | Ese mes no le toca pagar, y no cuenta como que debe |
+
+`mes` se escribe como `2026-10`. Si no lo pones, `/desmarcar` y `/eximir`
+usan el mes de ahorita.
+
+**La banda** — `/miembro`
+
+| Comando | Qué hace |
+|---|---|
+| `/miembro agregar @persona [monto] [nombre]` | La mete a la banda. Entra al cobro de **este** mes |
+| `/miembro quitar @persona` | La saca. Si ya pagó este mes, se respeta; si no, este mes ya no se le cobra |
+| `/miembro monto @persona monto [este_mes]` | Cambia lo que paga. Por defecto desde el mes que viene |
+| `/miembro nombre @persona nombre` | Cómo aparece en las listas |
+
+**Cómo se cobra** — `/ajustes`
+
+| Comando | Qué hace |
+|---|---|
+| `/ajustes ver` | Toda la configuración y la lista de la banda, en una tarjeta |
+| `/ajustes dia 2` | El día del mes en que se paga (si el mes es corto, el último día) |
+| `/ajustes total 240` | Cuánto cuesta el VPS |
+| `/ajustes reparto iguales\|personalizado` | El total dividido entre todos, o cada quien su monto |
+| `/ajustes avisos 3 2` | Avisar 3 días antes, y si se pasa la fecha, cada 2 días |
+| `/ajustes hora 11` | A qué hora salen los recordatorios |
+| `/ajustes tesorero @persona` | Quién recibe el dinero y confirma |
+| `/ajustes rol @rol` | Un rol que también puede administrar (vacío = solo el tesorero) |
+
+Los montos se escriben como quieras: `40`, `40.50`, `$40,50`.
+
+**¿Quién ve estos comandos?** Discord los esconde a quien no tiene el
+permiso de *Gestionar servidor*. Si el tesorero no lo tiene, dáselo a ese
+comando en **Ajustes del servidor → Integraciones → (el bot) → Comandos**.
+Aparte de eso, el bot revisa siempre que quien los usa sea el tesorero o
+tenga el rol de admin del cobro: aunque alguien los vea, no los puede usar.
+
+---
+
+## Alertas de caída del servidor (opcional)
+
+El mismo bot puede avisar en Discord si el servidor de Minecraft se cae.
+Pon el ID de un canal en `.env` (puede ser el mismo `#pagos`, o uno de
+admins):
+
+```bash
+ALERTAS_CANAL_ID=1234567890123456789
+```
+
+Y `mc restart`. Cada minuto revisa si el servidor contesta. Si lleva **5
+minutos** sin contestar avisa una vez, y cuando vuelve avisa otra. No avisa
+mientras el servidor está arrancando (por ejemplo después de un `mc
+restart`), solo si se cae después de haber estado arriba.
+
+Necesita que el bot de pagos esté prendido (`pagos.activo: true`).
 
 ---
 
 ## Cambiar cosas
 
-Todo se cambia en `settings.yml` y luego:
+Todo desde Discord, sin tocar archivos ni reiniciar nada. Revisa cómo
+quedó con `/ajustes ver`.
 
-```bash
-mc build && mc restart
-```
-
-### Cambiar el monto del VPS
-
-```yaml
-monto_total_mxn: "520.00"
-```
-
-El mes que **ya está abierto** no se recalcula: eso descuadraría lo que ya
-pagaron. El monto nuevo aplica desde el mes siguiente.
-
-### Agregar a alguien
-
-Agrégalo a `participantes`. Si el mes ya está corriendo, el bot lo mete al
-mes en curso con su cuota.
-
-### Quitar a alguien
-
-Quítalo de `participantes`. **Del mes que ya está corriendo NO se borra**: si
-ya pagó, ese dinero cuenta, y borrarlo descuadraría el total. Desde el mes
-siguiente ya no aparece.
-
-Si lo que quieres es que no pague **este** mes, usa `/eximir @persona`.
-
-### Cambiar el día de pago
-
-```yaml
-dia_de_pago: 15
-```
-
-Si pones **31** y el mes tiene 30, el bot usa el **último día del mes**. En
-febrero usa el 28 (o el 29 si es bisiesto). Eso ya está resuelto.
-
-### Montos distintos por persona
-
-```yaml
-reparto: "personalizado"
-participantes:
-  - nombre: "Ana"
-    discord_id: 111111111111111111
-    monto_mxn: "200.00"
-  - nombre: "Pepe"
-    discord_id: 222222222222222222
-    monto_mxn: "125.00"
-  - nombre: "Lupita"
-    discord_id: 333333333333333333
-    monto_mxn: "125.00"
-```
-
-Con `personalizado`, **cada participante necesita su `monto_mxn`**. Si a
-alguien le falta, el bot no arranca y te dice a quién.
-
-### Cambiar los avisos
-
-```yaml
-avisos:
-  dias_antes: 5          # avisa 5 días antes
-  cada_dias_despues: 3   # después de la fecha, cada 3 días
-```
+| Quieres… | Escribe |
+|---|---|
+| Meter a alguien | `/miembro agregar @Pepe 40` |
+| Sacar a alguien | `/miembro quitar @Pepe` |
+| Que alguien pague otra cantidad | `/miembro monto @Pepe 50` (o con `este_mes: True`) |
+| Que alguien no pague un mes | `/eximir @Pepe` |
+| Cambiar el día de pago | `/ajustes dia 5` |
+| Cambiar lo que cuesta el VPS | `/ajustes total 300` |
+| Avisar antes o más seguido | `/ajustes avisos 5 1` |
+| Cambiar de tesorero | `/ajustes tesorero @Tesorero` |
 
 ### Que deje de cobrar
+
+En `settings.yml`:
 
 ```yaml
 pagos:
   activo: false
 ```
+
+Y `mc build && mc restart`. El contenedor del bot ya no arranca.
 
 ---
 
@@ -282,8 +314,15 @@ pagos:
 - **Los recordatorios no se repiten.** Antes de mandar un aviso, el bot
   revisa en su base de datos si ya mandó ese mismo aviso hoy. Si el VPS se
   reinicia tres veces el día de pago, el aviso sale **una** vez.
-- **Los botones sobreviven los reinicios.** Son vistas persistentes, así que
-  el botón de un mensaje de hace una semana sigue funcionando.
+- **Los botones sobreviven los reinicios.** Cada botón lleva en su
+  identificador lo que necesita (el de "Sí me llegó", de quién y de qué mes
+  es el pago), así que el de un mensaje de hace una semana sigue jalando.
+- **La configuración vive en la base de datos**, en la tabla `ajustes`. Cada
+  cambio desde Discord se valida completo antes de guardarse: si el
+  resultado no tiene sentido, no se guarda nada.
+- **Los mensajes son tarjetas** con el diseño nuevo de Discord (contenedor
+  con franja de color, separadores y los botones adentro). El texto está en
+  `discord_ui/textos.py` y el acomodo en `discord_ui/tarjetas.py`.
 - **Si Discord o la base de datos fallan, el bot sigue vivo.** Lo anota en el
   log y vuelve a intentar: un bot caído no le cobra a nadie.
 - **La base de datos es SQLite** en un volumen, y **entra en los respaldos**
@@ -304,7 +343,7 @@ Corre `mc setup`, llénalas, y `mc build && mc restart`.
 
 ### "Discord rechazó el token"
 
-El token está mal, o estás usando el de DiscordSRV. Son bots distintos.
+El token está mal: vuelve a copiarlo del Developer Portal (Bot > Reset Token).
 Saca el token de la aplicación de **este** bot (**Reset Token**).
 
 ### "la sección pagos de settings.yml todavía trae CAMBIAME"

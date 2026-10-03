@@ -10,7 +10,7 @@ from mc_admin.cli import consola
 from mc_admin.contexto import Contexto
 from mc_admin.core import gamerules
 from mc_admin.errores import ErrorDeRcon, ErrorMc
-from mc_admin.infra import rcon
+from mc_admin.infra import archivos, rcon
 from mc_admin.infra.docker import SERVICIO_MINECRAFT
 
 # Cuánto esperamos a que el servidor conteste antes de rendirnos y decirle al
@@ -42,8 +42,6 @@ def aplicar_configuracion_en_vivo(ctx: Contexto) -> None:
     mundo y los grupos en la base de datos de LuckPerms, así que hay que
     decírselo al servidor ya encendido. Correrlo dos veces no hace daño.
     """
-    from mc_admin.core import jugadores as core_jugadores
-
     # --- Gamerules ------------------------------------------------------ #
     reglas = gamerules.reglas_para(dormir_con_un_jugador=ctx.settings.mundo.dormir_con_un_jugador)
     try:
@@ -66,25 +64,20 @@ def aplicar_configuracion_en_vivo(ctx: Contexto) -> None:
         except ErrorDeRcon as exc:
             consola.aviso(f"no pude aplicar los grupos: {exc.mensaje}")
 
-    # --- Whitelist ------------------------------------------------------- #
-    nombres = core_jugadores.nombres_para_el_servidor(
-        list(ctx.settings.whitelist.java),
-        list(ctx.settings.whitelist.bedrock),
-        ctx.settings.seguridad.prefijo_bedrock,
-    )
-    if nombres:
-        try:
-            rcon.mandar_varios(ctx.conexion_rcon, [f"whitelist add {n}" for n in nombres])
-            consola.ok(f"{len(nombres)} jugador(es) en la whitelist")
-        except ErrorDeRcon as exc:
-            consola.aviso(f"no pude aplicar la whitelist: {exc.mensaje}")
+    # --- Whitelist y admins --------------------------------------------- #
+    from mc_admin.cli import jugadores
+
+    if jugadores.sincronizar(ctx):
+        w = ctx.settings.whitelist
+        total = len({n.lower() for n in [*ctx.settings.admins, *w.java]}) + len(w.bedrock)
+        consola.ok(f"whitelist y admins aplicados ({total} jugador(es))")
+    else:
+        consola.aviso("no pude aplicar la whitelist y los admins por RCON")
 
 
 def _revisar_que_se_pueda_arrancar(ctx: Contexto) -> None:
     """Truena si falta algo imprescindible para encender el servidor."""
-    faltan = ctx.secretos.faltantes_para(
-        discord=ctx.settings.discord.activo, pagos=ctx.settings.pagos.activo
-    )
+    faltan = ctx.secretos.faltantes_para(pagos=ctx.settings.pagos.activo)
     if faltan:
         raise ErrorMc(
             "faltan cosas por llenar en .env: " + ", ".join(faltan),
@@ -97,27 +90,53 @@ def _revisar_que_se_pueda_arrancar(ctx: Contexto) -> None:
         )
 
 
+def _arrancar(ctx: Contexto) -> None:
+    """Lo que hacen `mc start` y la segunda mitad de `mc restart`."""
+    _revisar_que_se_pueda_arrancar(ctx)
+
+    # Barato y sin red: por si editaste settings.yml y no corriste `mc build`,
+    # que al menos la versión, la memoria y los puertos vayan al día.
+    archivos.asegurar_carpetas(ctx.raiz)
+    if ctx.sincronizar_compose():
+        consola.tenue("  (actualicé las variables de Docker Compose en .env)")
+
+    consola.paso(f"Encendiendo {ctx.settings.servidor.nombre}...")
+    ctx.compose.arrancar()
+    consola.ok("contenedores arriba")
+
+    consola.paso("Esperando a que el servidor conteste...")
+    if _esperar_a_que_conteste(ctx):
+        aplicar_configuracion_en_vivo(ctx)
+    else:
+        consola.tenue(
+            "  Todavía no contesta. Es normal en el primer arranque: está\n"
+            "  generando el mundo con los datapacks.\n"
+            "  Cuando termine, corre `mc start` otra vez para que aplique\n"
+            "  las gamerules, los permisos y la whitelist."
+        )
+
+
+def _guardar_y_apagar(ctx: Contexto) -> None:
+    """Guarda el mundo y apaga todo."""
+    # `save-all flush` espera a que de verdad esté en el disco. Luego
+    # `compose down` manda SIGTERM, la imagen de itzg hace un `stop` limpio y
+    # el compose le da 2 minutos antes de matarlo.
+    try:
+        rcon.mandar(ctx.conexion_rcon, "save-all flush", timeout=rcon.TIMEOUT_LARGO)
+        consola.ok("mundo guardado")
+    except ErrorDeRcon:
+        consola.tenue("  (no contestó por RCON; seguro ya estaba apagado)")
+
+    consola.paso("Apagando (puede tardar hasta un minuto)...")
+    ctx.compose.apagar()
+    consola.ok("apagado")
+
+
 def start() -> None:
     """Enciende el servidor (y el bot de pagos y los respaldos)."""
     try:
         ctx = _ctx()
-        _revisar_que_se_pueda_arrancar(ctx)
-
-        consola.paso(f"Encendiendo {ctx.settings.servidor.nombre}...")
-        ctx.compose.arrancar()
-        consola.ok("contenedores arriba")
-
-        consola.paso("Esperando a que el servidor conteste...")
-        if _esperar_a_que_conteste(ctx):
-            aplicar_configuracion_en_vivo(ctx)
-        else:
-            consola.tenue(
-                "  Todavía no contesta. Es normal en el primer arranque: está\n"
-                "  generando el mundo con los 10 datapacks.\n"
-                "  Cuando termine, corre `mc start` otra vez para que aplique\n"
-                "  las gamerules y los grupos de permisos."
-            )
-
+        _arrancar(ctx)
         consola.tenue("\n  Míralo con: mc logs -f\n  Revisa que todo esté bien con: mc doctor")
     except ErrorMc as exc:
         consola.salir_con_error(exc)
@@ -126,34 +145,23 @@ def start() -> None:
 def stop() -> None:
     """Apaga el servidor guardando el mundo."""
     try:
-        ctx = _ctx()
-        # Guardamos antes de apagar: `compose stop` manda SIGTERM y la imagen
-        # de itzg hace un `stop` limpio, pero un save-all extra no sobra y
-        # cubre el caso de que el servidor esté lento.
-        try:
-            rcon.mandar(ctx.conexion_rcon, "save-all", timeout=rcon.TIMEOUT_LARGO)
-            consola.ok("mundo guardado")
-        except ErrorDeRcon:
-            consola.tenue("  (no contestó por RCON; seguro ya estaba apagado)")
-
-        consola.paso("Apagando...")
-        ctx.compose.apagar()
-        consola.ok("apagado")
+        _guardar_y_apagar(_ctx())
     except ErrorMc as exc:
         consola.salir_con_error(exc)
 
 
 def restart() -> None:
-    """Reinicia el servidor."""
+    """Reinicia todo y aplica lo que hayas cambiado en settings.yml o .env.
+
+    No es un `docker compose restart`: ese reinicia el mismo contenedor y no
+    se entera de cambios en .env, en el compose ni en el código del bot.
+    """
     try:
         ctx = _ctx()
-        try:
-            rcon.mandar(ctx.conexion_rcon, "save-all", timeout=rcon.TIMEOUT_LARGO)
-            consola.ok("mundo guardado")
-        except ErrorDeRcon:
-            pass
-        consola.paso("Reiniciando...")
-        ctx.compose.reiniciar()
+        # Antes de apagar: si falta algo en .env, mejor no apagar nada.
+        _revisar_que_se_pueda_arrancar(ctx)
+        _guardar_y_apagar(ctx)
+        _arrancar(ctx)
         consola.ok("reiniciado")
     except ErrorMc as exc:
         consola.salir_con_error(exc)
@@ -203,7 +211,10 @@ def logs(
     seguir: bool = typer.Option(False, "--seguir", "-f", help="Quédate viendo los logs."),
     lineas: int = typer.Option(80, "--lineas", "-n", help="Cuántas líneas mostrar."),
     servicio: str | None = typer.Option(
-        None, "--servicio", "-s", help="Solo un servicio: minecraft, respaldos o pagos-bot."
+        None,
+        "--servicio",
+        "-s",
+        help="Solo un servicio: minecraft, respaldos, respaldos-remoto o pagos-bot.",
     ),
 ) -> None:
     """Muestra los logs del servidor."""

@@ -14,6 +14,7 @@ import typer
 
 from mc_admin.cli import consola
 from mc_admin.contexto import Contexto
+from mc_admin.core.compose import reemplazar_bloque
 from mc_admin.core.construccion import Accion, PasoDelPlan, PlanDeConstruccion
 from mc_admin.core.manifest import Destino
 from mc_admin.core.plantillas import TRADUCCIONES, renderizar_todo
@@ -79,7 +80,28 @@ def armar_plan(ctx: Contexto, *, descargar: bool = True) -> PlanDeConstruccion:
             )
         )
 
-    # 3. Traducciones propias.
+    # 3. Las variables de docker-compose (versión, memoria, puertos...).
+    ruta_env = ctx.raiz / ".env"
+    actual_env = ruta_env.read_text(encoding="utf-8") if ruta_env.is_file() else ""
+    nuevo_env = reemplazar_bloque(actual_env, ctx.bloque_compose())
+    plan.agregar(
+        PasoDelPlan(
+            "Docker Compose",
+            "variables MC_* desde settings.yml",
+            ".env",
+            Accion.SIN_CAMBIO
+            if nuevo_env == actual_env
+            else (Accion.ACTUALIZAR if actual_env else Accion.CREAR),
+        )
+    )
+    if ctx.settings.respaldos.remoto.activo and not ctx.ruta_rclone_conf.is_file():
+        plan.problemas.append(
+            f"respaldos.remoto está prendido pero no existe {ctx.ruta_rclone_conf}. "
+            "Configura rclone en este VPS (docs/respaldos.md) o el contenedor "
+            "de respaldos remotos no va a poder subir nada."
+        )
+
+    # 4. Traducciones propias.
     for origen, destino in TRADUCCIONES.items():
         ruta_origen = ctx.carpeta_traducciones / origen
         if not ruta_origen.is_file():
@@ -95,7 +117,7 @@ def armar_plan(ctx: Contexto, *, descargar: bool = True) -> PlanDeConstruccion:
             )
         )
 
-    # 4. Plugins y datapacks.
+    # 5. Plugins y datapacks.
     for destino_tipo, artefacto in manifest.artefactos:
         ruta = datos / artefacto.ruta_destino(destino_tipo)
         en_cache = ctx.carpeta_cache / f"{artefacto.sha256[:12]}-{artefacto.archivo}"
@@ -114,7 +136,7 @@ def armar_plan(ctx: Contexto, *, descargar: bool = True) -> PlanDeConstruccion:
             )
         )
 
-    # 5. Vanilla Tweaks.
+    # 6. Vanilla Tweaks.
     if manifest.vanilla_tweaks:
         for pack in manifest.vanilla_tweaks.packs:
             ruta = datos / Destino.DATAPACKS.value / pack.archivo
@@ -127,7 +149,7 @@ def armar_plan(ctx: Contexto, *, descargar: bool = True) -> PlanDeConstruccion:
                 )
             )
 
-    # 6. Jars de plugins que ya no están en el manifest.
+    # 7. Jars de plugins que ya no están en el manifest.
     esperados = {
         a.archivo for d, a in manifest.artefactos if d is Destino.PLUGINS and not a.subcarpeta
     }
@@ -184,6 +206,20 @@ def ejecutar(ctx: Contexto) -> None:
         if not g.ruta_relativa.startswith("mensajes/"):
             archivos.escribir_si_cambio(datos / g.ruta_relativa, g.contenido)
     consola.ok(f"{len(generados)} configs generadas")
+
+    # --- Docker Compose ------------------------------------------------- #
+    consola.paso("Pasando versión, memoria, puertos y respaldos a .env...")
+    if ctx.sincronizar_compose():
+        consola.ok("variables de Docker Compose actualizadas (aplícalas con `mc restart`)")
+    else:
+        consola.ok("variables de Docker Compose al día")
+
+    # --- Whitelist ----------------------------------------------------- #
+    # Con el UUID correcto de cada quien; `mc start` le dice al servidor que
+    # lo vuelva a leer.
+    from mc_admin.cli import jugadores
+
+    jugadores.sincronizar(ctx, en_vivo=False)
 
     # --- Traducciones --------------------------------------------------- #
     consola.paso("Copiando las traducciones al español...")

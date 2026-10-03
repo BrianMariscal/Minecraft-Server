@@ -1,6 +1,6 @@
 [project]
 name = "pagos-bot"
-version = "1.0.0"
+version = "1.1.0"
 description = "Bot de Discord que cobra la mensualidad del VPS de Minecraft HD"
 requires-python = ">=3.12"
 dependencies = [

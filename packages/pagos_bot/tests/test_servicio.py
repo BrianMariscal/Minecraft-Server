@@ -254,3 +254,96 @@ class TestPermisos:
     def test_sin_rol_configurado_solo_el_tesorero(self, config: PagosConfig) -> None:
         sin_rol = config.model_copy(update={"rol_admin_id": 0})
         assert not sin_rol.puede_administrar(2, [0])
+
+
+class TestAvisoPrevioCruzandoMes:
+    """El aviso previo puede caer en el MES ANTERIOR al que cobra.
+
+    Con `dia_de_pago: 2` y `dias_antes: 3`, el aviso del periodo de noviembre
+    toca el 30 de OCTUBRE, cuando el periodo en curso todavía es octubre.
+    Mirar solo el periodo de hoy hacía que ese aviso no saliera NUNCA, y el
+    bug no se veía con el día 5 por defecto (ahí el aviso cae el día 2 del
+    mismo mes).
+    """
+
+    @pytest.fixture
+    def config_dia_2(self, config: PagosConfig) -> PagosConfig:
+        return config.model_copy(update={"dia_de_pago": 2})
+
+    @pytest.fixture
+    def svc_dia_2(self, config_dia_2: PagosConfig, repo: RepositorioPagos) -> ServicioCongelado:
+        """Octubre ya pagado, que es el caso normal al llegar fin de mes."""
+        svc = ServicioCongelado(config_dia_2, repo, momento(1))
+        svc.mes_actual()
+        for p in config_dia_2.participantes:
+            svc.confirmar(p.discord_id)
+        return svc
+
+    def test_el_previo_de_noviembre_sale_el_30_de_octubre(
+        self, svc_dia_2: ServicioCongelado
+    ) -> None:
+        svc_dia_2.viajar_a(momento(30, mes=10))
+        aviso = svc_dia_2.aviso_que_toca()
+        assert aviso is not None
+        assert aviso.tipo == AVISO_PREVIO
+        # Y es el de NOVIEMBRE, no el de octubre.
+        assert aviso.mes.periodo == Periodo(2026, 11)
+
+    def test_el_previo_abre_el_mes_que_viene(self, svc_dia_2: ServicioCongelado) -> None:
+        svc_dia_2.viajar_a(momento(30, mes=10))
+        aviso = svc_dia_2.aviso_que_toca()
+        assert aviso is not None
+        assert len(aviso.mes.cuotas) == len(svc_dia_2.config.participantes)
+        assert all(c.estado is Estado.PENDIENTE for c in aviso.mes.cuotas)
+
+    def test_no_se_repite_si_el_bot_se_reinicia(self, svc_dia_2: ServicioCongelado) -> None:
+        svc_dia_2.viajar_a(momento(30, mes=10))
+        aviso = svc_dia_2.aviso_que_toca()
+        assert aviso is not None
+        svc_dia_2.anotar_que_se_mando(aviso)
+        assert svc_dia_2.aviso_que_toca() is None
+
+    def test_el_mes_que_se_abrio_antes_no_sale_en_el_historial(
+        self, svc_dia_2: ServicioCongelado
+    ) -> None:
+        """Noviembre no es 'historial' el 30 de octubre."""
+        svc_dia_2.viajar_a(momento(30, mes=10))
+        svc_dia_2.aviso_que_toca()
+        claves = [m.periodo.clave for m in svc_dia_2.historial()]
+        assert "2026-11" not in claves
+
+    def test_el_dia_de_pago_y_los_tardios_siguen_bien(self, svc_dia_2: ServicioCongelado) -> None:
+        svc_dia_2.viajar_a(momento(2, mes=11))
+        aviso = svc_dia_2.aviso_que_toca()
+        assert aviso is not None
+        assert aviso.tipo == AVISO_DIA
+        assert aviso.mes.periodo == Periodo(2026, 11)
+        svc_dia_2.anotar_que_se_mando(aviso)
+
+        svc_dia_2.viajar_a(momento(4, mes=11))
+        tardio = svc_dia_2.aviso_que_toca()
+        assert tardio is not None
+        assert tardio.tipo == AVISO_TARDIO
+        assert tardio.dias_de_atraso == 2
+
+    def test_un_mes_sin_pagar_tiene_prioridad_sobre_el_previo(
+        self, config_dia_2: PagosConfig, repo: RepositorioPagos
+    ) -> None:
+        """Perseguir un mes que nadie pagó urge más que avisar del siguiente."""
+        svc = ServicioCongelado(config_dia_2, repo, momento(1))
+        svc.mes_actual()  # octubre abierto y sin pagar
+        svc.viajar_a(momento(30, mes=10))
+        aviso = svc.aviso_que_toca()
+        assert aviso is not None
+        assert aviso.tipo == AVISO_TARDIO
+        assert aviso.mes.periodo == Periodo(2026, 10)
+
+    def test_con_dia_de_pago_tardio_el_previo_cae_en_el_mismo_mes(
+        self, config: PagosConfig, repo: RepositorioPagos
+    ) -> None:
+        """El caso normal, que es el que ya funcionaba: día 5, aviso el 2."""
+        svc = ServicioCongelado(config, repo, momento(2))
+        aviso = svc.aviso_que_toca()
+        assert aviso is not None
+        assert aviso.tipo == AVISO_PREVIO
+        assert aviso.mes.periodo == Periodo(2026, 10)

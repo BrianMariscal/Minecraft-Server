@@ -1,0 +1,37 @@
+# ===========================================================================
+#  Configuración de gitleaks para Minecraft HD
+# ===========================================================================
+#  Partimos de TODAS las reglas que trae gitleaks, sin tocar ni una, y solo
+#  le permitimos un falso positivo concreto.
+# ===========================================================================
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+# ---------------------------------------------------------------------
+#  Los `discord_id` de settings.yml NO son secretos.
+# ---------------------------------------------------------------------
+#  gitleaks confunde tres cosas distintas:
+#
+#    - ID de USUARIO (lo que tenemos aquí): un número público. Cualquiera
+#      en el servidor lo saca con clic derecho > Copiar ID. No sirve para
+#      autenticarse ni para actuar en nombre de nadie. Es como el número
+#      de asiento, no como la llave.
+#    - CLIENT SECRET de una aplicación: ese sí es secreto.
+#    - TOKEN de bot: ese es LA contraseña del bot. Va en .env, que está en
+#      .gitignore y nunca entra a git.
+#
+#  Su regla `discord-client-id` pesca cualquier número de 17 a 20 dígitos
+#  que esté cerca de la palabra "discord", así que marca la lista de
+#  participantes del bot de pagos.
+#
+#  El permiso va acotado a tres cosas a la vez: solo el archivo
+#  settings.yml, solo líneas que sean EXACTAMENTE `discord_id: <número>`, y
+#  solo esa regla. Si alguien pega un token en ese mismo archivo, o un
+#  número de esos en cualquier otro archivo, gitleaks lo sigue atrapando.
+description = "IDs de usuario de Discord en settings.yml: son públicos, no credenciales"
+targetRules = ["discord-client-id"]
+paths = ['''^settings\.yml$''']
+regexTarget = "line"
+regexes = ['''^\s*discord_id:\s*\d{17,20}\s*$''']

@@ -10,6 +10,7 @@ from mc_admin.cli import consola
 from mc_admin.contexto import Contexto
 from mc_admin.core import diagnostico as diag
 from mc_admin.core import traducciones as trad
+from mc_admin.core.compose import reemplazar_bloque
 from mc_admin.core.diagnostico import Nivel, Reporte
 from mc_admin.errores import ErrorMc
 from mc_admin.infra import archivos, puertos, rcon
@@ -83,13 +84,21 @@ def doctor(
             )
         )
         reporte.agregar(
-            diag.revisar_secretos(
-                ctx.secretos.faltantes_para(
-                    discord=ctx.settings.discord.activo, pagos=ctx.settings.pagos.activo
-                )
-            )
+            diag.revisar_secretos(ctx.secretos.faltantes_para(pagos=ctx.settings.pagos.activo))
         )
         reporte.agregar(diag.revisar_logo(ctx.ruta_logo.is_file(), ctx.settings.servidor.logo))
+        ruta_env = ctx.raiz / ".env"
+        env_actual = ruta_env.read_text(encoding="utf-8") if ruta_env.is_file() else ""
+        reporte.agregar(
+            diag.revisar_compose(reemplazar_bloque(env_actual, ctx.bloque_compose()) == env_actual)
+        )
+        remoto = diag.revisar_rclone(
+            ctx.settings.respaldos.remoto.activo,
+            ctx.ruta_rclone_conf.is_file(),
+            str(ctx.ruta_rclone_conf),
+        )
+        if remoto is not None:
+            reporte.agregar(remoto)
         reporte.agregar(diag.revisar_traducciones(len(sospechosas)))
 
         # --- En vivo ------------------------------------------------------ #

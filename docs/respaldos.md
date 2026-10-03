@@ -45,7 +45,9 @@ Nadie se desconecta y nadie pierde nada.
 - Las configs de todos los plugins.
 - Las bases de datos: CoreProtect, AuthMe, LuckPerms y la vinculación de
   cuentas de Floodgate.
-- La base de datos del **bot de pagos**.
+- La base de datos del **bot de pagos** (`pagos-datos/`), más una foto que
+  el bot saca cada hora con la API de SQLite. Si la base principal de un
+  respaldo saliera dañada, `mc backup restore` usa la foto.
 - El `settings.yml` con el que se hizo.
 
 ### Qué NO entra, y por qué
@@ -200,27 +202,34 @@ respaldos:
     destino: "gdrive:minecraft-hd"
 ```
 
-En `.env`:
-
-```bash
-RCLONE_REMOTE=gdrive
-RCLONE_DEST_DIR=minecraft-hd
+    intervalo: "24h"      # cada cuándo sube una copia
 ```
 
 Y:
 
 ```bash
-mc build
+mc build      # revisa que exista ~/.config/rclone/rclone.conf
 mc restart
 ```
 
+`mc build` parte el destino en remoto (`gdrive`) y carpeta (`minecraft-hd`)
+y prende un contenedor aparte, `respaldos-remoto`, que lee el
+`rclone.conf` de tu usuario en el VPS. No hay nada que poner en `.env`.
+
+Los respaldos locales en `backups/` siguen igual: el remoto es **además**,
+no en vez de.
+
 ### 5. Comprobar
 
-Después del siguiente respaldo automático:
-
 ```bash
+mc status                     # debe salir respaldos-remoto corriendo
+mc logs -s respaldos-remoto   # el primero sale a los 2 minutos de arrancar
 rclone ls gdrive:minecraft-hd
 ```
+
+Si en el log ves que rclone no encuentra el remoto, revisa que el nombre
+antes de los dos puntos en `destino` sea exactamente el que le pusiste en
+`rclone config` (`rclone listremotes` te los dice).
 
 ---
 

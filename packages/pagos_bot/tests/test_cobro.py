@@ -103,10 +103,11 @@ class TestCuantoFalta:
         nombres = [c.participante.nombre for c in mes.faltantes]
         assert nombres == ["Ana", "Pepe", "Lupita", "Juan"]
 
-    def test_los_exentos_no_cuentan_para_el_total(self) -> None:
+    def test_un_exento_no_baja_el_precio_del_vps(self) -> None:
+        """La meta es lo que cuesta el VPS: que alguien no pague no lo abarata."""
         mes = mes_nuevo().con_estado(4, Estado.EXENTO, momento(5))
         assert len(mes.activos) == 3
-        assert mes.por_juntar == Dinero.de_pesos("337.50")
+        assert mes.por_juntar == Dinero.de_pesos("450.00")
         assert "Juan" not in [c.participante.nombre for c in mes.faltantes]
 
 
@@ -166,3 +167,38 @@ class TestEstadoVisual:
 class TestParticipante:
     def test_mencion_de_discord(self) -> None:
         assert Participante("Pepe", 123).mencion == "<@123>"
+
+
+class TestLaMetaEsElPrecioDelVps:
+    """Lo pidió el tesorero: el precio que pone es la meta, sumen lo que sumen."""
+
+    def _mes(self, total: str, montos: list[str]) -> MesDeCobro:
+        gente = [
+            Participante(nombre=f"p{i}", discord_id=i + 1, monto_fijo=Dinero.de_pesos(m))
+            for i, m in enumerate(montos)
+        ]
+        return abrir_mes(Periodo(2026, 10), Dinero.de_pesos(total), gente, Reparto.PERSONALIZADO)
+
+    def test_la_meta_es_el_total_aunque_las_cuotas_sumen_mas(self) -> None:
+        mes = self._mes("240", ["40"] * 7)
+        assert mes.meta == Dinero.de_pesos("240")
+        assert mes.por_juntar == Dinero.de_pesos("240")
+
+    def test_juntar_de_mas_no_da_negativo(self) -> None:
+        mes = self._mes("240", ["40"] * 7)
+        for i in range(1, 8):
+            mes = mes.con_estado(i, Estado.PAGADO, momento(5))
+        assert mes.juntado == Dinero.de_pesos("280")
+        assert mes.por_juntar == Dinero.cero()
+        assert mes.avance == 1.0
+
+    def test_la_barra_avanza_contra_el_precio(self) -> None:
+        mes = self._mes("240", ["40"] * 7)
+        for i in (1, 2, 3):
+            mes = mes.con_estado(i, Estado.PAGADO, momento(5))
+        assert mes.avance == pytest.approx(0.5)
+
+    def test_cambiar_el_precio(self) -> None:
+        assert self._mes("240", ["40"] * 7).con_total(Dinero.de_pesos("300")).meta == (
+            Dinero.de_pesos("300")
+        )

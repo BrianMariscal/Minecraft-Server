@@ -168,6 +168,12 @@ print("script listo", file=sys.stderr)
 #  Tono mexicano, corto, natural. Nada de "Por favor, proceda a...".
 # --------------------------------------------------------------------------
 A_MANO = {
+    # --- Silenciados: avisos de plugin que no le sirven al jugador -------
+    # Vacío = EssentialsX no manda nada. "Comprobación de actualización
+    # desactivada" les salía a los admins en cada entrada, y el de /back
+    # en cada muerte (el comando sigue funcionando).
+    "versionCheckDisabled": "",
+    "backAfterDeath": "",
     # --- Casas (el jar decía "hogar", que nadie dice) --------------------
     "homeSet": "<gray>Guardé tu casa.",
     "homes": "<primary>Tus casas:<reset> {0}",

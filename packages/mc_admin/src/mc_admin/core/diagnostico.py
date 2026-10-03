@@ -239,6 +239,34 @@ def revisar_logo(existe: bool, ruta: str) -> Hallazgo:
     )
 
 
+def revisar_compose(al_dia: bool) -> Hallazgo:
+    """¿El bloque MC_* de .env corresponde a lo que dice settings.yml?"""
+    if al_dia:
+        return Hallazgo(
+            "Docker Compose", Nivel.BIEN, "versión, memoria y puertos al día con settings.yml"
+        )
+    return Hallazgo(
+        "Docker Compose",
+        Nivel.AVISO,
+        "las variables de .env no coinciden con settings.yml",
+        "Corre `mc build && mc restart` para aplicar lo que cambiaste.",
+    )
+
+
+def revisar_rclone(activo: bool, existe_conf: bool, ruta: str) -> Hallazgo | None:
+    """Con respaldo remoto prendido, rclone tiene que estar configurado."""
+    if not activo:
+        return None
+    if existe_conf:
+        return Hallazgo("Respaldo remoto", Nivel.BIEN, f"rclone configurado ({ruta})")
+    return Hallazgo(
+        "Respaldo remoto",
+        Nivel.MAL,
+        f"respaldos.remoto está prendido pero no existe {ruta}",
+        "Configura rclone en este VPS siguiendo docs/respaldos.md.",
+    )
+
+
 def revisar_traducciones(sospechosas: int) -> Hallazgo:
     """¿Quedó texto en inglés en las configs generadas?"""
     if sospechosas == 0:

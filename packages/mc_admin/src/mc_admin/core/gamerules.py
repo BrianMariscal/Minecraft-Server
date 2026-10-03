@@ -69,7 +69,7 @@ def reglas_para(*, dormir_con_un_jugador: bool) -> list[Regla]:
         )
 
     # Los mensajes de muerte se quedan encendidos: son vanilla y cada cliente
-    # los traduce a su idioma. DiscordSRV también los reenvía a Discord.
+    # los traduce a su idioma.
     reglas.append(
         Regla(
             nombre="show_death_messages",

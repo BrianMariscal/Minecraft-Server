@@ -7,11 +7,17 @@ settings.yml es `infra.archivos`, y el que se las dice al servidor es
 
 from __future__ import annotations
 
+import hashlib
 import re
+import uuid
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from mc_admin.errores import ErrorDeConfig
+
+if TYPE_CHECKING:
+    from mc_admin.config import Settings
 
 # Nombre válido de Minecraft Java: 3 a 16, letras, números y guion bajo.
 RE_NOMBRE_JAVA = re.compile(r"^[A-Za-z0-9_]{3,16}$")
@@ -108,14 +114,112 @@ def quitar(lista: list[str], nombre: str, plataforma: Plataforma) -> CambioEnLis
     return CambioEnLista(tuple(nueva), True, f"Quité a {limpio}.")
 
 
-def nombres_para_el_servidor(
-    java: list[str], bedrock: list[str], prefijo_bedrock: str
-) -> list[str]:
-    """Arma la lista completa de nombres que hay que meterle al servidor.
+# --------------------------------------------------------------------------- #
+#  UUIDs: con lo que de verdad compara el servidor
+# --------------------------------------------------------------------------- #
+#
+#  La whitelist, los ops y LuckPerms identifican a cada quien por UUID, no por
+#  nombre. Con un servidor no premium hay dos clases de UUID:
+#
+#  - Java: el "offline", que sale del nombre. Es el mismo cálculo que hace el
+#    servidor, así que se puede saber antes de que la persona entre.
+#  - Bedrock: Floodgate usa el XUID de la cuenta de Xbox. Un
+#    `whitelist add .Gamer_Tag` guardaría el UUID offline de ese nombre, que
+#    NO es el que trae el jugador, y el servidor lo sacaría aunque aparezca en
+#    la lista.
 
-    Los de Java van tal cual; los de Bedrock con el prefijo de Floodgate.
+
+def uuid_offline(nombre: str) -> str:
+    """El UUID que el servidor le da a un jugador de Java no premium.
+
+    Igual que `UUIDUtil.createOfflinePlayerUUID` de Minecraft: un UUID v3
+    sobre "OfflinePlayer:<nombre>".
     """
-    return [
-        *java,
-        *(nombre_con_prefijo(normalizar_gamertag(n), prefijo_bedrock) for n in bedrock),
-    ]
+    resumen = bytearray(hashlib.md5(f"OfflinePlayer:{nombre}".encode()).digest())  # noqa: S324
+    resumen[6] = (resumen[6] & 0x0F) | 0x30
+    resumen[8] = (resumen[8] & 0x3F) | 0x80
+    return str(uuid.UUID(bytes=bytes(resumen)))
+
+
+def uuid_floodgate(xuid: int) -> str:
+    """El UUID que Floodgate le da a un jugador de Bedrock: su XUID en hex."""
+    hexa = f"{xuid:016x}"
+    return f"00000000-0000-0000-{hexa[:4]}-{hexa[4:]}"
+
+
+def validar_xuid(texto: str) -> int:
+    """Lee un XUID de Xbox (un número de 16 dígitos más o menos).
+
+    Raises:
+        ErrorDeConfig: si no es un número que pueda ser un XUID.
+    """
+    limpio = texto.strip()
+    if not limpio.isdigit() or not 0 < int(limpio) < 2**64:
+        raise ErrorDeConfig(
+            f"'{texto}' no es un XUID",
+            pista="Es un número largo, como 1234567890123456. Ve docs/administrar.md.",
+        )
+    return int(limpio)
+
+
+@dataclass(frozen=True, slots=True)
+class EntradaWhitelist:
+    nombre: str
+    uuid: str
+
+    def a_json(self) -> dict[str, str]:
+        return {"uuid": self.uuid, "name": self.nombre}
+
+
+def entradas_whitelist(
+    java: list[str],
+    admins: list[str],
+    bedrock: list[str],
+    xuids: dict[str, int],
+    prefijo_bedrock: str,
+) -> tuple[list[EntradaWhitelist], list[str]]:
+    """Todo `whitelist.json`, calculado desde settings.yml.
+
+    Los admins entran solos: no tiene sentido ser admin y no poder entrar.
+    Devuelve también los de Bedrock que no tienen XUID todavía; esos no se
+    pueden meter (su UUID sale del XUID).
+    """
+    entradas: list[EntradaWhitelist] = []
+    vistos: set[str] = set()
+    for nombre in [*java, *admins]:
+        if nombre.lower() in vistos:
+            continue
+        vistos.add(nombre.lower())
+        entradas.append(EntradaWhitelist(nombre, uuid_offline(nombre)))
+
+    sin_xuid: list[str] = []
+    xuid_por_nombre = {k.lower(): v for k, v in xuids.items()}
+    for gamertag in bedrock:
+        normal = normalizar_gamertag(gamertag)
+        xuid = xuid_por_nombre.get(normal.lower())
+        if xuid is None:
+            sin_xuid.append(normal)
+            continue
+        entradas.append(
+            EntradaWhitelist(nombre_con_prefijo(normal, prefijo_bedrock), uuid_floodgate(xuid))
+        )
+    return entradas, sin_xuid
+
+
+def admins_con_uuid(settings: Settings) -> list[dict[str, str]]:
+    """Todos los admins con el UUID con el que los reconoce el servidor.
+
+    Los de Java con su UUID offline; los de Bedrock con el de Floodgate (si
+    ya tienen XUID: sin él no hay UUID que dar).
+    """
+    admins = [{"nombre": n, "uuid": uuid_offline(n)} for n in settings.admins]
+    xuids = {k.lower(): v for k, v in settings.whitelist.xuid.items()}
+    prefijo = settings.seguridad.prefijo_bedrock
+    for gamertag in settings.admins_bedrock:
+        normal = normalizar_gamertag(gamertag)
+        xuid = xuids.get(normal.lower())
+        if xuid is not None:
+            admins.append(
+                {"nombre": nombre_con_prefijo(normal, prefijo), "uuid": uuid_floodgate(xuid)}
+            )
+    return admins

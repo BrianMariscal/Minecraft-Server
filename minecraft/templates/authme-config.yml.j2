@@ -160,6 +160,29 @@ settings:
         type: PASSWORD
         # Cada 5 segundos le recuerda al que no se ha registrado qué escribir.
         messageInterval: 5
+        # Al registrarte quedas dentro de una vez, sin otro /login.
+        forceLoginAfterRegister: false
+        # El registro y el login salen en una ventanita (Minecraft 1.21.6+),
+        # no en el chat. Ya traducida en messages_es.yml.
+        dialog:
+            # Sin servidor de correo, "¿Olvidaste tu contraseña?" no hace
+            # nada. Si alguien la olvida, un admin le hace /authme unregister.
+            showForgotPasswordButton: false
+            showBody: true
+            preJoin:
+                enable: true
+                showCancelButton: true
+                allowCloseWithEscape: false
+                registerCancelKicks: false
+                loginCancelKicks: true
+
+    # AuthMe trae un welcome.txt en inglés ("This server uses AuthMeReloaded
+    # protection!"). La bienvenida ya la da el MOTD de EssentialsX.
+    useWelcomeMessage: false
+    # NO retrasamos el "+ Pepe" hasta el login: AuthMe lo vuelve a mandar
+    # con el texto vanilla ("joined the game") y se pierde el formato del
+    # chat. Probado con un cliente de verdad.
+    delayJoinMessage: false
 
 Email:
     # Sin recuperación por correo: no hay servidor de email configurado y

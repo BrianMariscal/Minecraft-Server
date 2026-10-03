@@ -22,22 +22,9 @@ PREGUNTAS: list[tuple[str, str, str, bool]] = [
         False,
     ),
     (
-        "DISCORD_TOKEN",
-        "Token del bot de DiscordSRV",
-        "El bot que conecta el chat del juego con Discord.\n  Cómo sacarlo: docs/discord.md",
-        True,
-    ),
-    (
-        "DISCORD_CHANNEL_CHAT",
-        "ID del canal de chat en Discord",
-        "Clic derecho en el canal > Copiar ID (con el modo desarrollador prendido).",
-        True,
-    ),
-    (
         "PAGOS_BOT_TOKEN",
         "Token del bot de pagos",
-        "OJO: es un bot DISTINTO al de DiscordSRV, con su propia aplicación.\n"
-        "  Cómo crearlo: docs/bot-pagos.md",
+        "El bot de Discord que cobra el VPS. Cómo crearlo: docs/bot-pagos.md",
         True,
     ),
     (
@@ -51,6 +38,13 @@ PREGUNTAS: list[tuple[str, str, str, bool]] = [
         "ID del canal #pagos",
         "Donde el bot va a mandar los recordatorios.",
         True,
+    ),
+    (
+        "ALERTAS_CANAL_ID",
+        "ID del canal de alertas (opcional)",
+        "El bot de pagos avisa ahí si el servidor de Minecraft se cae y cuando\n"
+        "  vuelve. Déjalo vacío si no lo quieres. Puede ser el mismo #pagos.",
+        False,
     ),
 ]
 
@@ -88,10 +82,8 @@ def setup() -> None:
         )
 
         for clave, etiqueta, ayuda, es_secreto in PREGUNTAS:
-            # Si Discord o los pagos están apagados, no molestamos con eso.
-            if clave.startswith("DISCORD") and not ctx.settings.discord.activo:
-                continue
-            if clave.startswith("PAGOS") and not ctx.settings.pagos.activo:
+            # Si el bot de pagos está apagado, no molestamos con eso.
+            if clave.startswith(("PAGOS", "ALERTAS")) and not ctx.settings.pagos.activo:
                 continue
 
             ya = getattr(actuales, clave.lower(), "")
@@ -117,9 +109,7 @@ def setup() -> None:
 
         # --- 4. ¿Qué falta todavía? --------------------------------------- #
         finales = cargar_secretos(ctx.raiz, usar_entorno=False)
-        faltan = finales.faltantes_para(
-            discord=ctx.settings.discord.activo, pagos=ctx.settings.pagos.activo
-        )
+        faltan = finales.faltantes_para(pagos=ctx.settings.pagos.activo)
 
         consola.titulo("Cómo vamos")
         if faltan:

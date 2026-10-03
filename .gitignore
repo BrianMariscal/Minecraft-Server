@@ -6,6 +6,11 @@
 # Configs generadas por `mc build` a partir de templates + settings.yml.
 minecraft/generated/
 
+# Caché de descargas de `mc build`: los jars y zips ya verificados. Son más
+# de 100 MB que se vuelven a bajar solos y cuyo sha256 ya está en el
+# manifest, así que no tienen por qué vivir en git.
+.cache/
+
 # Datos del servidor y respaldos (los crea Docker en runtime).
 data/
 backups/
@@ -15,9 +20,14 @@ world*/
 # El logo lo pone cada quien; ver logo/README.md.
 logo/logo.png
 
-# Base de datos del bot de pagos.
+# Base de datos del bot de pagos: quién pagó qué mes. Trae los Discord IDs
+# de la banda, así que la carpeta entera se queda fuera (incluidos los
+# archivos -wal y -shm de SQLite y la marca de salud del bot).
+pagos-datos/
 *.sqlite
 *.sqlite3
+*.sqlite-wal
+*.sqlite-shm
 *.db
 
 # Python
@@ -42,3 +52,9 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+*.kate-swp
+*~
+
+# Tarballs sueltos (copias del proyecto para mudarlo de VPS).
+*.tar.gz
+*.tgz

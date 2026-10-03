@@ -140,14 +140,6 @@ plugins:
     sha256: "06358594c2ee3032bdddbe473b7605c23b48631c6b41161f1b0f63db992dfc78"
     nota: "Tumbas al morir. Sustituye a AngelChest, que no tiene release estable para 26.x."
 
-  discordsrv:
-    nombre: "DiscordSRV"
-    version: "1.30.5"
-    archivo: "DiscordSRV-Build-1.30.5.jar"
-    url: "https://cdn.modrinth.com/data/UmLGoGij/versions/ATlquwiT/DiscordSRV-Build-1.30.5.jar"
-    sha256: "ef2fa1f2eb146c7c77412b7190a7dd33f1fc91282683fe45407739554c8aefef"
-    nota: "Puente de chat con Discord."
-
   chunky:
     nombre: "Chunky"
     version: "1.5.3"

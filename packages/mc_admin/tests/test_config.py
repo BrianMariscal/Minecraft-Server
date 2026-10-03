@@ -101,20 +101,39 @@ class TestReglasDeNegocio:
             cargar_settings(proyecto)
 
     def test_reparto_personalizado_sin_montos_se_rechaza(self, proyecto: Path) -> None:
-        editar(proyecto, {"pagos": {"reparto": "personalizado"}})
-        with pytest.raises(ErrorDeConfig, match="monto_mxn"):
+        """Con reparto personalizado, a nadie se le puede olvidar su monto."""
+        datos = yaml.safe_load((proyecto / "settings.yml").read_text(encoding="utf-8"))
+        gente = datos["pagos"]["participantes"]
+        # Le quitamos el monto al segundo, dejándoselo a los demás.
+        sin_monto = dict(gente[1])
+        sin_monto.pop("monto_mxn", None)
+        editar(
+            proyecto,
+            {"pagos": {"reparto": "personalizado", "participantes": [gente[0], sin_monto]}},
+        )
+        with pytest.raises(ErrorDeConfig) as info:
             cargar_settings(proyecto)
+        # Y el error tiene que decir A QUIÉN le falta, no solo que falta algo.
+        assert "monto_mxn" in info.value.mensaje
+        assert sin_monto["nombre"] in info.value.mensaje
+
+    def test_el_reparto_del_proyecto_es_coherente(self, proyecto: Path) -> None:
+        """Si settings.yml dice personalizado, todos tienen que traer monto."""
+        s = cargar_settings(proyecto)
+        if s.pagos.reparto == "personalizado":
+            sin_monto = [p.nombre for p in s.pagos.participantes if p.monto_mxn is None]
+            assert sin_monto == [], f"les falta monto_mxn a: {sin_monto}"
 
 
 class TestSecretos:
     def test_sin_env_todo_vacio(self, proyecto: Path) -> None:
         s = cargar_secretos(proyecto, usar_entorno=False)
         assert s.rcon_password == ""
-        assert "RCON_PASSWORD" in s.faltantes_para(discord=False, pagos=False)
+        assert "RCON_PASSWORD" in s.faltantes_para(pagos=False)
 
     def test_con_env_lleno_no_falta_nada(self, env_lleno: Path) -> None:
         s = cargar_secretos(env_lleno, usar_entorno=False)
-        assert s.faltantes_para(discord=True, pagos=True) == []
+        assert s.faltantes_para(pagos=True) == []
 
     def test_nunca_se_imprimen_los_valores(self, env_lleno: Path) -> None:
         """Un traceback o un log jamás debe filtrar el token."""
@@ -126,7 +145,7 @@ class TestSecretos:
 
     def test_solo_pide_lo_que_esta_activo(self, proyecto: Path) -> None:
         s = cargar_secretos(proyecto, usar_entorno=False)
-        faltan = s.faltantes_para(discord=False, pagos=False)
+        faltan = s.faltantes_para(pagos=False)
         assert faltan == ["RCON_PASSWORD"]
 
     def test_env_mal_escrito_truena_diciendo_la_linea(self, proyecto: Path) -> None:

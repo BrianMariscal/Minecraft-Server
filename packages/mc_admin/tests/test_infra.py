@@ -507,7 +507,7 @@ class TestEscribirEnv:
         archivos.escribir_env(env_lleno, {"RCON_PASSWORD": "cambiada"})
         texto = (env_lleno / ".env").read_text(encoding="utf-8")
         assert "RCON_PASSWORD=cambiada" in texto
-        assert "DISCORD_TOKEN=tokenDePrueba" in texto
+        assert "PAGOS_BOT_TOKEN=otroTokenDePrueba" in texto
 
     def test_una_variable_nueva_se_agrega(self, env_lleno: Path) -> None:
         archivos.escribir_env(env_lleno, {"ALGO_NUEVO": "valor"})

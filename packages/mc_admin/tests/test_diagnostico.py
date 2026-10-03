@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import pytest
 
+from mc_admin.core import diagnostico as diag
 from mc_admin.core.diagnostico import (
     Nivel,
     Reporte,
@@ -134,7 +135,7 @@ class TestSecretos:
         assert revisar_secretos([]).nivel is Nivel.BIEN
 
     def test_faltan(self) -> None:
-        h = revisar_secretos(["RCON_PASSWORD", "DISCORD_TOKEN"])
+        h = revisar_secretos(["RCON_PASSWORD", "PAGOS_BOT_TOKEN"])
         assert h.nivel is Nivel.MAL
         assert "RCON_PASSWORD" in h.detalle
         assert "mc setup" in h.pista
@@ -201,3 +202,28 @@ class TestReporte:
         assert r.hay_problemas
         assert "1 cosa(s) mal" in r.resumen()
         assert "1 aviso" in r.resumen()
+
+
+class TestCompose:
+    def test_al_dia(self) -> None:
+        assert diag.revisar_compose(True).nivel is diag.Nivel.BIEN
+
+    def test_desfasado_pide_build(self) -> None:
+        h = diag.revisar_compose(False)
+        assert h.nivel is diag.Nivel.AVISO
+        assert "mc build" in h.pista
+
+
+class TestRclone:
+    def test_apagado_no_dice_nada(self) -> None:
+        assert diag.revisar_rclone(False, False, "x") is None
+
+    def test_prendido_sin_configurar_es_problema(self) -> None:
+        h = diag.revisar_rclone(True, False, "/home/yo/.config/rclone/rclone.conf")
+        assert h is not None
+        assert h.nivel is diag.Nivel.MAL
+
+    def test_prendido_y_configurado(self) -> None:
+        h = diag.revisar_rclone(True, True, "x")
+        assert h is not None
+        assert h.nivel is diag.Nivel.BIEN

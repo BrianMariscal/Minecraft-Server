@@ -103,10 +103,6 @@ Se pidió "un plugin ligero compatible con Geyser". Se usa el datapack
 Se pidió "si existe un plugin ligero compatible con Geyser; si no, omítelo".
 No existe uno mantenido para 26.x, así que no se puso.
 
-Lo único que hay es el `MinecraftMentionSound` de DiscordSRV, que **solo
-suena cuando te mencionan desde Discord**, no dentro del chat del juego. Ese
-sí está encendido.
-
 ---
 
 ## Piezas que no se pidieron pero hacen falta

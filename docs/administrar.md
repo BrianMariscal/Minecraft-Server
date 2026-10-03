@@ -19,14 +19,28 @@ mc whitelist add Pepe
 mc whitelist add "Gamer Tag 7" --bedrock
 ```
 
-Con `--bedrock`, `mc` hace dos cosas solas:
+**Tú dale el gamertag tal cual**, sin punto y con espacios si los tiene. En
+el servidor va a aparecer como `.Gamer_Tag_7`: Floodgate cambia los espacios
+por guion bajo y le pone el punto adelante.
 
-1. Cambia los espacios por guion bajo (`Gamer Tag 7` → `Gamer_Tag_7`), que es
-   lo que hace Floodgate.
-2. Le pone el punto del prefijo (`.Gamer_Tag_7`), que es como el servidor lo
-   va a ver.
+Y que cada quien de Java entre y haga su registro **en cuanto lo agregues**
+(ver "El hueco de un servidor no premium" abajo).
 
-**Tú dale el gamertag tal cual**, sin punto y con espacios si los tiene.
+### Los de Bedrock necesitan su XUID
+
+El servidor no reconoce a nadie por su nombre, sino por un identificador
+(UUID). El de un jugador de Bedrock sale de su **XUID**, el número de su
+cuenta de Xbox. Sin él, aunque aparezca en la lista, el servidor lo saca.
+
+`mc whitelist add ... --bedrock` lo busca solo. Si no lo encuentra (pasa con
+quien nunca ha entrado a un servidor con Geyser), te dice cómo:
+
+1. Entra a <https://www.cxkes.me/xbox/xuid> y busca el gamertag.
+2. Copia el número de **XUID (DEC)**.
+3. `mc whitelist add "Gamer Tag 7" --bedrock --xuid 1234567890123456`
+
+Queda guardado en `settings.yml` (`whitelist.xuid`) y ya no hay que volver a
+buscarlo.
 
 ### Quitar y ver
 
@@ -36,16 +50,32 @@ mc whitelist remove "Gamer Tag 7" --bedrock
 mc whitelist list
 ```
 
-`mc whitelist list` te muestra las dos listas y, para los de Bedrock, con qué
-nombre los ve el servidor.
+Si estaba conectado, lo saca del servidor en ese momento. `mc whitelist
+list` enseña a todos, quién es admin, y avisa si a alguien de Bedrock le
+falta su XUID.
 
 ### Cómo funciona por dentro
 
-Los cambios se guardan en `settings.yml` **y** se le dicen al servidor por
-RCON en el momento. Si el servidor está apagado, se aplican al arrancar.
+`settings.yml` es la única lista. Con cada cambio, `mc` escribe el
+`whitelist.json` del servidor **completo**, con el UUID correcto de cada
+quien, y le dice que lo vuelva a leer (`whitelist reload`). Si el servidor
+está apagado, queda listo para cuando arranque.
 
-Correrlo dos veces no duplica nada y no distingue mayúsculas (Minecraft
-tampoco).
+No se usa `whitelist add` del servidor porque con los de Bedrock guarda un
+UUID equivocado (el del nombre, no el de Xbox) y no los deja entrar.
+
+### El hueco de un servidor no premium
+
+Sin cuentas de Mojang, el nombre no prueba nada: la contraseña la pone **el
+primero** que entra con ese nombre. Si alguien de fuera se entera del nombre
+antes de que su dueño entre, se queda con la cuenta (y si es admin, con
+todo). Por eso: agrega a alguien **cuando ya vaya a entrar**, y que se
+registre luego luego. Los de Bedrock no tienen este problema: Xbox ya los
+identificó.
+
+El registro sale en una **ventanita** al conectarse (contraseña y
+confirmación). Si alguien olvida la suya, un admin la borra con
+`/authme unregister <nombre>` y vuelve a registrarse.
 
 ---
 
@@ -57,14 +87,17 @@ mc admin remove Admin_HD
 mc admin list
 ```
 
-Esto hace tres cosas:
+Esto hace todo solo:
 
 1. Lo mete a `admins:` en `settings.yml`.
-2. Lo pone en el grupo `admin` de LuckPerms (prefijo `[Admin]` en el chat).
-3. Le da `op`.
+2. **Lo mete a la whitelist**: no hace falta `mc whitelist add` aparte.
+3. Lo pone en el grupo `admin` de LuckPerms (prefijo `[Admin]` en el chat),
+   **aunque nunca haya entrado** al servidor.
+4. Le da `op`.
+5. Actualiza el guion de grupos que se aplica en cada arranque.
 
-Después de agregar un admin, corre `mc build` para que quede también en el
-guion de grupos que se aplica en cada arranque.
+`mc admin remove` le quita el admin y el op, pero lo deja en la whitelist
+como jugador normal. Para sacarlo del todo, después: `mc whitelist remove`.
 
 ### Qué puede hacer un admin
 
@@ -312,7 +345,7 @@ mc update       # qué hay nuevo
 ## Dónde está cada cosa
 
 ```
-Minecraft server/
+minecraft-hd/
 ├── settings.yml              ← LO ÚNICO que editas normalmente
 ├── .env                      ← los secretos (no entra a git)
 ├── docker-compose.yml

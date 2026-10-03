@@ -49,6 +49,10 @@ versiones:
 #  VPS de referencia: 8 GB RAM / 4 vCores. Dejamos ~2 GB al sistema,
 #  a los contenedores del bot y de respaldos, y al caché de disco.
 recursos:
+  # El heap de Java. El contenedor recibe esto MÁS 1.5 GB de tope, porque
+  # Java usa memoria fuera del heap (Geyser, BlueMap, hilos). Con 6G el
+  # contenedor puede llegar a 7.5 GB: en un VPS de 8 GB activa el swap
+  # (docs/vps.md) o bájale a "5G".
   memoria: "6G"
   # Flags de Aikar: GC predecible, pensado para servidores de Minecraft.
   flags_aikar: true
@@ -59,12 +63,20 @@ rendimiento:
   simulation_distance: 8
 
 # --- Puertos ---------------------------------------------------------------
-#  Solo estos tres se abren en el firewall. Ver docs/vps.md.
+#  Solo java, bedrock y bluemap se abren en el firewall. Ver docs/vps.md.
 puertos:
   java: 25565         # TCP
   bedrock: 19132      # UDP
   bluemap: 8100       # TCP (mapa web)
-  rcon: 25575         # TCP — NO lo expongas a internet, solo red de Docker
+  # TCP, publicado SOLO en 127.0.0.1 del VPS para que `mc` lo alcance.
+  # NUNCA lo abras en el firewall.
+  rcon: 25575
+
+# --- Mapa web (BlueMap) ----------------------------------------------------
+mapa:
+  # true: cualquiera con la IP del VPS ve el mapa, y con él dónde están las
+  # bases de todos. false: solo se ve con un túnel de SSH (docs/administrar.md).
+  publico: true
 
 # --- Idioma ----------------------------------------------------------------
 idioma:
@@ -118,14 +130,8 @@ respaldos:
   remoto:
     activo: false
     destino: ""           # ej. "gdrive:minecraft-hd" o "b2:minecraft-hd"
-
-# --- Discord (DiscordSRV) --------------------------------------------------
-#  El token y los IDs van en .env, no aquí.
-discord:
-  activo: true
-  # Canal de consola solo para admins. Déjalo apagado si no lo necesitas.
-  canal_consola: false
-  avisar_encendido_apagado: true
+    # Subir 1-3 GB a la nube cada 6 horas es mucho: una vez al día basta.
+    intervalo: "24h"
 
 # --- Chat ------------------------------------------------------------------
 chat:
@@ -163,30 +169,65 @@ tumbas:
 # --- Bot de pagos del VPS --------------------------------------------------
 #  El token (PAGOS_BOT_TOKEN) y los IDs de canal van en .env.
 #  Guía: docs/bot-pagos.md
+#
+#  OJO: esto es solo el PUNTO DE PARTIDA. La primera vez que arranca, el bot
+#  lo copia a su base de datos, y de ahí en adelante todo (la banda, los
+#  montos, el día de pago, los avisos, el tesorero) se cambia DESDE DISCORD
+#  con /miembro y /ajustes. Editar esto después no cambia nada, salvo
+#  `activo` y `zona_horaria`.
 pagos:
   activo: true
   zona_horaria: "America/Mexico_City"
   # Día del mes en que se paga el VPS. Si pones 31 y el mes es corto,
   # el bot usa el último día del mes.
-  dia_de_pago: 5
+  dia_de_pago: 2
   # Monto TOTAL del VPS en pesos mexicanos.
-  monto_total_mxn: "450.00"
+  # Con reparto "personalizado" solo es de referencia: se cobra la suma de
+  # los monto_mxn. Ahorita suman 7 x $40.00 = $280.00, $40.00 más que este
+  # total. Si no es a propósito, ajusta uno de los dos; el bot avisa del
+  # descuadre en su log al arrancar.
+  monto_total_mxn: "240.00"
   # "iguales" divide el total entre todos los participantes.
   # "personalizado" usa el campo `monto_mxn` de cada participante.
-  reparto: "iguales"
+  #
+  # Está en "personalizado" a propósito, con $40.00 para cada quien.
+  # Con "iguales" el bot dividiría el total entre los que haya, así que al
+  # unirse alguien más la cuota bajaría sola (con 8 serían $35.00). Así,
+  # cada quien paga sus 40 pase lo que pase.
+  reparto: "personalizado"
 
-  # PENDIENTE DE LLENAR: pon aquí a la banda.
+  # La banda que coopera. Cada quien con sus $40.00.
+  #
   # `discord_id` es el ID numérico del usuario (clic derecho > Copiar ID,
   # con el modo desarrollador prendido). Ver docs/bot-pagos.md.
+  #
   participantes:
-    - nombre: "CAMBIAME"
-      discord_id: 000000000000000000
-      # monto_mxn: "150.00"   # solo si reparto = "personalizado"
+    - nombre: "Tesorero Ejemplo"
+      discord_id: 100000000000000001
+      monto_mxn: "40.00"
+    - nombre: "Jugador 2"
+      discord_id: 100000000000000002
+      monto_mxn: "40.00"
+    - nombre: "Jugador 3"
+      discord_id: 100000000000000003
+      monto_mxn: "40.00"
+    - nombre: "Jugador 4"
+      discord_id: 100000000000000004
+      monto_mxn: "40.00"
+    - nombre: "Jugador 5"
+      discord_id: 100000000000000005
+      monto_mxn: "40.00"
+    - nombre: "Jugador 6"
+      discord_id: 100000000000000006
+      monto_mxn: "40.00"
+    - nombre: "Jugador 7"
+      discord_id: 100000000000000007
+      monto_mxn: "40.00"
 
   # Quién paga el VPS y confirma los pagos de los demás.
   tesorero:
-    nombre: "CAMBIAME"
-    discord_id: 000000000000000000
+    nombre: "Tesorero Ejemplo"
+    discord_id: 100000000000000001
 
   # Rol de Discord que también puede usar los comandos de administración.
   # Déjalo en 0 si solo el tesorero debe poder.
@@ -199,9 +240,12 @@ pagos:
     cada_dias_despues: 2
 
 # --- Administradores del servidor de Minecraft -----------------------------
-#  PENDIENTE DE LLENAR. Van al grupo `admin` de LuckPerms y a ops.
-#  También puedes manejarlos con `mc admin add <jugador>`.
+#  Van al grupo `admin` de LuckPerms, a ops y a la whitelist (solos, no
+#  hace falta ponerlos también abajo). Mejor con `mc admin add <jugador>`.
 admins: []
+#  Admins que juegan en Bedrock (gamertag, sin el punto). Mejor con
+#  `mc admin add "Gamer Tag" --bedrock`: también los mete a la whitelist.
+admins_bedrock: []
 
 # --- Whitelist -------------------------------------------------------------
 #  PENDIENTE DE LLENAR. También puedes usar `mc whitelist add <jugador>`
@@ -211,3 +255,6 @@ whitelist:
   java: []
   # Gamertags de Xbox SIN el punto de Floodgate: `mc` se lo pone solo.
   bedrock: []
+  # El XUID de Xbox de cada gamertag de arriba. Lo llena `mc whitelist add
+  # --bedrock` solo; ve docs/administrar.md si te lo pide.
+  xuid: {}

@@ -48,9 +48,10 @@ solo plugin que borre mobs, porque eso es justo lo que rompe las granjas.
 
 **Discord**
 
-- El chat del juego se ve en Discord y al revés.
 - Un bot aparte que le recuerda a la banda que toca pagar el VPS, lleva la
-  cuenta de quién pagó y avisa cuando ya está cubierto.
+  cuenta de quién pagó (también lo atrasado de meses anteriores) y avisa
+  cuando ya está cubierto.
+- Opcional: el mismo bot avisa si el servidor de Minecraft se cae.
 
 **Seguridad**
 
@@ -74,7 +75,7 @@ El resumen:
 # En el VPS, con Docker y uv ya instalados.
 cd ~/minecraft-hd
 
-mc setup     # te pide la contraseña de RCON y los tokens de Discord
+mc setup     # te pide la contraseña de RCON y el token del bot de pagos
 mc build     # baja 24 plugins y datapacks, verificando cada sha256
 mc start     # arranca
 mc logs -f   # el primer arranque tarda: genera el mundo
@@ -95,12 +96,11 @@ mc doctor                    # revisa que todo esté bien
 
 | Guía | De qué |
 |---|---|
-| **[vps.md](docs/vps.md)** | Montar el VPS de cero: Docker, subir la carpeta, firewall, dominio |
+| **[vps.md](docs/vps.md)** | Montar el VPS de cero: Docker, subir la carpeta, firewall, dominio. Y cómo mudarte de proveedor |
 | **[conectarse.md](docs/conectarse.md)** | Cómo entra la banda, desde Java, Bedrock y consolas |
 | **[vincular-cuentas.md](docs/vincular-cuentas.md)** | Tener el mismo personaje en Java y en Bedrock |
 | **[administrar.md](docs/administrar.md)** | Whitelist, admins, pregen, regenerar el mundo, CoreProtect |
 | **[respaldos.md](docs/respaldos.md)** | Los automáticos, restaurar, y una copia fuera del VPS |
-| **[discord.md](docs/discord.md)** | Crear el bot del chat e invitarlo |
 | **[bot-pagos.md](docs/bot-pagos.md)** | Crear el bot de pagos y configurar a la banda |
 | **[versiones.md](docs/versiones.md)** | Qué versión está fijada y **por qué**, y cómo subirlas |
 
@@ -109,7 +109,7 @@ mc doctor                    # revisa que todo esté bien
 ## Lo único que editas
 
 **`settings.yml`**, en la raíz. Ahí está el nombre del servidor, el MOTD, la
-versión, los puertos, la memoria, el idioma, los respaldos, Discord y los
+versión, los puertos, la memoria, el idioma, los respaldos y los
 datos del bot de pagos. Está comentado línea por línea.
 
 Después de cambiar algo:
@@ -119,7 +119,10 @@ mc build && mc restart
 ```
 
 Los secretos (tokens, contraseñas) van en **`.env`**, que no entra a git.
-`mc setup` te lo llena.
+`mc setup` te lo llena. Al final de `.env`, `mc build` escribe un bloque
+marcado con la versión, la memoria, los puertos y los respaldos sacados de
+`settings.yml`: de ahí los lee `docker-compose.yml`. Ese bloque no se edita
+a mano.
 
 > **No edites los archivos de `data/`**: `mc build` los sobrescribe. Las
 > configs comentadas, para leerlas, están en `minecraft/generated/`.
@@ -142,7 +145,7 @@ Los secretos (tokens, contraseñas) van en **`.env`**, que no entra a git.
 |---|---|
 | `mc start` | Enciende, y aplica gamerules, permisos y whitelist |
 | `mc stop` | Apaga guardando el mundo |
-| `mc restart` | Reinicia |
+| `mc restart` | Guarda, apaga y vuelve a levantar todo, aplicando lo que cambiaste en `settings.yml` o `.env` |
 | `mc status` | Qué está arriba, quién anda conectado, a cuántos TPS |
 | `mc logs` / `mc logs -f` | Los logs |
 | `mc console` | Consola interactiva por RCON |
@@ -190,11 +193,11 @@ piden doble confirmación, hacen un respaldo antes y tienen `--dry-run`.
 ## La estructura
 
 ```
-Minecraft server/
+minecraft-hd/
 ├── settings.yml              ← LO ÚNICO que editas normalmente
 ├── .env                      ← los secretos (no entra a git)
 ├── .env.example              ← la plantilla, comentada
-├── docker-compose.yml        ← los tres contenedores
+├── docker-compose.yml        ← los contenedores (lee sus números de .env)
 │
 ├── minecraft/
 │   ├── manifest.yml          ← plugins y datapacks, con URL y sha256

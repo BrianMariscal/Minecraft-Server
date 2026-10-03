@@ -13,7 +13,7 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import Callable
 
-VERSION_ACTUAL = 1
+VERSION_ACTUAL = 2
 
 
 def _v1(cx: sqlite3.Connection) -> None:
@@ -58,8 +58,27 @@ def _v1(cx: sqlite3.Connection) -> None:
     )
 
 
+def _v2(cx: sqlite3.Connection) -> None:
+    """La configuración del cobro, editable desde Discord.
+
+    Un renglón por ajuste, con el valor en JSON. Hoy solo hay uno, `config`
+    (la sección `pagos` completa), pero así no hay que migrar para agregar
+    otro.
+    """
+    cx.executescript(
+        """
+        CREATE TABLE ajustes (
+            clave          TEXT PRIMARY KEY,
+            valor          TEXT NOT NULL,   -- JSON
+            actualizado_en TEXT NOT NULL
+        );
+        """
+    )
+
+
 MIGRACIONES: list[tuple[int, Callable[[sqlite3.Connection], None]]] = [
     (1, _v1),
+    (2, _v2),
 ]
 
 

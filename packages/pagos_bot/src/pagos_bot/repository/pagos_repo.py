@@ -34,6 +34,26 @@ class RepositorioPagos:
     def cerrar(self) -> None:
         self._cx.close()
 
+    def copiar_a(self, destino: Path) -> None:
+        """Saca una foto consistente de la base con la API de respaldo de SQLite.
+
+        Los respaldos copian los archivos tal cual, y una base en WAL copiada
+        a medio escribir puede no abrir. Esta foto siempre abre: si la base
+        principal de un respaldo sale dañada, `mc backup restore` usa esta.
+        Se escribe a un temporal y se renombra, para que un respaldo nunca
+        se lleve una foto a medias.
+        """
+        temporal = destino.with_name(destino.name + ".tmp")
+        temporal.unlink(missing_ok=True)
+        copia = sqlite3.connect(temporal)
+        try:
+            self._cx.backup(copia)
+            # La foto es un solo archivo, sin -wal que se pueda quedar atrás.
+            copia.execute("PRAGMA journal_mode = DELETE")
+        finally:
+            copia.close()
+        temporal.replace(destino)
+
     @contextmanager
     def _transaccion(self) -> Iterator[sqlite3.Connection]:
         """Todo o nada: si truena a medias, no queda a medias."""
@@ -121,11 +141,32 @@ class RepositorioPagos:
                 (cuando.isoformat(), periodo.clave),
             )
 
+    def reabrir(self, periodo: Periodo) -> None:
+        """Quita la marca de cerrado: alguien volvió a deber ese mes."""
+        with self._transaccion() as cx:
+            cx.execute("UPDATE periodos SET cerrado_en = NULL WHERE clave = ?", (periodo.clave,))
+
     def esta_cerrado(self, periodo: Periodo) -> bool:
         fila = self._cx.execute(
             "SELECT cerrado_en FROM periodos WHERE clave = ?", (periodo.clave,)
         ).fetchone()
         return bool(fila and fila["cerrado_en"])
+
+    # -- ajustes ----------------------------------------------------------- #
+
+    def leer_ajuste(self, clave: str) -> str | None:
+        """El JSON guardado bajo esa clave, o None si no hay."""
+        fila = self._cx.execute("SELECT valor FROM ajustes WHERE clave = ?", (clave,)).fetchone()
+        return str(fila["valor"]) if fila else None
+
+    def guardar_ajuste(self, clave: str, valor_json: str) -> None:
+        with self._transaccion() as cx:
+            cx.execute(
+                "INSERT INTO ajustes (clave, valor, actualizado_en) VALUES (?, ?, ?) "
+                "ON CONFLICT(clave) DO UPDATE SET valor=excluded.valor, "
+                "actualizado_en=excluded.actualizado_en",
+                (clave, valor_json, datetime.now().astimezone().isoformat()),
+            )
 
     # -- avisos ------------------------------------------------------------ #
 

@@ -8,24 +8,26 @@ tres veces el día de pago no menciona a nadie tres veces.
 from __future__ import annotations
 
 import logging
+from contextlib import suppress
 
 import discord
+from apscheduler.schedulers import SchedulerNotRunningError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from pagos_bot.discord_ui import botones, embeds, textos
+from pagos_bot.discord_ui import botones, tarjetas, textos
 from pagos_bot.services.cobros import (
     AVISO_DIA,
     AVISO_PREVIO,
+    AvisoQueToca,
     ErrorDeCobro,
     ServicioDeCobros,
 )
 
 log = logging.getLogger("pagos.scheduler")
 
-# A las 11 de la mañana, hora de México. Ni tan temprano que nadie lo vea,
-# ni tan tarde que ya se les haya pasado el día.
-HORA_DEL_AVISO = 11
+# La hora sale de la configuración (`/ajustes hora`, 11 por defecto: ni tan
+# temprano que nadie lo vea, ni tan tarde que ya se les haya pasado el día).
 MINUTO_DEL_AVISO = 0
 
 
@@ -42,41 +44,71 @@ class Recordatorios:
         self.cliente = cliente
         self.canal_id = canal_id
         self.scheduler = AsyncIOScheduler(timezone=servicio.config.zona)
+        # Para no apagar dos veces: `parar()` llega por el manejador de
+        # SIGTERM y otra vez por el cierre de discord.py.
+        self._parado = False
 
-    def arrancar(self) -> None:
+    def _programar(self) -> None:
+        hora = self.servicio.config.hora_aviso
         self.scheduler.add_job(
             self.revisar,
-            CronTrigger(
-                hour=HORA_DEL_AVISO,
-                minute=MINUTO_DEL_AVISO,
-                timezone=self.servicio.config.zona,
-            ),
+            CronTrigger(hour=hora, minute=MINUTO_DEL_AVISO, timezone=self.servicio.config.zona),
             id="aviso_diario",
             replace_existing=True,
             # Si el bot estuvo caído a la hora exacta, que lo mande al volver
             # dentro de las siguientes 6 horas en lugar de saltárselo.
             misfire_grace_time=6 * 3600,
         )
-        self.scheduler.start()
         log.info(
             "recordatorios programados para las %02d:%02d, hora de %s",
-            HORA_DEL_AVISO,
+            hora,
             MINUTO_DEL_AVISO,
             self.servicio.config.zona_horaria,
         )
 
+    def arrancar(self) -> None:
+        self._programar()
+        self.scheduler.start()
+
+    def reprogramar(self) -> None:
+        """Después de `/ajustes hora`: el mismo trabajo, a la hora nueva."""
+        self._programar()
+
     def parar(self) -> None:
-        if self.scheduler.running:
+        """Para el reloj. Se puede llamar varias veces sin que truene.
+
+        Hace falta blindarlo por dos razones:
+
+        1. `parar()` llega dos veces: una por el manejador de SIGTERM que
+           pone Docker en cada `mc restart`, y otra por el cierre de
+           discord.py.
+        2. apscheduler DIFIERE el apagado al event loop
+           (`@run_in_event_loop` sobre `_shutdown`). Su `shutdown()` revisa
+           `running`, que todavía es True, y encola el apagado; cuando el
+           segundo callback corre, el primero ya dejó el estado en STOPPED y
+           `SchedulerNotRunningError` sale desde dentro del loop, donde ya no
+           lo puede atrapar nadie.
+
+        Sin esto, cada `mc restart` dejaba un traceback de 10 líneas en el
+        log del contenedor, con el bot apagándose perfectamente bien.
+        """
+        if self._parado:
+            return
+        self._parado = True
+        with suppress(SchedulerNotRunningError):
             self.scheduler.shutdown(wait=False)
 
     async def revisar(self) -> None:
         """¿Toca mandar algo hoy? Si sí, lo manda.
 
+        Puede tocar más de uno el mismo día (el del mes en curso y el de un
+        mes que quedó debiéndose). Sale uno por mensaje.
+
         Si Discord o la base de datos fallan, lo anota en el log y sigue
         vivo: un bot caído no cobra nada.
         """
         try:
-            aviso = self.servicio.aviso_que_toca()
+            avisos = self.servicio.avisos_que_tocan()
         except ErrorDeCobro as exc:
             log.warning("no pude revisar los avisos: %s", exc)
             return
@@ -84,7 +116,7 @@ class Recordatorios:
             log.exception("error inesperado al revisar los avisos")
             return
 
-        if aviso is None:
+        if not avisos:
             log.debug("hoy no toca ningún aviso")
             return
 
@@ -97,6 +129,10 @@ class Recordatorios:
             )
             return
 
+        for aviso in avisos:
+            await self._mandar(canal, aviso)
+
+    async def _mandar(self, canal: discord.abc.Messageable, aviso: AvisoQueToca) -> None:
         agenda = self.servicio.agenda
         mes = aviso.mes
 
@@ -112,11 +148,11 @@ class Recordatorios:
 
         try:
             await canal.send(
-                embed=embeds.aviso(texto, urgente=urgente),
-                view=botones.BotonYaPague(self.servicio),
+                view=tarjetas.aviso(texto, mes, urgente=urgente, botones=[botones.BotonYaPague()]),
+                allowed_mentions=tarjetas.SOLO_PERSONAS,
             )
         except discord.DiscordException:
-            # No anotamos el aviso: si falló, que se reintente.
+            # No lo anotamos: si falló, que se reintente.
             log.exception("no pude mandar el aviso al canal")
             return
 

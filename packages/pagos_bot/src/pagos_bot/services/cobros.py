@@ -12,6 +12,7 @@ from datetime import date, datetime
 from pagos_bot.config import PagosConfig
 from pagos_bot.domain.calendario import Agenda, Periodo
 from pagos_bot.domain.cobro import Cuota, Estado, MesDeCobro, abrir_mes
+from pagos_bot.domain.dinero import Dinero
 from pagos_bot.repository.pagos_repo import RepositorioPagos
 
 
@@ -23,6 +24,9 @@ class ErrorDeCobro(Exception):
 AVISO_PREVIO = "previo"
 AVISO_DIA = "dia"
 AVISO_TARDIO = "tardio"
+
+# Hasta cuántos meses atrás se sigue persiguiendo una deuda.
+MESES_QUE_SE_PERSIGUEN = 12
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,8 +44,12 @@ class ServicioDeCobros:
     """Todo lo que el bot sabe hacer con los pagos."""
 
     def __init__(self, config: PagosConfig, repo: RepositorioPagos) -> None:
-        self.config = config
         self.repo = repo
+        self.aplicar_config(config)
+
+    def aplicar_config(self, config: PagosConfig) -> None:
+        """Cambia la configuración en caliente (la usan los comandos del tesorero)."""
+        self.config = config
         self.agenda = Agenda(
             dia_de_pago=config.dia_de_pago,
             dias_antes=config.avisos.dias_antes,
@@ -112,56 +120,180 @@ class ServicioDeCobros:
         self.repo.guardar_mes(actualizado, self.config.reparto)
         return actualizado
 
+    # -- qué mes -------------------------------------------------------------- #
+
+    def mes_de(self, periodo: Periodo | None) -> MesDeCobro:
+        """El mes que pide un comando. None = el de ahorita.
+
+        El de ahorita y el que sigue se abren si hace falta (el que sigue lo
+        abre el aviso previo unos días antes). Uno viejo tiene que existir.
+        """
+        if periodo is None:
+            return self.mes_actual()
+        actual = self.periodo_actual()
+        if periodo in (actual, actual.siguiente()):
+            return self.abrir_si_falta(periodo)
+        mes = self.repo.leer_mes(periodo)
+        if mes is None:
+            msg = f"no hay cobro de {periodo.nombre}."
+            raise ErrorDeCobro(msg)
+        return mes
+
+    def meses_abiertos(self) -> list[MesDeCobro]:
+        """Del más viejo al más nuevo: donde se busca qué debe cada quien.
+
+        Trae el de ahorita (aunque ya esté cubierto), los anteriores que
+        todavía no se cierran, y el que sigue si el aviso previo ya lo abrió.
+        """
+        actual = self.mes_actual()
+        limite = actual.periodo.siguiente()
+        meses: list[MesDeCobro] = []
+        for p in sorted(self.repo.periodos_guardados(MESES_QUE_SE_PERSIGUEN + 2)):
+            if p > limite:
+                continue
+            if p == actual.periodo:
+                meses.append(actual)
+                continue
+            if p < actual.periodo and self.repo.esta_cerrado(p):
+                continue
+            mes = self.repo.leer_mes(p)
+            if mes is not None:
+                meses.append(mes)
+        return meses
+
+    def deudas_anteriores(self) -> list[MesDeCobro]:
+        """Los meses ya pasados en los que todavía falta gente."""
+        actual = self.periodo_actual()
+        return [
+            m
+            for m in self.meses_abiertos()
+            if m.periodo < actual and not m.esta_cubierto and m.faltantes
+        ]
+
     # -- marcar pagos ------------------------------------------------------- #
 
     def dijo_que_pago(self, discord_id: int) -> MesDeCobro:
-        """Alguien le picó a "Ya pagué" o escribió /pague."""
-        mes = self.mes_actual()
-        cuota = mes.cuota_de(discord_id)
-        if cuota is None:
+        """Alguien le picó a "Ya pagué" o escribió /pague.
+
+        Se anota en el mes MÁS VIEJO que deba: primero se salda lo atrasado.
+        Si ya está al corriente y el aviso previo ya abrió el mes que sigue,
+        cuenta como pago adelantado de ese. Sin esto, picarle al botón del
+        aviso previo (que sale el 30 por el mes que viene) contestaba "ya
+        tienes el mes pagado" y no había forma de avisar el pago.
+        """
+        suyos = [(m, c) for m in self.meses_abiertos() if (c := m.cuota_de(discord_id)) is not None]
+        if not suyos:
             msg = "no estás en la lista de este mes. Dile a un admin que te agregue."
             raise ErrorDeCobro(msg)
-        if cuota.estado is Estado.PAGADO:
-            msg = "ya tienes el mes pagado y confirmado, no tienes que hacer nada."
+
+        pendiente = next((m for m, c in suyos if c.estado is Estado.PENDIENTE), None)
+        if pendiente is not None:
+            nuevo = pendiente.con_estado(discord_id, Estado.POR_CONFIRMAR, self.ahora())
+            self.repo.guardar_mes(nuevo, self.config.reparto)
+            return nuevo
+
+        # Nada pendiente. Si ya avisó, no volvemos a etiquetar al tesorero
+        # cada vez que le pique al botón.
+        esperando = next((m for m, c in suyos if c.estado is Estado.POR_CONFIRMAR), None)
+        if esperando is not None:
+            msg = (
+                f"ya le avisé al tesorero de tu pago de {esperando.periodo.nombre}; "
+                "nada más falta que lo confirme."
+            )
             raise ErrorDeCobro(msg)
-        if cuota.estado is Estado.EXENTO:
+
+        actual = self.periodo_actual()
+        cuota_actual = next((c for m, c in suyos if m.periodo == actual), None)
+        if cuota_actual is not None and cuota_actual.estado is Estado.EXENTO:
             msg = "este mes no te toca pagar."
             raise ErrorDeCobro(msg)
+        msg = "ya tienes el mes pagado y confirmado, no tienes que hacer nada."
+        raise ErrorDeCobro(msg)
 
-        nuevo = mes.con_estado(discord_id, Estado.POR_CONFIRMAR, self.ahora())
-        self.repo.guardar_mes(nuevo, self.config.reparto)
-        return nuevo
+    def confirmar(self, discord_id: int, periodo: Periodo | None = None) -> MesDeCobro:
+        """El tesorero confirma que sí llegó el dinero.
 
-    def confirmar(self, discord_id: int) -> MesDeCobro:
-        """El tesorero confirma que sí llegó el dinero."""
-        mes = self.mes_actual()
-        if mes.cuota_de(discord_id) is None:
-            msg = "esa persona no está en la lista de este mes."
+        Sin mes, confirma lo más viejo que esa persona tenga: primero lo que
+        dijo que pagó y, si no dijo nada (pago en efectivo), lo más viejo que
+        deba.
+        """
+        mes = self.mes_de(periodo) if periodo is not None else self._mes_a_confirmar(discord_id)
+        cuota = mes.cuota_de(discord_id)
+        if cuota is None:
+            msg = f"esa persona no está en la lista de {mes.periodo.nombre}."
+            raise ErrorDeCobro(msg)
+        if cuota.estado is Estado.PAGADO:
+            msg = f"su pago de {mes.periodo.nombre} ya estaba confirmado."
             raise ErrorDeCobro(msg)
         nuevo = mes.con_estado(discord_id, Estado.PAGADO, self.ahora())
         self.repo.guardar_mes(nuevo, self.config.reparto)
         self._cerrar_si_ya_esta(nuevo)
         return nuevo
 
-    def desmarcar(self, discord_id: int) -> MesDeCobro:
-        """Regresa a alguien a pendiente (se equivocaron, se devolvió el pago...)."""
-        mes = self.mes_actual()
-        if mes.cuota_de(discord_id) is None:
+    def _mes_a_confirmar(self, discord_id: int) -> MesDeCobro:
+        meses = self.meses_abiertos()
+        for estado in (Estado.POR_CONFIRMAR, Estado.PENDIENTE):
+            for m in meses:
+                c = m.cuota_de(discord_id)
+                if c is not None and c.estado is estado:
+                    return m
+        if all(m.cuota_de(discord_id) is None for m in meses):
             msg = "esa persona no está en la lista de este mes."
+            raise ErrorDeCobro(msg)
+        msg = "esa persona no debe nada: ya está al corriente."
+        raise ErrorDeCobro(msg)
+
+    def desmarcar(self, discord_id: int, periodo: Periodo | None = None) -> MesDeCobro:
+        """Regresa a alguien a pendiente (se equivocaron, se devolvió el pago...)."""
+        mes = self.mes_de(periodo)
+        if mes.cuota_de(discord_id) is None:
+            msg = f"esa persona no está en la lista de {mes.periodo.nombre}."
             raise ErrorDeCobro(msg)
         nuevo = mes.con_estado(discord_id, Estado.PENDIENTE, self.ahora())
         self.repo.guardar_mes(nuevo, self.config.reparto)
+        # Si el mes ya estaba cerrado, ya no: vuelve a faltar alguien.
+        self.repo.reabrir(nuevo.periodo)
         return nuevo
 
-    def eximir(self, discord_id: int) -> MesDeCobro:
+    def eximir(self, discord_id: int, periodo: Periodo | None = None) -> MesDeCobro:
         """Sacar a alguien del mes sin que cuente como que debe."""
-        mes = self.mes_actual()
+        mes = self.mes_de(periodo)
         if mes.cuota_de(discord_id) is None:
-            msg = "esa persona no está en la lista de este mes."
+            msg = f"esa persona no está en la lista de {mes.periodo.nombre}."
             raise ErrorDeCobro(msg)
         nuevo = mes.con_estado(discord_id, Estado.EXENTO, self.ahora())
         self.repo.guardar_mes(nuevo, self.config.reparto)
         self._cerrar_si_ya_esta(nuevo)
+        return nuevo
+
+    def cambiar_precio_de_meses_abiertos(self, total: Dinero) -> None:
+        """El precio nuevo del VPS aplica al mes en curso y al siguiente.
+
+        Los meses ya pasados conservan el precio que tenían: así el historial
+        dice lo que de verdad costó.
+        """
+        actual = self.mes_actual()
+        meses = [actual]
+        siguiente = self.repo.leer_mes(actual.periodo.siguiente())
+        if siguiente is not None:
+            meses.append(siguiente)
+        for mes in meses:
+            nuevo = mes.con_total(total)
+            self.repo.guardar_mes(nuevo, self.config.reparto)
+            self._cerrar_si_ya_esta(nuevo)
+
+    def cambiar_monto_del_mes(self, discord_id: int, monto: Dinero) -> MesDeCobro:
+        """Cambia lo que le toca a alguien en el mes en curso, si no ha pagado."""
+        mes = self.mes_actual()
+        cuota = mes.cuota_de(discord_id)
+        if cuota is None:
+            msg = "esa persona no está en el mes en curso."
+            raise ErrorDeCobro(msg)
+        if cuota.estado is Estado.PAGADO:
+            msg = f"ya pagó {mes.periodo.nombre}; el monto nuevo aplica desde el mes que viene."
+            raise ErrorDeCobro(msg)
+        nuevo = mes.con_monto(discord_id, monto)
+        self.repo.guardar_mes(nuevo, self.config.reparto)
         return nuevo
 
     def _cerrar_si_ya_esta(self, mes: MesDeCobro) -> None:
@@ -170,17 +302,61 @@ class ServicioDeCobros:
 
     # -- avisos -------------------------------------------------------------- #
 
-    def aviso_que_toca(self, hoy: date | None = None) -> AvisoQueToca | None:
-        """Qué recordatorio hay que mandar hoy, si es que alguno.
+    def avisos_que_tocan(self, hoy: date | None = None) -> list[AvisoQueToca]:
+        """Los recordatorios que hay que mandar hoy, del más urgente al menos.
 
-        Nunca devuelve dos veces el mismo aviso del mismo día: antes de
-        proponerlo revisa la tabla `avisos`. Por eso reiniciar el bot no
-        vuelve a mencionar a nadie.
+        Nunca propone dos veces el mismo aviso del mismo día: antes revisa la
+        tabla `avisos`. Por eso reiniciar el bot no vuelve a mencionar a nadie.
+
+        OJO con el aviso previo: puede caer en el MES ANTERIOR al que cobra.
+        Con `dia_de_pago: 2` y `dias_antes: 3`, el aviso del periodo de
+        noviembre toca el 30 de OCTUBRE, cuando el periodo en curso todavía
+        es octubre. Por eso hay que mirar también el periodo siguiente y no
+        solo el de hoy; si no, con un día de pago temprano el aviso previo
+        no sale nunca.
+
+        Y los meses pasados que nadie terminó de pagar siguen recibiendo su
+        recordatorio tardío cada N días: una deuda no se borra porque cambió
+        el mes.
         """
         ahora = self.ahora()
         dia = hoy or self.agenda.hoy(ahora)
-        mes = self.mes_actual()
 
+        avisos: list[AvisoQueToca] = []
+        # 1. Lo del periodo en curso, que es lo más urgente.
+        if (aviso := self._aviso_del_periodo_en_curso(ahora, dia)) is not None:
+            avisos.append(aviso)
+        # 2. El aviso previo del periodo que viene.
+        if (aviso := self._aviso_previo_del_siguiente(ahora, dia)) is not None:
+            avisos.append(aviso)
+        # 3. Lo que se quedó debiendo de meses anteriores.
+        avisos.extend(self._avisos_de_meses_atrasados(ahora, dia))
+        return avisos
+
+    def aviso_que_toca(self, hoy: date | None = None) -> AvisoQueToca | None:
+        """El más urgente de `avisos_que_tocan`, o None si hoy no toca nada."""
+        return next(iter(self.avisos_que_tocan(hoy)), None)
+
+    def _avisos_de_meses_atrasados(self, ahora: datetime, dia: date) -> list[AvisoQueToca]:
+        avisos: list[AvisoQueToca] = []
+        for mes in self.deudas_anteriores():
+            if not self.agenda.toca_recordatorio_tardio(mes.periodo, ahora):
+                continue
+            if self.repo.ya_se_mando(mes.periodo, AVISO_TARDIO, dia):
+                continue
+            avisos.append(
+                AvisoQueToca(
+                    tipo=AVISO_TARDIO,
+                    mes=mes,
+                    mencionar=tuple(mes.faltantes),
+                    dias_de_atraso=-self.agenda.dias_para_pagar(mes.periodo, ahora),
+                )
+            )
+        return avisos
+
+    def _aviso_del_periodo_en_curso(self, ahora: datetime, dia: date) -> AvisoQueToca | None:
+        """El del día de pago, los tardíos, y el previo si cae en este mes."""
+        mes = self.mes_actual()
         if mes.esta_cubierto:
             return None
 
@@ -188,15 +364,15 @@ class ServicioDeCobros:
         mencionar: tuple[Cuota, ...]
         atraso: int
 
-        if self.agenda.toca_aviso_previo(mes.periodo, ahora):
-            # En el aviso previo no se menciona a nadie: todavía no deben nada.
-            tipo, mencionar, atraso = AVISO_PREVIO, (), 0
-        elif self.agenda.toca_aviso_del_dia(mes.periodo, ahora):
+        if self.agenda.toca_aviso_del_dia(mes.periodo, ahora):
             tipo, mencionar, atraso = AVISO_DIA, tuple(mes.faltantes), 0
         elif self.agenda.toca_recordatorio_tardio(mes.periodo, ahora):
             tipo = AVISO_TARDIO
             mencionar = tuple(mes.faltantes)
             atraso = -self.agenda.dias_para_pagar(mes.periodo, ahora)
+        elif self.agenda.toca_aviso_previo(mes.periodo, ahora):
+            # Solo pasa cuando dia_de_pago > dias_antes.
+            tipo, mencionar, atraso = AVISO_PREVIO, (), 0
         else:
             return None
 
@@ -209,6 +385,21 @@ class ServicioDeCobros:
 
         return AvisoQueToca(tipo=tipo, mes=mes, mencionar=mencionar, dias_de_atraso=atraso)
 
+    def _aviso_previo_del_siguiente(self, ahora: datetime, dia: date) -> AvisoQueToca | None:
+        """El aviso previo cuando el día de pago cae temprano en el mes."""
+        siguiente = self.periodo_actual().siguiente()
+        if not self.agenda.toca_aviso_previo(siguiente, ahora):
+            return None
+        if self.repo.ya_se_mando(siguiente, AVISO_PREVIO, dia):
+            return None
+
+        # Abrir el mes unos días antes no tiene costo: todos quedan en
+        # pendiente y `mes_actual()` lo encuentra ya abierto cuando entre.
+        mes = self.abrir_si_falta(siguiente)
+        if mes.esta_cubierto:
+            return None
+        return AvisoQueToca(tipo=AVISO_PREVIO, mes=mes, mencionar=(), dias_de_atraso=0)
+
     def anotar_que_se_mando(self, aviso: AvisoQueToca, hoy: date | None = None) -> None:
         """Deja constancia para no repetirlo."""
         ahora = self.ahora()
@@ -220,8 +411,10 @@ class ServicioDeCobros:
         """Los meses anteriores, del más nuevo al más viejo."""
         actual = self.periodo_actual()
         meses: list[MesDeCobro] = []
-        for p in self.repo.periodos_guardados(cuantos + 1):
-            if p == actual:
+        for p in self.repo.periodos_guardados(cuantos + 2):
+            # `>= actual` y no `== actual`: el aviso previo abre el mes que
+            # viene unos días antes, y ese todavía no es "historial".
+            if p >= actual:
                 continue
             mes = self.repo.leer_mes(p)
             if mes is not None:

@@ -1,0 +1,12 @@
+# El bot de pagos se construye con la raíz del proyecto como contexto (le
+# hace falta uv.lock). Sin este archivo, Docker le mandaría al daemon el
+# mundo entero, los respaldos y el .env en cada build.
+#
+# Solo dejamos pasar lo que el Dockerfile copia de verdad.
+*
+!pyproject.toml
+!uv.lock
+!packages/mc_admin/pyproject.toml
+!packages/pagos_bot/pyproject.toml
+!packages/pagos_bot/src/
+**/__pycache__/

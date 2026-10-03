@@ -178,6 +178,8 @@ class Tecnico(_Base):
 class RespaldoRemoto(_Base):
     activo: bool = False
     destino: str = ""
+    # Subir 1-3 GB a la nube cada 6 horas es mucho; una vez al día basta.
+    intervalo: str = Field(default="24h", pattern=r"^\d+[mhd]$")
 
     @model_validator(mode="after")
     def _destino_si_activo(self) -> Self:
@@ -185,6 +187,12 @@ class RespaldoRemoto(_Base):
             msg = (
                 "respaldos.remoto.activo es true pero respaldos.remoto.destino está "
                 "vacío. Pon el remoto de rclone, por ejemplo 'gdrive:minecraft-hd'"
+            )
+            raise ValueError(msg)
+        if self.activo and ":" not in self.destino:
+            msg = (
+                f"respaldos.remoto.destino '{self.destino}' no trae el remoto de rclone. "
+                "Se escribe remoto:carpeta, por ejemplo 'gdrive:minecraft-hd'"
             )
             raise ValueError(msg)
         return self
@@ -196,10 +204,12 @@ class Respaldos(_Base):
     remoto: RespaldoRemoto
 
 
-class Discord(_Base):
-    activo: bool
-    canal_consola: bool
-    avisar_encendido_apagado: bool
+class Mapa(_Base):
+    """El mapa web de BlueMap."""
+
+    # true: cualquiera con la IP del VPS lo ve (y ve dónde están las bases).
+    # false: solo se ve desde el propio VPS, con un túnel de SSH.
+    publico: bool = True
 
 
 class Recordatorio(_Base):
@@ -340,11 +350,15 @@ class Settings(_Base):
     mundo: Mundo
     tecnico: Tecnico
     respaldos: Respaldos
-    discord: Discord
+    mapa: Mapa = Field(default_factory=Mapa)
     chat: Chat
     tumbas: Tumbas
     pagos: Pagos
     admins: list[str] = Field(default_factory=list)
+    # Admins que juegan en Bedrock: su gamertag (sin el punto). Tienen que
+    # estar también en whitelist.bedrock con su XUID; `mc admin add --bedrock`
+    # hace las dos cosas.
+    admins_bedrock: list[str] = Field(default_factory=list)
     whitelist: Whitelist
 
     @field_validator("admins")
@@ -364,6 +378,10 @@ class Settings(_Base):
 class Whitelist(_Base):
     java: list[str] = Field(default_factory=list)
     bedrock: list[str] = Field(default_factory=list)
+    # El XUID de Xbox de cada gamertag de `bedrock`. De ahí sale el UUID con
+    # el que Floodgate identifica al jugador. Lo llena `mc whitelist add
+    # --bedrock`; a mano casi nunca hace falta.
+    xuid: dict[str, int] = Field(default_factory=dict)
 
     @field_validator("java")
     @classmethod
@@ -404,13 +422,11 @@ class Secretos(_Base):
     """Lo que vive en .env. Nunca se loguea ni se imprime."""
 
     rcon_password: str = ""
-    discord_token: str = ""
-    discord_channel_chat: str = ""
-    discord_channel_consola: str = ""
     pagos_bot_token: str = ""
     pagos_guild_id: str = ""
     pagos_canal_id: str = ""
-    rclone_remote_config: str = ""
+    # Opcional: canal donde el bot avisa si el servidor de Minecraft se cae.
+    alertas_canal_id: str = ""
     tz: str = "America/Mexico_City"
 
     def __repr__(self) -> str:
@@ -420,16 +436,11 @@ class Secretos(_Base):
 
     __str__ = __repr__
 
-    def faltantes_para(self, *, discord: bool, pagos: bool) -> list[str]:
+    def faltantes_para(self, *, pagos: bool) -> list[str]:
         """Devuelve los nombres de variables que faltan según lo que esté activo."""
         faltan: list[str] = []
         if not self.rcon_password:
             faltan.append("RCON_PASSWORD")
-        if discord:
-            if not self.discord_token:
-                faltan.append("DISCORD_TOKEN")
-            if not self.discord_channel_chat:
-                faltan.append("DISCORD_CHANNEL_CHAT")
         if pagos:
             if not self.pagos_bot_token:
                 faltan.append("PAGOS_BOT_TOKEN")
@@ -541,5 +552,5 @@ def encontrar_raiz(inicio: Path | None = None) -> Path:
             return candidata
     raise ErrorDeConfig(
         f"no encontré {ARCHIVO_SETTINGS} ni aquí ni en ninguna carpeta de arriba",
-        pista="Métete a la carpeta del proyecto (la que se llama 'Minecraft server').",
+        pista="Métete a la carpeta del proyecto (la que tiene settings.yml).",
     )

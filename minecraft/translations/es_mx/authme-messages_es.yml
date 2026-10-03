@@ -30,7 +30,7 @@ registration:
     register_request: '&eRegístrate para jugar: &f/register tuContraseña tuContraseña'
     command_usage: '&cSe usa así: &f/register contraseña contraseña'
     reg_only: '&cEsto es solo para quien ya se registró. Escribe &f/register contraseña contraseña'
-    success: '&a¡Listo, ya quedaste! Ahora entra con &f/login tuContraseña'
+    success: '&a¡Listo, ya quedaste registrado!'
     kicked_admin_registered: 'Un admin te acaba de registrar. Vuelve a entrar.'
 
 # --- Errores de contraseña al registrarse ---------------------------------

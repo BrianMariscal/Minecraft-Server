@@ -15,6 +15,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateNotFo
 from jinja2 import TemplateSyntaxError as JinjaSyntaxError
 
 from mc_admin.config import Secretos, Settings
+from mc_admin.core.jugadores import admins_con_uuid
 from mc_admin.errores import ErrorDeConfig
 
 # Plantilla -> ruta de salida relativa a minecraft/generated/.
@@ -41,8 +42,6 @@ SALIDAS: dict[str, str] = {
     "luckperms-config.yml.j2": "plugins/LuckPerms/config.yml",
     "chatsentinel-config.yml.j2": "plugins/ChatSentinel/config.yml",
     "coreprotect-config.yml.j2": "plugins/CoreProtect/config.yml",
-    # --- Discord ----------------------------------------------------------
-    "discordsrv-config.yml.j2": "plugins/DiscordSRV/config.yml",
     # --- Mapa web ---------------------------------------------------------
     "bluemap-core.conf.j2": "plugins/BlueMap/core.conf",
     "bluemap-webserver.conf.j2": "plugins/BlueMap/webserver.conf",
@@ -180,20 +179,15 @@ def construir_contexto(settings: Settings, secretos: Secretos) -> dict[str, Any]
         "chat": s.chat.model_dump(),
         # Tumbas
         "tumbas": s.tumbas.model_dump(),
-        # Discord
-        "discord": s.discord.model_dump(),
         # Versiones
         "version_minecraft": s.versiones.minecraft,
         # Admins, para el guion de grupos de LuckPerms.
-        "admins": list(s.admins),
-        # Zona horaria: la usan DiscordSRV y el bot de pagos.
+        "admins": admins_con_uuid(s),
+        # Zona horaria del servidor y del bot de pagos.
         "zona_horaria": s.pagos.zona_horaria,
         # --- Secretos -----------------------------------------------------
         # Van a archivos dentro de minecraft/generated/, que git ignora.
         "rcon_password": secretos.rcon_password,
-        "discord_token": secretos.discord_token,
-        "discord_canal_chat": secretos.discord_channel_chat or "000000000000000000",
-        "discord_canal_consola": secretos.discord_channel_consola or "000000000000000000",
     }
 
 
@@ -255,5 +249,4 @@ TRADUCCIONES: dict[str, str] = {
     "coreprotect-language.yml": "plugins/CoreProtect/language.yml",
     "axgraves-messages.yml": "plugins/AxGraves/messages.yml",
     "chatsentinel-messages.yml": "plugins/ChatSentinel/messages.yml",
-    "discordsrv-messages.yml": "plugins/DiscordSRV/messages.yml",
 }

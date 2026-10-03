@@ -808,7 +808,7 @@ wheels = [
 
 [[package]]
 name = "mc-admin"
-version = "1.0.0"
+version = "1.1.0"
 source = { editable = "packages/mc_admin" }
 dependencies = [
     { name = "httpx" },
@@ -1106,7 +1106,7 @@ wheels = [
 
 [[package]]
 name = "pagos-bot"
-version = "1.0.0"
+version = "1.1.0"
 source = { editable = "packages/pagos_bot" }
 dependencies = [
     { name = "apscheduler" },

@@ -143,9 +143,19 @@ class MesDeCobro:
         return sumar([c.monto for c in self.pagados])
 
     @property
+    def meta(self) -> Dinero:
+        """Lo que cuesta el VPS este mes: el precio que puso el tesorero.
+
+        Es la meta aunque las cuotas sumen otra cosa (con reparto
+        personalizado pueden sumar más, y eso está bien).
+        """
+        return self.total
+
+    @property
     def por_juntar(self) -> Dinero:
-        """Lo que falta para cubrir el VPS."""
-        return sumar([c.monto for c in self.activos]) - self.juntado
+        """Lo que falta para llegar al precio del VPS. Nunca negativo."""
+        falta = self.meta - self.juntado
+        return falta if falta.es_positivo else Dinero.cero()
 
     @property
     def esta_cubierto(self) -> bool:
@@ -154,16 +164,27 @@ class MesDeCobro:
 
     @property
     def avance(self) -> float:
-        """De 0.0 a 1.0, para la barrita del embed."""
-        objetivo = sumar([c.monto for c in self.activos])
-        if not objetivo.es_positivo:
+        """De 0.0 a 1.0 contra el precio del VPS. Si se junta de más, 1.0."""
+        if not self.activos or not self.meta.es_positivo:
             return 1.0
-        return min(1.0, self.juntado.centavos / objetivo.centavos)
+        return min(1.0, self.juntado.centavos / self.meta.centavos)
+
+    def con_total(self, total: Dinero) -> MesDeCobro:
+        """Devuelve el mes con otro precio del VPS."""
+        return replace(self, total=total)
 
     def cuota_de(self, discord_id: int) -> Cuota | None:
         return next((c for c in self.cuotas if c.participante.discord_id == discord_id), None)
 
     # -- cambios ----------------------------------------------------------- #
+
+    def con_monto(self, discord_id: int, monto: Dinero) -> MesDeCobro:
+        """Devuelve un mes nuevo donde a esa persona le toca otro monto."""
+        nuevas = tuple(
+            replace(c, monto=monto) if c.participante.discord_id == discord_id else c
+            for c in self.cuotas
+        )
+        return replace(self, cuotas=nuevas)
 
     def con_estado(self, discord_id: int, estado: Estado, cuando: datetime) -> MesDeCobro:
         """Devuelve un mes nuevo con esa persona en ese estado."""

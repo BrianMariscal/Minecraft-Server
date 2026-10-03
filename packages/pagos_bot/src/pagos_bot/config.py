@@ -64,6 +64,8 @@ class PagosConfig(_Base):
     tesorero: TesoreroConfig
     rol_admin_id: int = Field(default=0, ge=0)
     avisos: AvisosConfig
+    # A qué hora (de `zona_horaria`) salen los recordatorios.
+    hora_aviso: int = Field(default=11, ge=0, le=23)
 
     @field_validator("zona_horaria")
     @classmethod
@@ -104,6 +106,19 @@ class PagosConfig(_Base):
             return True
         return any(p.nombre == MARCADOR_PENDIENTE or p.discord_id == 0 for p in self.participantes)
 
+    @property
+    def descuadre(self) -> Dinero | None:
+        """Con reparto personalizado: cuánto se aleja la suma de cuotas del total.
+
+        None si cuadra (o si el reparto es `iguales`, que cuadra siempre).
+        Positivo = se junta de más; negativo = no alcanza para el VPS.
+        """
+        if self.reparto is not Reparto.PERSONALIZADO:
+            return None
+        montos = [p.monto_mxn for p in self.participantes if p.monto_mxn is not None]
+        diferencia = Dinero.de_pesos(sum(montos, Decimal(0))) - self.total
+        return diferencia if diferencia.centavos else None
+
     def puede_administrar(self, discord_id: int, roles: list[int]) -> bool:
         """¿Esta persona puede confirmar pagos y mover el mes?"""
         if discord_id == self.tesorero.discord_id:
@@ -118,6 +133,10 @@ class Entorno(_Base):
     guild_id: int
     canal_id: int
     ruta_db: Path
+    # El vigía del servidor de Minecraft. Sin canal, no vigila.
+    alertas_canal_id: int | None = None
+    minecraft_host: str = "minecraft"
+    minecraft_puerto: int = 25565
 
     @classmethod
     def desde_entorno(cls) -> Self:
@@ -134,16 +153,20 @@ class Entorno(_Base):
             )
             raise ErrorDeConfig(msg)
 
+        alertas = os.environ.get("ALERTAS_CANAL_ID", "").strip()
         try:
             return cls(
                 token=os.environ["PAGOS_BOT_TOKEN"],
                 guild_id=int(os.environ["PAGOS_GUILD_ID"]),
                 canal_id=int(os.environ["PAGOS_CANAL_ID"]),
                 ruta_db=Path(os.environ.get("PAGOS_DB", "/datos/pagos.sqlite")),
+                alertas_canal_id=int(alertas) if alertas else None,
+                minecraft_host=os.environ.get("MINECRAFT_HOST", "minecraft"),
+                minecraft_puerto=int(os.environ.get("MINECRAFT_PUERTO", "25565")),
             )
         except ValueError as exc:
             msg = (
-                "PAGOS_GUILD_ID y PAGOS_CANAL_ID tienen que ser números.\n"
+                "PAGOS_GUILD_ID, PAGOS_CANAL_ID y ALERTAS_CANAL_ID tienen que ser números.\n"
                 "Son los IDs de Discord: clic derecho > Copiar ID, con el modo\n"
                 "desarrollador prendido. Ver docs/bot-pagos.md."
             )

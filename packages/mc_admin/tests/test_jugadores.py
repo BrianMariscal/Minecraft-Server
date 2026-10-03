@@ -7,11 +7,14 @@ import pytest
 from mc_admin.core.jugadores import (
     Plataforma,
     agregar,
+    entradas_whitelist,
     nombre_con_prefijo,
-    nombres_para_el_servidor,
     normalizar_gamertag,
     quitar,
+    uuid_floodgate,
+    uuid_offline,
     validar,
+    validar_xuid,
 )
 from mc_admin.errores import ErrorDeConfig
 
@@ -106,13 +109,48 @@ class TestAgregarYQuitar:
         assert r.lista == ()
 
 
-class TestNombresParaElServidor:
-    def test_java_tal_cual_y_bedrock_con_punto(self) -> None:
-        nombres = nombres_para_el_servidor(["Pepe"], ["Gamer Tag"], ".")
-        assert nombres == ["Pepe", ".Gamer_Tag"]
+class TestUUIDs:
+    """Verificados contra un Paper 26.1.2 de verdad (whitelist.json y ops.json)."""
 
-    def test_listas_vacias(self) -> None:
-        assert nombres_para_el_servidor([], [], ".") == []
+    def test_offline_igual_que_el_servidor(self) -> None:
+        assert uuid_offline("Pepe") == "6eed0e07-3df7-3e33-9aa2-baa999bb44ee"
+        assert uuid_offline("Zorro") == "94c56451-ca97-328d-a577-186e0ba6ebd3"
 
-    def test_sin_prefijo(self) -> None:
-        assert nombres_para_el_servidor([], ["Pepe"], "") == ["Pepe"]
+    def test_floodgate_es_el_xuid_en_hex(self) -> None:
+        # 1234567890123456 = 0x000462d53c8abac0
+        assert uuid_floodgate(1234567890123456) == "00000000-0000-0000-0004-62d53c8abac0"
+
+    @pytest.mark.parametrize("malo", ["", "abc", "-5", "0", "12.5"])
+    def test_xuid_invalido(self, malo: str) -> None:
+        with pytest.raises(ErrorDeConfig):
+            validar_xuid(malo)
+
+    def test_xuid_valido(self) -> None:
+        assert validar_xuid(" 1234567890123456 ") == 1234567890123456
+
+
+class TestEntradasWhitelist:
+    def test_java_con_uuid_offline(self) -> None:
+        entradas, _ = entradas_whitelist(["Pepe"], [], [], {}, ".")
+        assert [e.a_json() for e in entradas] == [
+            {"uuid": "6eed0e07-3df7-3e33-9aa2-baa999bb44ee", "name": "Pepe"}
+        ]
+
+    def test_los_admins_entran_solos_y_sin_duplicar(self) -> None:
+        entradas, _ = entradas_whitelist(["Pepe"], ["pepe", "Zorro"], [], {}, ".")
+        assert [e.nombre for e in entradas] == ["Pepe", "Zorro"]
+
+    def test_bedrock_con_el_uuid_de_floodgate(self) -> None:
+        entradas, sin_xuid = entradas_whitelist(
+            [], [], ["Gamer Tag"], {"Gamer_Tag": 1234567890123456}, "."
+        )
+        assert sin_xuid == []
+        assert entradas[0].a_json() == {
+            "uuid": "00000000-0000-0000-0004-62d53c8abac0",
+            "name": ".Gamer_Tag",
+        }
+
+    def test_bedrock_sin_xuid_no_entra_y_se_avisa(self) -> None:
+        entradas, sin_xuid = entradas_whitelist([], [], ["Gamer Tag"], {}, ".")
+        assert entradas == []
+        assert sin_xuid == ["Gamer_Tag"]

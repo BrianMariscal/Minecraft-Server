@@ -35,8 +35,6 @@ def env_lleno(proyecto: Path) -> Path:
     """Un .env con todo lleno, para probar el camino felíz."""
     (proyecto / ".env").write_text(
         "RCON_PASSWORD=contrasenaDePrueba\n"
-        "DISCORD_TOKEN=tokenDePrueba\n"
-        "DISCORD_CHANNEL_CHAT=111\n"
         "PAGOS_BOT_TOKEN=otroTokenDePrueba\n"
         "PAGOS_GUILD_ID=222\n"
         "PAGOS_CANAL_ID=333\n",

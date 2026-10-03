@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import shutil
+import sqlite3
 import tarfile
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -14,12 +16,19 @@ from mc_admin.cli import consola
 from mc_admin.contexto import Contexto
 from mc_admin.core import respaldos as core
 from mc_admin.errores import ErrorDeRcon, ErrorDeRespaldo, ErrorMc, OperacionCancelada
-from mc_admin.infra import rcon
+from mc_admin.infra import rcon, sqlite
 
 app = typer.Typer(help="Respaldos del mundo y de las configs.")
 
 # Lo que no tiene caso guardar: se vuelve a bajar o a generar solo.
-EXCLUIR = ("cache", "logs", "libraries", "versions", "plugins/BlueMap/bluemap/web")
+# `pagos-datos` dentro de data/ es solo el punto de montaje vacío que usa el
+# contenedor de respaldos; la base de verdad se agrega aparte, abajo.
+EXCLUIR = ("cache", "logs", "libraries", "versions", "plugins/BlueMap/bluemap/web", "pagos-datos")
+
+CARPETA_PAGOS = "pagos-datos"
+BASE_PAGOS = "pagos.sqlite"
+# La foto que el bot saca cada hora con la API de respaldo de SQLite.
+COPIA_PAGOS = "pagos.copia.sqlite"
 
 
 def _zona(ctx: Contexto) -> ZoneInfo:
@@ -64,13 +73,12 @@ def crear_respaldo(ctx: Contexto, etiqueta: str = "world") -> Path:
                 if rel in EXCLUIR or rel.endswith(".jar"):
                     continue
                 tar.add(elemento, arcname=rel, filter=_sin_basura)
-            # La base de datos del bot de pagos también entra.
-            pagos = ctx.raiz / "pagos-datos"
-            if pagos.is_dir():
-                tar.add(pagos, arcname="pagos-datos")
+            # La base de datos del bot de pagos también entra, pero copiada con
+            # la API de SQLite: el bot puede estar escribiendo en este momento.
+            _agregar_base_de_pagos(ctx, tar)
             # Y settings.yml, para saber con qué config se hizo.
             tar.add(ctx.raiz / "settings.yml", arcname="settings.yml")
-    except OSError as exc:
+    except (OSError, sqlite3.Error) as exc:
         destino.unlink(missing_ok=True)
         raise ErrorDeRespaldo(f"no pude escribir el respaldo: {exc}") from exc
     finally:
@@ -85,6 +93,59 @@ def crear_respaldo(ctx: Contexto, etiqueta: str = "world") -> Path:
                     "Entra con `mc console` y escribe `save-on`."
                 )
     return destino
+
+
+def _agregar_base_de_pagos(ctx: Contexto, tar: tarfile.TarFile) -> None:
+    """Mete al tar una copia consistente de la base del bot de pagos."""
+    base = ctx.raiz / CARPETA_PAGOS / BASE_PAGOS
+    if not base.is_file():
+        return
+    with tempfile.TemporaryDirectory() as temporal:
+        copia = Path(temporal) / BASE_PAGOS
+        sqlite.copia_consistente(base, copia)
+        tar.add(copia, arcname=f"{CARPETA_PAGOS}/{BASE_PAGOS}")
+
+
+def _restaurar_base_de_pagos(ctx: Contexto, tar: tarfile.TarFile) -> None:
+    """Saca del respaldo la base del bot de pagos y la deja sana.
+
+    Los respaldos automáticos copian los archivos tal cual (base, -wal y la
+    foto horaria del bot). Si la base que salió no pasa la revisión de
+    SQLite, usamos la foto.
+    """
+    de_pagos = [m for m in tar.getmembers() if _nombre(m).startswith(CARPETA_PAGOS + "/")]
+    if not de_pagos:
+        return
+
+    carpeta = ctx.raiz / CARPETA_PAGOS
+    # Lo de ahorita fuera, con su -wal: si se quedara, SQLite se lo aplicaría
+    # encima a la base restaurada.
+    sqlite.borrar_con_wal(carpeta / BASE_PAGOS)
+    sqlite.borrar_con_wal(carpeta / COPIA_PAGOS)
+    tar.extractall(ctx.raiz, members=de_pagos, filter="data")
+
+    base = carpeta / BASE_PAGOS
+    if sqlite.esta_sana(base):
+        consola.info("  restauré también la base de datos del bot de pagos")
+        return
+    copia = carpeta / COPIA_PAGOS
+    if sqlite.esta_sana(copia):
+        sqlite.borrar_con_wal(base)
+        shutil.copy2(copia, base)
+        consola.aviso(
+            "la base del bot de pagos del respaldo venía dañada; usé la foto que "
+            "el bot saca cada hora (puede faltarle lo de la última hora)"
+        )
+        return
+    consola.mal(
+        "la base del bot de pagos del respaldo no abre. Prueba con otro respaldo: "
+        "mc backup restore <id>"
+    )
+
+
+def _nombre(miembro: tarfile.TarInfo) -> str:
+    """El nombre sin el `./` que le ponen los respaldos de itzg/mc-backup."""
+    return miembro.name.removeprefix("./")
 
 
 def _sin_basura(info: tarfile.TarInfo) -> tarfile.TarInfo | None:
@@ -193,17 +254,15 @@ def backup_restore(
             #
             # filter="data" es lo que evita que una ruta con ".." dentro del
             # tar escriba fuera de la carpeta destino.
+            # Ojo: los respaldos de itzg/mc-backup nombran todo con "./"
+            # adelante ("./pagos-datos/..."); los de `mc backup now`, no.
             del_servidor = [
                 m
                 for m in tar.getmembers()
-                if not m.name.startswith(("settings.yml", "pagos-datos"))
+                if not _nombre(m).startswith(("settings.yml", CARPETA_PAGOS))
             ]
             tar.extractall(destino, members=del_servidor, filter="data")
-
-            de_pagos = [m for m in tar.getmembers() if m.name.startswith("pagos-datos")]
-            if de_pagos:
-                tar.extractall(ctx.raiz, members=de_pagos, filter="data")
-                consola.info("  restauré también la base de datos del bot de pagos")
+            _restaurar_base_de_pagos(ctx, tar)
 
         # settings.yml del respaldo NO se restaura solo: si cambiaste la
         # config a propósito, pisártela sin avisar sería una grosería.

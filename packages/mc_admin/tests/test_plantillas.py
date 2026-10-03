@@ -244,10 +244,10 @@ class TestTumbas:
 
 
 class TestSecretos:
-    def test_el_token_llega_a_la_config_de_discordsrv(self, generados: dict[str, str]) -> None:
-        dsrv = yaml.safe_load(generados["plugins/DiscordSRV/config.yml"])
-        assert dsrv["BotToken"] == "tokenDePrueba"
-        assert dsrv["ForcedLanguage"] == "es"
+    def test_la_contrasena_de_rcon_llega_a_server_properties(
+        self, generados: dict[str, str]
+    ) -> None:
+        assert "rcon.password=contrasenaDePrueba" in generados["server.properties"]
 
     def test_bluemap_acepta_la_descarga_o_no_arranca(self, generados: dict[str, str]) -> None:
         assert "accept-download: true" in generados["plugins/BlueMap/core.conf"]

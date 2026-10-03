@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import json
 import os
 import shutil
 import tempfile
@@ -11,7 +12,7 @@ from pathlib import Path
 
 import yaml
 from ruamel.yaml import YAML
-from ruamel.yaml.comments import CommentedSeq
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from mc_admin.core.plantillas import ArchivoGenerado
 from mc_admin.errores import ErrorDeConfig, ErrorDeEntorno
@@ -25,6 +26,7 @@ CARPETA_TEMPLATES = Path("minecraft/templates")
 CARPETA_CACHE = Path(".cache/descargas")
 CARPETA_DATOS = Path("data")
 CARPETA_RESPALDOS = Path("backups")
+CARPETA_PAGOS = Path("pagos-datos")
 ARCHIVO_MANIFEST = Path("minecraft/manifest.yml")
 
 
@@ -65,8 +67,8 @@ def escribir_si_cambio(ruta: Path, contenido: str, *, dry_run: bool = False) -> 
                 pista=(
                     "Casi siempre es que los archivos quedaron del usuario del "
                     "contenedor. Arréglalo con:\n"
-                    "    sudo chown -R $USER:$USER data\n"
-                    "y revisa que UID y GID en .env sean los tuyos (`id -u`, `id -g`)."
+                    "    sudo chown -R $USER:$USER data pagos-datos\n"
+                    "y corre `mc build`, que pone tu UID y GID en .env."
                 ),
             ) from exc
         except OSError as exc:
@@ -153,7 +155,7 @@ def ram_total_gb() -> float | None:
     return None
 
 
-def actualizar_settings(raiz: Path, cambios: dict[str, list[str]]) -> None:
+def actualizar_settings(raiz: Path, cambios: dict[str, list[str] | dict[str, int]]) -> None:
     """Reescribe claves de settings.yml conservando comentarios y formato.
 
     settings.yml está documentado a propósito, así que no podemos cargarlo y
@@ -185,7 +187,7 @@ def actualizar_settings(raiz: Path, cambios: dict[str, list[str]]) -> None:
             msg = f"settings.yml no tiene la clave '{ruta_clave}'"
             raise ErrorDeConfig(msg)
         # Lista nueva ordenada sin distinguir mayúsculas, como la deja `core`.
-        nodo[hoja] = CommentedSeq(valor)
+        nodo[hoja] = CommentedMap(valor) if isinstance(valor, dict) else CommentedSeq(valor)
 
     flujo = io.StringIO()
     yaml_rt.dump(doc, flujo)
@@ -202,9 +204,32 @@ def actualizar_settings(raiz: Path, cambios: dict[str, list[str]]) -> None:
     escribir_si_cambio(ruta, texto)
 
 
+def escribir_whitelist(carpeta_datos: Path, entradas: list[dict[str, str]]) -> bool:
+    """Escribe data/whitelist.json completo. True si cambió algo.
+
+    El servidor lo vuelve a leer con `whitelist reload`. Lo escribimos
+    nosotros, y no con `whitelist add`, porque así podemos poner el UUID
+    correcto de cada quien (ver core.jugadores) y quien se borra de
+    settings.yml se borra también de aquí.
+    """
+    contenido = json.dumps(entradas, indent=2, ensure_ascii=False) + "\n"
+    return escribir_si_cambio(carpeta_datos / "whitelist.json", contenido).cambio
+
+
 def asegurar_carpetas(raiz: Path) -> None:
     """Crea las carpetas de runtime si no existen. Idempotente."""
-    for carpeta in (CARPETA_GENERADOS, CARPETA_CACHE, CARPETA_DATOS, CARPETA_RESPALDOS):
+    for carpeta in (
+        CARPETA_GENERADOS,
+        CARPETA_CACHE,
+        CARPETA_DATOS,
+        CARPETA_RESPALDOS,
+        CARPETA_PAGOS,
+        # El contenedor de respaldos monta pagos-datos/ ENCIMA de esta carpeta
+        # para que la base del bot entre a cada respaldo. Si no existiera,
+        # Docker intentaría crearla dentro de un montaje de solo lectura y
+        # el contenedor no arrancaría.
+        CARPETA_DATOS / CARPETA_PAGOS,
+    ):
         destino = raiz / carpeta
         try:
             destino.mkdir(parents=True, exist_ok=True)
@@ -215,20 +240,42 @@ def asegurar_carpetas(raiz: Path) -> None:
             ) from exc
 
 
+def _texto_base_del_env(raiz: Path) -> str:
+    """Lo que hay en .env, o .env.example si todavía no existe."""
+    ruta = raiz / ".env"
+    if ruta.is_file():
+        return ruta.read_text(encoding="utf-8")
+    ejemplo = raiz / ".env.example"
+    if not ejemplo.is_file():
+        raise ErrorDeConfig(
+            "no existe .env ni .env.example",
+            pista="Recupera .env.example con git checkout .env.example",
+        )
+    return ejemplo.read_text(encoding="utf-8")
+
+
+def _guardar_env(raiz: Path, texto: str) -> bool:
+    """Escribe .env con permisos 600. Devuelve True si cambió algo."""
+    ruta = raiz / ".env"
+    escritura = escribir_si_cambio(ruta, texto)
+    # .env trae secretos: que solo lo lea su dueño.
+    os.chmod(ruta, 0o600)  # noqa: PTH101 — Path.chmod no acepta follow_symlinks aquí
+    return escritura.cambio
+
+
+def escribir_bloque_compose(raiz: Path, bloque: str) -> bool:
+    """Pone en .env el bloque de variables que `mc build` saca de settings.yml.
+
+    Devuelve True si el bloque cambió (y hace falta recrear contenedores).
+    """
+    from mc_admin.core.compose import reemplazar_bloque
+
+    return _guardar_env(raiz, reemplazar_bloque(_texto_base_del_env(raiz), bloque))
+
+
 def escribir_env(raiz: Path, valores: dict[str, str]) -> None:
     """Crea o actualiza .env conservando lo que ya estaba y los comentarios."""
-    ruta = raiz / ".env"
-    ejemplo = raiz / ".env.example"
-
-    if not ruta.is_file():
-        if not ejemplo.is_file():
-            raise ErrorDeConfig(
-                "no existe .env ni .env.example",
-                pista="Recupera .env.example con git checkout .env.example",
-            )
-        base = ejemplo.read_text(encoding="utf-8")
-    else:
-        base = ruta.read_text(encoding="utf-8")
+    base = _texto_base_del_env(raiz)
 
     lineas = base.splitlines()
     pendientes = dict(valores)
@@ -243,6 +290,4 @@ def escribir_env(raiz: Path, valores: dict[str, str]) -> None:
         lineas.append("")
         lineas.extend(f"{k}={v}" for k, v in pendientes.items())
 
-    escribir_si_cambio(ruta, "\n".join(lineas) + "\n")
-    # .env trae secretos: que solo lo lea su dueño.
-    os.chmod(ruta, 0o600)  # noqa: PTH101 — Path.chmod no acepta follow_symlinks aquí
+    _guardar_env(raiz, "\n".join(lineas) + "\n")

@@ -16,7 +16,6 @@ dentro del jar, así que basta con dejarlo ahí.
 | `chatsentinel-messages.yml` | ChatSentinel | El jar solo trae inglés. |
 | `essentials-messages_es.properties` | EssentialsX | Sí trae `messages_es.properties`, pero es español de España. Corregimos los modismos. |
 | `authme-messages_es.yml` | AuthMe Reloaded | Igual: trae `messages_es.yml` de España. |
-| `discordsrv-messages.yml` | DiscordSRV | Trae `messages/es.yml`, también de España. |
 
 ## Lo que NO traducimos y por qué
 

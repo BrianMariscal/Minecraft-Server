@@ -91,8 +91,10 @@ lp group admin permission set chatsentinel.admin true
 lp group admin permission set chatsentinel.bypass true
 lp group admin permission set geyser.command.* true
 lp group admin permission set floodgate.command.* true
-lp group admin permission set discordsrv.admin true
 lp group admin permission set luckperms.* true
+# Sin el "Comprobación de actualización desactivada" de EssentialsX en cada
+# entrada: lo manda a quien tiene este permiso, y los ops lo traen de fábrica.
+lp group admin permission set essentials.updatecheck false
 
 # Ojo con estos: dan poder de verdad.
 lp group admin permission set minecraft.command.whitelist true
@@ -103,8 +105,12 @@ lp group admin permission set minecraft.command.ban true
 
 {% if admins %}
 # --- Los admins de settings.yml -------------------------------------------
+# Por UUID y no por nombre: con el nombre, LuckPerms contesta "A user for X
+# could not be found" si esa persona todavía no ha entrado nunca, y el admin
+# se quedaba sin permisos.
 {% for admin in admins %}
-lp user {{ admin }} parent add admin
+# {{ admin.nombre }}
+lp user {{ admin.uuid }} parent add admin
 {% endfor %}
 {% else %}
 # --- Sin admins todavía ---------------------------------------------------

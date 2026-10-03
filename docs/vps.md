@@ -135,31 +135,44 @@ Desde **tu computadora**, no desde el VPS.
 Solo manda lo que cambió, así que la segunda vez es rapidísimo:
 
 ```bash
+# Desde la carpeta que CONTIENE a minecraft-hd/
 rsync -avz --progress \
   --exclude 'data/' \
   --exclude 'backups/' \
+  --exclude 'pagos-datos/' \
+  --exclude '.env' \
   --exclude '.venv/' \
   --exclude '__pycache__/' \
   --exclude '.cache/' \
   --exclude 'minecraft/generated/' \
-  "Minecraft server/" \
+  minecraft-hd/ \
   usuario@tu-vps:~/minecraft-hd/
 ```
 
-Fíjate en los `--exclude`: `data/` y `backups/` son del VPS y pueden pesar
-gigas. No tiene sentido mandarlos de ida ni de vuelta.
+Fíjate en los `--exclude`: `data/`, `backups/` y `pagos-datos/` son del VPS
+y pueden pesar gigas (o, en el caso del bot, pisarte quién ya pagó). No
+tiene sentido mandarlos de ida ni de vuelta. Y `.env` lleva tus tokens.
+
+> Si ya habías corrido el bot de pagos en tu computadora y quieres conservar
+> lo que anotó, súbelo **una sola vez**, antes del primer `mc start`:
+> `scp -r minecraft-hd/pagos-datos usuario@tu-vps:~/minecraft-hd/`.
 
 ### Con scp (si no tienes rsync)
 
 ```bash
+# Desde la carpeta que CONTIENE a minecraft-hd/
 tar czf mc-hd.tar.gz \
-  --exclude='data' --exclude='backups' --exclude='.venv' \
+  --exclude='data' --exclude='backups' --exclude='pagos-datos' \
+  --exclude='.env' --exclude='.venv' \
   --exclude='__pycache__' --exclude='.cache' \
   --exclude='minecraft/generated' \
-  "Minecraft server"
+  minecraft-hd
+
+# Revisa que no salió vacío (debe pesar cientos de KB, no unos bytes):
+ls -lh mc-hd.tar.gz
 
 scp mc-hd.tar.gz usuario@tu-vps:~/
-ssh usuario@tu-vps 'tar xzf mc-hd.tar.gz && mv "Minecraft server" minecraft-hd'
+ssh usuario@tu-vps 'tar xzf mc-hd.tar.gz && rm mc-hd.tar.gz'
 ```
 
 ### ¿Y el `.env`?
@@ -237,19 +250,56 @@ Debe verse así:
 `19132/tcp` por error, no va a entrar nadie de Bedrock y el error no dice
 nada útil.
 
-**RCON (25575) NO se abre. Nunca.** Vive solo en la red interna de Docker.
-Quien tenga esa contraseña es dueño del servidor: puede dar op, banear y
-apagarlo. En el `docker-compose.yml` ese puerto no se publica a propósito.
+**RCON (25575) NO se abre. Nunca.** Quien tenga esa contraseña es dueño
+del servidor: puede dar op, banear y apagarlo. En el `docker-compose.yml`
+está publicado **solo en `127.0.0.1`**, para que `mc` lo alcance desde el
+propio VPS; desde internet ese puerto no existe, haga lo que haga el
+firewall.
+
+**Ojo: Docker se salta `ufw`.** Los puertos que publica Docker se abren por
+su cuenta en iptables, aunque `ufw` diga que están cerrados. Por eso lo que
+debe ser privado se amarra a `127.0.0.1` en el compose, y no basta con "no
+abrirlo" en `ufw`.
 
 ### Si quieres el mapa privado
 
-No abras el 8100 y entra por un túnel SSH desde tu compu:
+Por lo de arriba, quitar la regla del 8100 en `ufw` **no** lo esconde. Hazlo
+desde `settings.yml`:
+
+```yaml
+mapa:
+  publico: false
+```
+
+```bash
+mc build && mc restart
+sudo ufw delete allow 8100/tcp   # ya no hace falta
+```
+
+Y entra por un túnel SSH desde tu compu:
 
 ```bash
 ssh -L 8100:localhost:8100 usuario@tu-vps
 ```
 
-Y abre `http://localhost:8100` en tu navegador.
+Luego abre `http://localhost:8100` en tu navegador.
+
+### Swap: un colchón para la RAM
+
+Con `recursos.memoria: "6G"`, el contenedor del servidor puede llegar a
+7.5 GB (Java usa memoria fuera del heap). En un VPS de 8 GB conviene tener
+swap para que un pico no tumbe nada:
+
+```bash
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+# Que solo lo use de emergencia:
+echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-swap.conf
+sudo sysctl --system
+```
 
 ---
 
@@ -395,6 +445,155 @@ Si va justo, bájale a `recursos.memoria` en `settings.yml` y corre
 `mc build && mc restart`.
 
 ---
+
+## Cambiar de proveedor de VPS
+
+La pregunta normal es "¿me llevo mi Docker y ya?". Casi: los contenedores
+son desechables, lo que importa son los **datos**.
+
+Y aquí hay algo que juega a tu favor: el `docker-compose.yml` usa *bind
+mounts* a la carpeta del proyecto, no volúmenes de Docker. O sea que **todo
+lo irremplazable vive dentro de `minecraft-hd/`**. No hay nada escondido
+en `/var/lib/docker` que haya que exportar.
+
+### Lo que SÍ te llevas
+
+| Qué | Por qué |
+|---|---|
+| `data/` | El mundo, y las bases de datos de CoreProtect, AuthMe, LuckPerms y la vinculación de cuentas. **Esto es lo único que no se puede volver a generar.** |
+| `pagos-datos/` | Quién ha pagado qué mes. |
+| `settings.yml` | Tu configuración. |
+| `.env` | Los tokens y la contraseña de RCON. |
+| `minecraft/`, `packages/`, `docker-compose.yml` | El proyecto. |
+| `backups/` | Opcional, pero llévate al menos el último. |
+
+### Lo que NO te llevas
+
+| Qué | Por qué |
+|---|---|
+| Las imágenes de Docker | Se bajan solas de Docker Hub por su tag. La del bot de pagos se construye en el VPS nuevo. |
+| `.cache/` | Son los jars ya bajados. Pesa bastante y `mc build` los vuelve a bajar verificando el sha256. |
+| `data/plugins/*.jar`, `data/libraries/`, `data/versions/` | Igual: `mc build` los repone. |
+| `data/cache/`, `data/logs/` | Basura regenerable. |
+| `minecraft/generated/` | Lo regenera `mc build`. |
+| `.venv/` | Lo rehace `uv sync`. |
+
+### Cómo hacerlo
+
+**Primero, apaga el servidor.** Copiar un mundo que se está escribiendo te
+da un mundo inconsistente, y eso no se nota hasta que un chunk sale
+corrupto.
+
+```bash
+# --- en el VPS VIEJO ---
+mc stop
+mc backup now        # por si acaso
+```
+
+Luego, desde **tu computadora**, pasas la carpeta de un VPS al otro:
+
+```bash
+rsync -avz --progress \
+  --exclude '.cache/' \
+  --exclude '.venv/' \
+  --exclude 'minecraft/generated/' \
+  --exclude '__pycache__/' \
+  --exclude 'data/cache/' \
+  --exclude 'data/logs/' \
+  --exclude 'data/libraries/' \
+  --exclude 'data/versions/' \
+  --exclude 'data/plugins/*.jar' \
+  --exclude 'data/plugins/BlueMap/bluemap/web/' \
+  usuario@vps-viejo:~/minecraft-hd/ \
+  usuario@vps-nuevo:~/minecraft-hd/
+```
+
+Si no puedes ir de servidor a servidor directo, bájalo a tu compu y súbelo:
+es el mismo comando en dos pasos.
+
+```bash
+# --- en el VPS NUEVO ---
+# 1. Docker y uv, igual que la primera vez (secciones 3 y 4 de esta guía).
+
+# 2. Los archivos tienen que ser tuyos. Si el usuario del VPS nuevo tiene
+#    otro número de id, los permisos quedan mal y el servidor no arranca.
+sudo chown -R $USER:$USER ~/minecraft-hd
+id -u; id -g        # que estos dos coincidan con UID y GID de .env
+
+# 3. Repone los jars y regenera las configs.
+cd ~/minecraft-hd
+mc build
+
+# 4. Revisa antes de arrancar.
+mc doctor
+
+# 5. Arranca.
+mc start
+mc logs -f
+```
+
+### Las cuatro cosas que Docker NO se lleva
+
+Esto es lo que de verdad se olvida:
+
+1. **El firewall.** El VPS nuevo viene abierto o cerrado de fábrica, no como
+   lo dejaste. Vuelve a hacer la sección 7 de esta guía: `25565/tcp`,
+   `19132/udp` y el de BlueMap. Y acuérdate de `OpenSSH` antes de
+   `ufw enable`.
+2. **El DNS.** Tu dominio o tu DuckDNS siguen apuntando a la IP vieja. Si no
+   lo cambias, la banda se conecta a un servidor que ya no existe.
+   - DuckDNS: actualiza la IP y el cron de `~/duckdns/actualizar.sh`.
+   - Dominio propio: cambia el registro **A**. El **SRV** no se toca (apunta
+     al nombre, no a la IP).
+   - Los DNS tardan en propagarse. Si quieres que sea instantáneo, baja el
+     TTL a 300 segundos **unos días antes** de mudarte.
+3. **Que Docker arranque con el sistema**: `sudo systemctl enable docker`.
+4. **Los respaldos fuera del VPS**, si los tenías: hay que volver a
+   configurar `rclone` en el VPS nuevo (`docs/respaldos.md`).
+
+### Lo que NO hay que tocar
+
+- **Los tokens de Discord.** Están amarrados a la aplicación, no a la
+  máquina. Los dos bots siguen funcionando igual.
+- **La contraseña de RCON.** Vive solo en la red interna de Docker.
+- **Las cuentas de los jugadores.** Sus contraseñas de AuthMe, sus casas de
+  `/sethome`, sus permisos y sus cuentas vinculadas van dentro de `data/`.
+  Nadie tiene que volver a registrarse.
+- **El mes del bot de pagos.** Va en `pagos-datos/`, así que no se pierde
+  quién ya pagó.
+
+### La ruta alterna: por respaldo
+
+Si prefieres no andar con `rsync` y sus exclusiones, un respaldo ya trae
+exactamente lo que hay que llevarse (deja fuera los jars, el caché y los
+logs solito):
+
+```bash
+# en el viejo
+mc stop && mc backup now
+mc backup list        # apunta el id
+
+# copias la carpeta del proyecto SIN data/, más el .tgz del respaldo
+
+# en el nuevo
+mc build
+mc backup restore <el-id>
+mc start
+```
+
+### Comprobar que quedó bien
+
+```bash
+mc doctor       # puertos, memoria, disco, versiones, secretos
+mc status       # contenedores y TPS
+```
+
+Y dentro del juego: que tu `/home` te lleve a tu casa de verdad, y que el
+mapa web abra en `http://la-ip-nueva:8100`. Si las dos cosas jalan, la
+mudanza salió bien.
+
+Cuando ya estés seguro, apaga el VPS viejo. No antes: tener los dos unos
+días cuesta poco y te deja volver si algo salió mal.
 
 ## Mantenimiento
 

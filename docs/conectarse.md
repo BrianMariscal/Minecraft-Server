@@ -31,19 +31,19 @@ Dile a un admin tu nombre:
 El servidor es no premium, o sea que Mojang no verifica a nadie. Tu personaje
 es tuyo porque tienes una contraseña.
 
-**La primera vez:**
+**La primera vez** te sale una ventanita que dice **"Registrarte"**: escribe
+una contraseña, repítela y dale a **Registrarme**. **Apúntatela**: si se te
+olvida, un admin tiene que borrar tu registro y empiezas de nuevo.
+
+**Las siguientes veces** sale la ventanita **"Entrar"**: tu contraseña y
+listo.
+
+Si por alguna razón no te sale la ventanita (versiones viejas de Minecraft),
+el chat te dice qué escribir:
 
 ```
-/register tuContraseña tuContraseña
-```
-
-Sí, la contraseña se escribe dos veces. **Apúntatela**: si se te olvida, un
-admin tiene que borrar tu registro y empiezas de nuevo.
-
-**Las siguientes veces:**
-
-```
-/login tuContraseña
+/register tuContraseña tuContraseña     ← la primera vez
+/login tuContraseña                     ← las demás
 ```
 
 Hasta que no entres, no puedes moverte, hablar ni abrir tu inventario. Es a

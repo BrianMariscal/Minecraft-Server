@@ -1,0 +1,63 @@
+# Lo mismo que los ganchos de pre-commit, pero en cada push y PR: así nada
+# roto llega a main aunque alguien haya hecho commit con --no-verify.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Lint, tipos y tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Instalar dependencias (las mismas de uv.lock)
+        run: uv sync --locked
+
+      - name: ruff (lint)
+        run: uv run ruff check .
+
+      - name: ruff (formato)
+        run: uv run ruff format --check .
+
+      - name: mypy (estricto)
+        run: uv run mypy packages
+
+      - name: pytest
+        run: uv run pytest --cov=mc_admin --cov=pagos_bot --cov-report=term-missing
+
+  docker:
+    name: Compose y la imagen del bot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: docker-compose.yml es válido (con todos los perfiles)
+        run: |
+          printf 'RCON_PASSWORD=ci\n' > .env
+          docker compose --profile pagos --profile remoto config --quiet
+
+      - name: La imagen del bot de pagos construye
+        run: docker build -f packages/pagos_bot/Dockerfile -t pagos-bot:ci .
+
+  secretos:
+    name: Que no se cuele ningún token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml

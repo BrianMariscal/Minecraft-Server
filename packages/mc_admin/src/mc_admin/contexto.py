@@ -11,6 +11,7 @@ from functools import cached_property
 from pathlib import Path
 
 from mc_admin.config import Secretos, Settings, cargar_secretos, cargar_settings, encontrar_raiz
+from mc_admin.core import compose as core_compose
 from mc_admin.core.manifest import Manifest
 from mc_admin.infra import archivos
 from mc_admin.infra.docker import Compose
@@ -85,3 +86,27 @@ class Contexto:
     @property
     def ruta_logo(self) -> Path:
         return self.raiz / self.settings.servidor.logo
+
+    @property
+    def ruta_rclone_conf(self) -> Path:
+        """Donde `rclone config` deja su archivo en el VPS."""
+        return Path.home() / ".config/rclone/rclone.conf"
+
+    def bloque_compose(self) -> str:
+        """Las variables MC_* de .env, calculadas desde settings.yml."""
+        # El dueño de la carpeta del proyecto, y no el usuario del proceso:
+        # con `sg docker` o `newgrp docker` el grupo del proceso es `docker`,
+        # y el servidor acabaría escribiendo archivos con ese grupo.
+        dueno = self.raiz.stat()
+        return core_compose.bloque(
+            core_compose.variables(
+                self.settings,
+                uid=dueno.st_uid,
+                gid=dueno.st_gid,
+                conf_rclone=str(self.ruta_rclone_conf),
+            )
+        )
+
+    def sincronizar_compose(self) -> bool:
+        """Escribe el bloque en .env. True si cambió algo."""
+        return archivos.escribir_bloque_compose(self.raiz, self.bloque_compose())
