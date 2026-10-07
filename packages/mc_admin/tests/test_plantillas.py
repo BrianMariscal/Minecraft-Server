@@ -242,15 +242,19 @@ class TestTumbas:
         assert ax["xp-keep-percentage"] == 1.0
         assert ax["interact-only-own"] is False
 
+    def test_los_admins_tambien_dejan_tumba(self, generados: dict[str, str]) -> None:
+        # essentials.* incluye keepinv: sin quitárselo, el admin no pierde nada
+        # y AxGraves no le hace tumba.
+        guion = generados["mensajes/luckperms-grupos.txt"]
+        assert "lp group admin permission set essentials.keepinv false" in guion
+        assert "lp group admin permission set essentials.keepxp false" in guion
+
 
 class TestSecretos:
     def test_la_contrasena_de_rcon_llega_a_server_properties(
         self, generados: dict[str, str]
     ) -> None:
         assert "rcon.password=contrasenaDePrueba" in generados["server.properties"]
-
-    def test_bluemap_acepta_la_descarga_o_no_arranca(self, generados: dict[str, str]) -> None:
-        assert "accept-download: true" in generados["plugins/BlueMap/core.conf"]
 
 
 class TestMiniMessageALegacy:

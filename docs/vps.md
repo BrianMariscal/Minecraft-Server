@@ -229,7 +229,6 @@ sudo ufw allow OpenSSH
 
 sudo ufw allow 25565/tcp comment 'Minecraft Java'
 sudo ufw allow 19132/udp comment 'Minecraft Bedrock'
-sudo ufw allow 8100/tcp  comment 'Mapa web BlueMap'
 
 sudo ufw enable
 sudo ufw status numbered
@@ -241,7 +240,6 @@ Debe verse así:
 22/tcp    ALLOW IN    Anywhere    # OpenSSH
 25565/tcp ALLOW IN    Anywhere    # Minecraft Java
 19132/udp ALLOW IN    Anywhere    # Minecraft Bedrock
-8100/tcp  ALLOW IN    Anywhere    # Mapa web BlueMap
 ```
 
 ### Dos cosas que hay que tener claras
@@ -260,29 +258,6 @@ firewall.
 su cuenta en iptables, aunque `ufw` diga que están cerrados. Por eso lo que
 debe ser privado se amarra a `127.0.0.1` en el compose, y no basta con "no
 abrirlo" en `ufw`.
-
-### Si quieres el mapa privado
-
-Por lo de arriba, quitar la regla del 8100 en `ufw` **no** lo esconde. Hazlo
-desde `settings.yml`:
-
-```yaml
-mapa:
-  publico: false
-```
-
-```bash
-mc build && mc restart
-sudo ufw delete allow 8100/tcp   # ya no hace falta
-```
-
-Y entra por un túnel SSH desde tu compu:
-
-```bash
-ssh -L 8100:localhost:8100 usuario@tu-vps
-```
-
-Luego abre `http://localhost:8100` en tu navegador.
 
 ### Swap: un colchón para la RAM
 
@@ -415,7 +390,7 @@ docker compose version
 
 ```bash
 mc doctor        # te dice qué proceso lo tiene
-sudo ss -tulpn | grep -E '25565|19132|8100'
+sudo ss -tulpn | grep -E '25565|19132'
 ```
 
 ### Los de Bedrock no pueden entrar
@@ -503,7 +478,6 @@ rsync -avz --progress \
   --exclude 'data/libraries/' \
   --exclude 'data/versions/' \
   --exclude 'data/plugins/*.jar' \
-  --exclude 'data/plugins/BlueMap/bluemap/web/' \
   usuario@vps-viejo:~/minecraft-hd/ \
   usuario@vps-nuevo:~/minecraft-hd/
 ```
@@ -537,8 +511,8 @@ mc logs -f
 Esto es lo que de verdad se olvida:
 
 1. **El firewall.** El VPS nuevo viene abierto o cerrado de fábrica, no como
-   lo dejaste. Vuelve a hacer la sección 7 de esta guía: `25565/tcp`,
-   `19132/udp` y el de BlueMap. Y acuérdate de `OpenSSH` antes de
+   lo dejaste. Vuelve a hacer la sección 7 de esta guía: `25565/tcp` y
+   `19132/udp`. Y acuérdate de `OpenSSH` antes de
    `ufw enable`.
 2. **El DNS.** Tu dominio o tu DuckDNS siguen apuntando a la IP vieja. Si no
    lo cambias, la banda se conecta a un servidor que ya no existe.
@@ -588,9 +562,8 @@ mc doctor       # puertos, memoria, disco, versiones, secretos
 mc status       # contenedores y TPS
 ```
 
-Y dentro del juego: que tu `/home` te lleve a tu casa de verdad, y que el
-mapa web abra en `http://la-ip-nueva:8100`. Si las dos cosas jalan, la
-mudanza salió bien.
+Y dentro del juego: que tu `/home` te lleve a tu casa de verdad. Si jala,
+la mudanza salió bien.
 
 Cuando ya estés seguro, apaga el VPS viejo. No antes: tener los dos unos
 días cuesta poco y te deja volver si algo salió mal.

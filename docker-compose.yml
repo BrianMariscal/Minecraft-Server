@@ -49,9 +49,6 @@ services:
       - "${MC_PUERTO_JAVA:-25565}:${MC_PUERTO_JAVA:-25565}/tcp"
       # Bedrock, UDP. Ojo con el /udp: sin eso no entra nadie de Bedrock.
       - "${MC_PUERTO_BEDROCK:-19132}:${MC_PUERTO_BEDROCK:-19132}/udp"
-      # Mapa web de BlueMap. Con mapa.publico: false en settings.yml queda
-      # amarrado a 127.0.0.1 y solo se ve por un túnel de SSH.
-      - "${MC_IP_MAPA:-0.0.0.0}:${MC_PUERTO_MAPA:-8100}:${MC_PUERTO_MAPA:-8100}/tcp"
       # RCON, SOLO en 127.0.0.1: así lo alcanza `mc` desde el propio VPS,
       # pero desde internet no existe. NUNCA le quites el 127.0.0.1: si lo
       # abres, cualquiera con la contraseña es dueño del servidor.
@@ -160,7 +157,7 @@ services:
       # por el montaje de abajo, la del bot de pagos en /data/pagos-datos.
       SRC_DIR: "/data"
       # Lo que NO tiene caso guardar: se regenera solo y pesa mucho.
-      EXCLUDES: "*.jar,cache,logs,libraries,versions,plugins/BlueMap/bluemap/web,plugins/dynmap"
+      EXCLUDES: "*.jar,cache,logs,libraries,versions"
       # Un tar comprimido por respaldo.
       BACKUP_METHOD: "tar"
       TAR_COMPRESS_METHOD: "gzip"

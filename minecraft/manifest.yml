@@ -148,14 +148,6 @@ plugins:
     sha256: "530d2c7430a96a39957391b7088be144daa3108f7665896d1c23aa8dd4af32f3"
     nota: "Pregeneracion del mundo."
 
-  bluemap:
-    nombre: "BlueMap"
-    version: "5.28-paper"
-    archivo: "bluemap-5.28-paper.jar"
-    url: "https://cdn.modrinth.com/data/swbUV1cr/versions/pILlMIlN/bluemap-5.28-paper.jar"
-    sha256: "4cfb4a9963132d5be0a9db031a28a98e9df92deed37ebb0756d3a7dd8721ab98"
-    nota: "Mapa web del mundo en su propio puerto."
-
   chatsentinel:
     nombre: "ChatSentinel"
     version: "2.0.3"

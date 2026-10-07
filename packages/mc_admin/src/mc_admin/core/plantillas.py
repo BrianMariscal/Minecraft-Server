@@ -42,9 +42,6 @@ SALIDAS: dict[str, str] = {
     "luckperms-config.yml.j2": "plugins/LuckPerms/config.yml",
     "chatsentinel-config.yml.j2": "plugins/ChatSentinel/config.yml",
     "coreprotect-config.yml.j2": "plugins/CoreProtect/config.yml",
-    # --- Mapa web ---------------------------------------------------------
-    "bluemap-core.conf.j2": "plugins/BlueMap/core.conf",
-    "bluemap-webserver.conf.j2": "plugins/BlueMap/webserver.conf",
     # --- Referencia para humanos (no las lee ningún plugin) --------------
     "bienvenida.txt.j2": "mensajes/bienvenida.txt",
     "luckperms-grupos.txt.j2": "mensajes/luckperms-grupos.txt",
@@ -161,7 +158,6 @@ def construir_contexto(settings: Settings, secretos: Secretos) -> dict[str, Any]
         # Puertos
         "puerto_java": s.puertos.java,
         "puerto_bedrock": s.puertos.bedrock,
-        "puerto_bluemap": s.puertos.bluemap,
         "puerto_rcon": s.puertos.rcon,
         # Idioma
         "idioma": s.idioma.codigo,

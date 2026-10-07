@@ -32,6 +32,10 @@ servidor:
   # El logo va en logo/logo.png. Si no existe, el servidor arranca igual.
   logo: "logo/logo.png"
 
+  # La IP del VPS (o un dominio). Solo es para que `mc status` diga a dónde
+  # conectarse; vacío = "tu-ip".
+  direccion: "203.0.113.10"
+
 # --- Versiones fijadas -----------------------------------------------------
 #  Investigado y verificado el 2026-09-30. NO uses LATEST.
 #  Minecraft 26.1.2 es la versión más reciente que TODAS las piezas de este
@@ -50,10 +54,13 @@ versiones:
 #  a los contenedores del bot y de respaldos, y al caché de disco.
 recursos:
   # El heap de Java. El contenedor recibe esto MÁS 1.5 GB de tope, porque
-  # Java usa memoria fuera del heap (Geyser, BlueMap, hilos). Con 6G el
-  # contenedor puede llegar a 7.5 GB: en un VPS de 8 GB activa el swap
-  # (docs/vps.md) o bájale a "5G".
-  memoria: "6G"
+  # Java usa memoria fuera del heap (Geyser, hilos).
+  # En el VPS de 8 GB, con "6G" el servidor ya usaba 2.2 GB de swap con solo
+  # 2 jugadores (2026-10-02). Con "5G" todo cabe en la RAM y alcanza para
+  # los 15. Si un día falta, primero baja view_distance, no subas esto.
+  # Con "5G" Java seguía con 1.4 GB en swap y al VPS le quedaban 1.5 GB
+  # (2026-10-06), así que se bajó a "4G".
+  memoria: "4G"
   # Flags de Aikar: GC predecible, pensado para servidores de Minecraft.
   flags_aikar: true
 
@@ -63,20 +70,13 @@ rendimiento:
   simulation_distance: 8
 
 # --- Puertos ---------------------------------------------------------------
-#  Solo java, bedrock y bluemap se abren en el firewall. Ver docs/vps.md.
+#  Solo java y bedrock se abren en el firewall. Ver docs/vps.md.
 puertos:
   java: 25565         # TCP
   bedrock: 19132      # UDP
-  bluemap: 8100       # TCP (mapa web)
   # TCP, publicado SOLO en 127.0.0.1 del VPS para que `mc` lo alcance.
   # NUNCA lo abras en el firewall.
   rcon: 25575
-
-# --- Mapa web (BlueMap) ----------------------------------------------------
-mapa:
-  # true: cualquiera con la IP del VPS ve el mapa, y con él dónde están las
-  # bases de todos. false: solo se ve con un túnel de SSH (docs/administrar.md).
-  publico: true
 
 # --- Idioma ----------------------------------------------------------------
 idioma:

@@ -28,7 +28,6 @@ mc start     # levanta todo
 - **Talar de un golpe**, sentarse en escalones, cabezas de mobs, poses de
   armor stands.
 - **Skins** aunque la cuenta no sea premium.
-- Un **mapa web** en 3D del mundo.
 
 **El mundo**
 

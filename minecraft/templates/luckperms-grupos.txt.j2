@@ -62,9 +62,6 @@ lp group default permission set floodgate.command.unlinkaccount true
 # Abrir tumbas (incluidas las ajenas: aquí compartimos todo).
 lp group default permission set axgraves.use true
 
-# Ver el mapa web.
-lp group default permission set bluemap.webapp true
-
 # Esto NO se da: borrar las tumbas de otros o saltarse el anti-spam.
 lp group default permission set axgraves.admin false
 lp group default permission set chatsentinel.bypass false
@@ -83,7 +80,6 @@ lp group admin permission set essentials.* true
 lp group admin permission set essentials.sethome.multiple.admin true
 lp group admin permission set coreprotect.* true
 lp group admin permission set chunky.* true
-lp group admin permission set bluemap.* true
 lp group admin permission set axgraves.admin true
 lp group admin permission set skinsrestorer.admincommand true
 lp group admin permission set authme.admin.* true
@@ -95,6 +91,11 @@ lp group admin permission set luckperms.* true
 # Sin el "Comprobación de actualización desactivada" de EssentialsX en cada
 # entrada: lo manda a quien tiene este permiso, y los ops lo traen de fábrica.
 lp group admin permission set essentials.updatecheck false
+# essentials.* trae keepinv y keepxp: los admins se morían sin perder nada y
+# AxGraves no les hacía tumba (con keepInventory no hay nada que guardar).
+# Que mueran como todos.
+lp group admin permission set essentials.keepinv false
+lp group admin permission set essentials.keepxp false
 
 # Ojo con estos: dan poder de verdad.
 lp group admin permission set minecraft.command.whitelist true

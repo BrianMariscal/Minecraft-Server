@@ -19,7 +19,7 @@ class TestComparar:
             ("2.2.5-b141", "2.2.5-b140", Cambio.BAJA),
             # LuckPerms trae prefijo v y sufijo de plataforma.
             ("v5.5.71-bukkit", "v5.5.85-bukkit", Cambio.SUBE),
-            # BlueMap y Towns and Towers.
+            # Sufijos de plataforma, como el de Towns and Towers.
             ("5.28-paper", "5.29-paper", Cambio.SUBE),
             ("26.1-datapack", "26.2-datapack", Cambio.SUBE),
             # PacketEvents.

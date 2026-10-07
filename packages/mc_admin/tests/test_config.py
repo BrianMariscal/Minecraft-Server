@@ -75,7 +75,7 @@ class TestReglasDeNegocio:
             cargar_settings(proyecto)
 
     def test_puertos_repetidos_se_rechazan(self, proyecto: Path) -> None:
-        editar(proyecto, {"puertos": {"bluemap": 25565}})
+        editar(proyecto, {"puertos": {"rcon": 25565}})
         with pytest.raises(ErrorDeConfig, match="puertos repetidos"):
             cargar_settings(proyecto)
 

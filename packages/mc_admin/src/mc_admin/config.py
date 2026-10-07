@@ -59,6 +59,8 @@ class Servidor(_Base):
     pvp: bool
     semilla: str = ""
     logo: str = "logo/logo.png"
+    # La IP o el dominio con que se conecta la banda; solo lo usa `mc status`.
+    direccion: str = ""
 
 
 class Versiones(_Base):
@@ -105,14 +107,13 @@ class Rendimiento(_Base):
 class Puertos(_Base):
     java: Puerto
     bedrock: Puerto
-    bluemap: Puerto
     rcon: Puerto
 
     @model_validator(mode="after")
     def _sin_repetidos(self) -> Self:
         # bedrock es UDP, así que puede repetir número con un TCP sin choque,
         # pero lo prohibimos igual para no confundir al configurar el firewall.
-        usados = [self.java, self.bedrock, self.bluemap, self.rcon]
+        usados = [self.java, self.bedrock, self.rcon]
         repetidos = {p for p in usados if usados.count(p) > 1}
         if repetidos:
             msg = (
@@ -202,14 +203,6 @@ class Respaldos(_Base):
     intervalo: str = Field(pattern=r"^\d+[mhd]$")
     conservar_dias: int = Field(ge=1, le=365)
     remoto: RespaldoRemoto
-
-
-class Mapa(_Base):
-    """El mapa web de BlueMap."""
-
-    # true: cualquiera con la IP del VPS lo ve (y ve dónde están las bases).
-    # false: solo se ve desde el propio VPS, con un túnel de SSH.
-    publico: bool = True
 
 
 class Recordatorio(_Base):
@@ -350,7 +343,6 @@ class Settings(_Base):
     mundo: Mundo
     tecnico: Tecnico
     respaldos: Respaldos
-    mapa: Mapa = Field(default_factory=Mapa)
     chat: Chat
     tumbas: Tumbas
     pagos: Pagos

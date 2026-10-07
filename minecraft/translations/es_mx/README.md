@@ -34,8 +34,6 @@ dentro del jar, así que basta con dejarlo ahí.
   administración** (`/lp user ... permission set`). Los ve únicamente quien
   administra el servidor, nunca un jugador. Lo dejamos en inglés a propósito
   en lugar de mantener una traducción de 700 líneas que nadie lee.
-- **BlueMap**: el idioma lo elige el navegador de quien abre el mapa web;
-  BlueMap trae español en su interfaz web.
 - **ViaVersion**: sus mensajes son de incompatibilidad de versión y se
   configuran en su propio `config.yml`, que `mc build` ya genera en español.
 

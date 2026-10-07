@@ -14,7 +14,7 @@ from __future__ import annotations
 from mc_admin.config import Settings
 
 # Lo que la JVM usa FUERA del heap (metaspace, hilos, buffers de red de
-# Geyser, el render de BlueMap). Si el límite del contenedor es igual al
+# Geyser, los hilos de los plugins). Si el límite del contenedor es igual al
 # heap, el kernel mata a Java en cuanto el servidor se pone a trabajar.
 MEMORIA_EXTRA_MB = 1536
 
@@ -66,11 +66,7 @@ def variables(settings: Settings, *, uid: int, gid: int, conf_rclone: str) -> di
         "MC_AIKAR": "true" if settings.recursos.flags_aikar else "false",
         "MC_PUERTO_JAVA": str(p.java),
         "MC_PUERTO_BEDROCK": str(p.bedrock),
-        "MC_PUERTO_MAPA": str(p.bluemap),
         "MC_PUERTO_RCON": str(p.rcon),
-        # 0.0.0.0 = cualquiera con la IP ve el mapa; 127.0.0.1 = solo desde
-        # el propio VPS (o por un túnel de SSH).
-        "MC_IP_MAPA": "0.0.0.0" if settings.mapa.publico else "127.0.0.1",  # noqa: S104
         "MC_RESPALDOS_INTERVALO": r.intervalo,
         "MC_RESPALDOS_DIAS": str(r.conservar_dias),
         "MC_UID": str(uid),

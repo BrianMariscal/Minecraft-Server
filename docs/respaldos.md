@@ -52,8 +52,8 @@ Nadie se desconecta y nadie pierde nada.
 
 ### Qué NO entra, y por qué
 
-Los jars de los plugins, `cache/`, `logs/`, `libraries/`, `versions/` y los
-mosaicos del mapa de BlueMap.
+Los jars de los plugins, `cache/`, `logs/`, `libraries/`, y
+`versions/`.
 
 Todo eso **se regenera solo** con `mc build` y pesa muchísimo. Un respaldo
 que también guarda 110 MB de jars es un respaldo que vas a borrar por falta
@@ -247,8 +247,7 @@ Lo normal es 1–3 GB con el mundo pregenerado. Si pesa mucho más:
 du -sh data/*  | sort -h | tail -5
 ```
 
-Lo más común es el mapa de BlueMap (`data/plugins/BlueMap/bluemap/web`), que
-**ya está excluido**. Si ves otra cosa grande, agrégala a `EXCLUDES` en el
+Si ves algo grande que se regenera solo, agrégalo a `EXCLUDES` en el
 `docker-compose.yml`.
 
 ### No quedan respaldos de hace días

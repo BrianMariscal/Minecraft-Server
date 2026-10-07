@@ -198,10 +198,10 @@ def status() -> None:
             except ErrorDeRcon:
                 consola.tenue("\n  (todavía no contesta por RCON; puede seguir arrancando)")
 
+        ip = ctx.settings.servidor.direccion or "tu-ip"
         consola.tenue(
-            f"\n  Java:    tu-ip:{ctx.settings.puertos.java}\n"
-            f"  Bedrock: tu-ip:{ctx.settings.puertos.bedrock}\n"
-            f"  Mapa:    http://tu-ip:{ctx.settings.puertos.bluemap}"
+            f"\n  Java:    {ip}:{ctx.settings.puertos.java}\n"
+            f"  Bedrock: {ip}:{ctx.settings.puertos.bedrock}"
         )
     except ErrorMc as exc:
         consola.salir_con_error(exc)

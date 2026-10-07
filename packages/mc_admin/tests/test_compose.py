@@ -74,13 +74,6 @@ class TestVariables:
         assert v["MC_RESPALDOS_INTERVALO"] == "3h"
         assert v["MC_RESPALDOS_DIAS"] == "14"
 
-    def test_mapa_publico_por_defecto(self, proyecto: Path) -> None:
-        assert _variables(cargar_settings(proyecto))["MC_IP_MAPA"] == "0.0.0.0"
-
-    def test_mapa_privado_se_amarra_a_localhost(self, proyecto: Path) -> None:
-        v = _variables(_settings(proyecto, **{"mapa.publico": False}))
-        assert v["MC_IP_MAPA"] == "127.0.0.1"
-
     def test_el_bot_de_pagos_es_un_perfil(self, proyecto: Path) -> None:
         prendido = _variables(_settings(proyecto, **{"pagos.activo": True}))
         assert prendido["COMPOSE_PROFILES"] == "pagos"

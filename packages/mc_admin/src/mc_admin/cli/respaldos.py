@@ -23,7 +23,7 @@ app = typer.Typer(help="Respaldos del mundo y de las configs.")
 # Lo que no tiene caso guardar: se vuelve a bajar o a generar solo.
 # `pagos-datos` dentro de data/ es solo el punto de montaje vacío que usa el
 # contenedor de respaldos; la base de verdad se agrega aparte, abajo.
-EXCLUIR = ("cache", "logs", "libraries", "versions", "plugins/BlueMap/bluemap/web", "pagos-datos")
+EXCLUIR = ("cache", "logs", "libraries", "versions", "pagos-datos")
 
 CARPETA_PAGOS = "pagos-datos"
 BASE_PAGOS = "pagos.sqlite"

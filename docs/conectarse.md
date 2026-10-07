@@ -199,14 +199,6 @@ Ve a **[docs/vincular-cuentas.md](vincular-cuentas.md)**.
 | `/skin Notch` | Te pones la skin de otro nombre |
 | `/linkaccount` | Vinculas tus cuentas de Java y Bedrock |
 
-### El mapa web
-
-```
-http://tu-direccion.com:8100
-```
-
-Se ve el mundo en 3D y dónde anda cada quien.
-
 ### Cosas que tiene el servidor
 
 - **Tumbas.** Al morir tus cosas y tu XP se quedan en una tumba con tu
