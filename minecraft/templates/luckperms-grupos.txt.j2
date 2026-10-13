@@ -49,6 +49,9 @@ lp group default permission set gsit.crawl true
 lp group default permission set gsit.spin true
 lp group default permission set gsit.use.sit true
 
+# Ordenar cofres e inventario con Chestsort+ (/chestsort para prenderlo).
+lp group default permission set chestsort.use true
+
 # Cambiar su skin (servidor no premium).
 lp group default permission set skinsrestorer.command true
 lp group default permission set skinsrestorer.command.set true
@@ -59,11 +62,17 @@ lp group default permission set skinsrestorer.command.update true
 lp group default permission set floodgate.command.linkaccount true
 lp group default permission set floodgate.command.unlinkaccount true
 
-# Abrir tumbas (incluidas las ajenas: aquí compartimos todo).
-lp group default permission set axgraves.use true
+# Tumbas: dejarla al morir, abrirla, recogerla de un jalón y ver la lista
+# de las tuyas (/graves). Quién abre las ajenas lo decide grave.yml.
+lp group default permission set graves.place true
+lp group default permission set graves.open true
+lp group default permission set graves.autoloot true
+lp group default permission set graves.break true
+lp group default permission set graves.gui true
+lp group default permission set graves.experience true
 
-# Esto NO se da: borrar las tumbas de otros o saltarse el anti-spam.
-lp group default permission set axgraves.admin false
+# Esto NO se da: teletransportarse a la tumba o saltarse el anti-spam.
+lp group default permission set graves.teleport false
 lp group default permission set chatsentinel.bypass false
 
 # --- Grupo admin ----------------------------------------------------------
@@ -80,7 +89,8 @@ lp group admin permission set essentials.* true
 lp group admin permission set essentials.sethome.multiple.admin true
 lp group admin permission set coreprotect.* true
 lp group admin permission set chunky.* true
-lp group admin permission set axgraves.admin true
+lp group admin permission set chestsort.admin true
+lp group admin permission set graves.* true
 lp group admin permission set skinsrestorer.admincommand true
 lp group admin permission set authme.admin.* true
 lp group admin permission set chatsentinel.admin true
@@ -92,7 +102,7 @@ lp group admin permission set luckperms.* true
 # entrada: lo manda a quien tiene este permiso, y los ops lo traen de fábrica.
 lp group admin permission set essentials.updatecheck false
 # essentials.* trae keepinv y keepxp: los admins se morían sin perder nada y
-# AxGraves no les hacía tumba (con keepInventory no hay nada que guardar).
+# no les quedaba tumba (con keepInventory no hay nada que guardar).
 # Que mueran como todos.
 lp group admin permission set essentials.keepinv false
 lp group admin permission set essentials.keepxp false

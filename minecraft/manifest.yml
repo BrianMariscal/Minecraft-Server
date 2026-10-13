@@ -132,13 +132,21 @@ plugins:
     sha256: "143d38509f49c40b214887ad3c682c8db7fdd81c610787d0186d65f51256f4d2"
     nota: "Sentarse en bloques y escaleras."
 
-  axgraves:
-    nombre: "AxGraves"
-    version: "1.32.1"
-    archivo: "AxGraves-1.32.1.jar"
-    url: "https://cdn.modrinth.com/data/Cz6msz34/versions/UlEYAsey/AxGraves-1.32.1.jar"
-    sha256: "06358594c2ee3032bdddbe473b7605c23b48631c6b41161f1b0f63db992dfc78"
-    nota: "Tumbas al morir. Sustituye a AngelChest, que no tiene release estable para 26.x."
+  gravesx:
+    nombre: "GravesX"
+    version: "2026.4.9.2"
+    archivo: "GravesX-2026.4.9.2.jar"
+    url: "https://cdn.modrinth.com/data/vCFaodCy/versions/OpYRNo98/GravesX-2026.4.9.2.jar"
+    sha256: "62253de35ee5f61dc70acd8f851d2fafb8e42954c3f3f4b1aae390a94bbbdb11"
+    nota: "Tumbas al morir. Pone un bloque de verdad (una cabeza), que Bedrock si ve; AxGraves las dibujaba solo con paquetes y en Bedrock no aparecian."
+
+  chestsort:
+    nombre: "Chestsort+"
+    version: "0.5.1"
+    archivo: "chestsort-plus-0.5.1.jar"
+    url: "https://cdn.modrinth.com/data/nIk7yzza/versions/DSp76PMQ/chestsort-plus-0.5.1.jar"
+    sha256: "b3625dbb5256d8ea2dacfea73418af9c27de7d8698533d55ed5ee69850245f03"
+    nota: "Ordena cofres y el inventario. Se usa en vez del ChestSort de mfnalex, cuyo ultimo release (14.2.0, oct 2024) llega solo a 1.21. Cada quien lo prende con /chestsort; el auto-ordenar al abrir un cofre corre en el servidor, asi que tambien sirve en Bedrock."
 
   chunky:
     nombre: "Chunky"

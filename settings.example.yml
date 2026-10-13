@@ -155,11 +155,11 @@ chat:
     # Sin filtro de groserías: aquí nos hablamos como somos.
     filtro_groserias: false
 
-# --- Tumbas (AxGraves) -----------------------------------------------------
-#  Se iba a usar AngelChest, pero su último release estable (13.9.4) es de
-#  enero 2025 y no soporta Minecraft 26.x; lo único probado en 26.x es un
-#  release candidate. AxGraves 1.32.1 es estable, soporta 26.1.2 y cubre lo
-#  mismo. Detalle en docs/versiones.md.
+# --- Tumbas (GravesX) ------------------------------------------------------
+#  Al morir queda una cabeza (un bloque de verdad, que Bedrock sí ve) con
+#  tus cosas, y al reaparecer te dan una brújula que apunta a ella.
+#  Antes era AxGraves, pero su tumba no se veía en Bedrock. Detalle en
+#  docs/versiones.md.
 tumbas:
   duracion_minutos: 60
   guardar_xp: true
@@ -255,9 +255,11 @@ admins_bedrock:
 #  y `mc whitelist add <jugador> --bedrock`.
 whitelist:
   # Nombres de Minecraft Java, tal cual.
-  java: []
+  java:
+    - JugadorJava
   # Gamertags de Xbox SIN el punto de Floodgate: `mc` se lo pone solo.
   bedrock:
+    - JugadorBedrock1
     - AdminBedrock
     - JugadorBedrock2
     - JugadorBedrock4
@@ -267,3 +269,4 @@ whitelist:
     AdminBedrock: 1234567890123456
     JugadorBedrock2: 1234567890123457
     JugadorBedrock4: 1234567890123459
+    JugadorBedrock1: 1234567890123460

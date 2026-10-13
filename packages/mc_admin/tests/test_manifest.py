@@ -22,7 +22,7 @@ class TestManifestReal:
 
     def test_carga(self, manifest: Manifest) -> None:
         assert manifest.compatible_con == "26.1.2"
-        assert len(manifest.plugins) >= 17
+        assert len(manifest.plugins) >= 18
         assert "discordsrv" not in manifest.plugins
         assert "bluemap" not in manifest.plugins
         assert len(manifest.datapacks) == 5

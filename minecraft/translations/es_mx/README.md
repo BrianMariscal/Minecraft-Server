@@ -11,7 +11,6 @@ dentro del jar, así que basta con dejarlo ahí.
 
 | Archivo | Plugin | Por qué lo traducimos nosotros |
 |---|---|---|
-| `axgraves-messages.yml` | AxGraves | El jar solo trae inglés. |
 | `coreprotect-language.yml` | CoreProtect | El jar no trae ningún idioma más que inglés. |
 | `chatsentinel-messages.yml` | ChatSentinel | El jar solo trae inglés. |
 | `essentials-messages_es.properties` | EssentialsX | Sí trae `messages_es.properties`, pero es español de España. Corregimos los modismos. |

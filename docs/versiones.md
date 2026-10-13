@@ -44,7 +44,7 @@ Si la cambias a una `-java21`, el servidor no arranca.
 
 ## Lo que se cambió respecto a lo que se pidió
 
-### AngelChest → AxGraves
+### AngelChest → GravesX
 
 Se pidió AngelChest para las tumbas. **No se puede usar:**
 
@@ -56,18 +56,24 @@ Se pidió AngelChest para las tumbas. **No se puede usar:**
   sha256: en cuanto salga el RC6, el sha256 dejaría de coincidir y `mc build`
   fallaría.
 
-En su lugar va **AxGraves 1.32.1**, que es release estable, declara soporte
-26.1.2, está en Modrinth (URL y sha256 fijables) y cubre los tres requisitos
-que se pidieron:
+Primero se puso **AxGraves 1.32.1**, pero dibuja la tumba solo con paquetes
+(un armor stand y un holograma que no existen en el mundo). En Bedrock no se
+veía nada: el 2026-10-06 un jugador de Bedrock se murió y no encontró ni la
+tumba ni sus cosas.
 
-| Se pidió | Cómo queda en AxGraves |
+Ahora va **GravesX 2026.4.9.2**: release estable, declara soporte 26.1.2,
+está en Modrinth (URL y sha256 fijables) y pone un **bloque de verdad** (una
+cabeza) donde mueres, que Geyser le enseña a Bedrock como a cualquier otro
+bloque. Además integra Floodgate y al reaparecer te da una brújula que apunta
+a tu tumba.
+
+| Se pidió | Cómo queda en GravesX (`grave.yml`) |
 |---|---|
-| Duran 1 hora | `despawn-time-seconds: 3600` |
-| Guardan la XP | `store-xp: true`, `xp-keep-percentage: 1.0` |
-| Cualquiera puede abrirlas | `interact-only-own: false` |
+| Duran 1 hora | `grave.time: 3600` |
+| Guardan la XP | `experience.store: 1.0` |
+| Cualquiera puede abrirlas | `protection.enabled: false` |
 
-De pasada, AxGraves guarda las tumbas si el servidor se reinicia, que con
-respaldos cada 6 horas no sobra.
+Las tumbas se guardan en su base H2, así que sobreviven a un reinicio.
 
 ### Vanilla Tweaks: dos packs que ya no existen
 

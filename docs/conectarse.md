@@ -201,10 +201,15 @@ Ve a **[docs/vincular-cuentas.md](vincular-cuentas.md)**.
 
 ### Cosas que tiene el servidor
 
-- **Tumbas.** Al morir tus cosas y tu XP se quedan en una tumba con tu
-  cabeza. Dura **1 hora** y **cualquiera puede abrirla**, así que si un
-  amigo llega antes, te las puede guardar.
+- **Tumbas.** Al morir tus cosas y tu XP se quedan en una cabeza puesta
+  donde moriste; clic derecho (o tocarla, en Bedrock) para abrirla. Al
+  reaparecer te dan una brújula que apunta a ella. Dura **1 hora** y
+  **cualquiera puede abrirla**, así que si un amigo llega antes, te las puede
+  guardar. `/graves` te enseña dónde están las tuyas.
 - **Dormir solo.** Con que **una** persona se duerma, amanece.
+- **Ordenar cofres.** Escribe `/chestsort` y prende "auto-sort chests": cada
+  cofre que abras se acomoda solo. En Java también se ordena con shift + clic
+  en una casilla vacía. Funciona igual en Bedrock.
 - **Talar de un golpe.** Rompes un tronco y se cae el árbol completo.
 - **Sentarse.** Clic derecho en escalones, losas y alfombras (con la mano
   vacía).

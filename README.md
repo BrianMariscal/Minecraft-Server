@@ -25,6 +25,7 @@ mc start     # levanta todo
 - **Tumbas**: al morir tus cosas y tu XP se quedan una hora en una tumba que
   cualquiera puede abrir.
 - **Dormir solo**: con que una persona se duerma, amanece.
+- **Ordenar cofres** solos al abrirlos (cada quien lo prende con `/chestsort`).
 - **Talar de un golpe**, sentarse en escalones, cabezas de mobs, poses de
   armor stands.
 - **Skins** aunque la cuenta no sea premium.
@@ -249,8 +250,8 @@ hasta 26.1.2. El detalle de qué topa cada pieza está en
 hash no coincida. Con `latest`, un reinicio cualquiera puede romperte tres
 plugins y te enteras cuando nadie puede entrar.
 
-**AxGraves en vez de AngelChest.** AngelChest no tiene release estable para
-26.x: el último es de enero de 2025. [Por qué](docs/versiones.md#angelchest--axgraves).
+**GravesX en vez de AngelChest.** AngelChest no tiene release estable para
+26.x, y AxGraves (lo que vino después) no se veía en Bedrock. [Por qué](docs/versiones.md#angelchest--gravesx).
 
 **Hay dos packs de Vanilla Tweaks que ya no existen** para 26.x (marcos
 invisibles y cosechar con clic derecho). No se sustituyeron por plugins de

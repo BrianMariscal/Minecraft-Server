@@ -35,7 +35,7 @@ SALIDAS: dict[str, str] = {
     "essentials-config.yml.j2": "plugins/Essentials/config.yml",
     "essentials-motd.txt.j2": "plugins/Essentials/motd.txt",
     "authme-config.yml.j2": "plugins/AuthMe/config.yml",
-    "axgraves-config.yml.j2": "plugins/AxGraves/config.yml",
+    "gravesx-grave.yml.j2": "plugins/GravesX/config/grave.yml",
     "gsit-config.yml.j2": "plugins/GSit/config.yml",
     "skinsrestorer-config.yml.j2": "plugins/SkinsRestorer/config.yml",
     # --- Permisos, chat y registro ---------------------------------------
@@ -243,6 +243,5 @@ TRADUCCIONES: dict[str, str] = {
     "essentials-messages_es.properties": "plugins/Essentials/messages/messages_es.properties",
     "authme-messages_es.yml": "plugins/AuthMe/messages/messages_es.yml",
     "coreprotect-language.yml": "plugins/CoreProtect/language.yml",
-    "axgraves-messages.yml": "plugins/AxGraves/messages.yml",
     "chatsentinel-messages.yml": "plugins/ChatSentinel/messages.yml",
 }

@@ -236,15 +236,20 @@ class TestTumbas:
     def test_duran_una_hora_guardan_xp_y_las_abre_cualquiera(
         self, generados: dict[str, str]
     ) -> None:
-        ax = yaml.safe_load(generados["plugins/AxGraves/config.yml"])
-        assert ax["despawn-time-seconds"] == 3600
-        assert ax["store-xp"] is True
-        assert ax["xp-keep-percentage"] == 1.0
-        assert ax["interact-only-own"] is False
+        g = yaml.safe_load(generados["plugins/GravesX/config/grave.yml"])
+        tumba = g["settings"]["default"]["default"]
+        assert tumba["grave"]["time"] == 3600
+        assert tumba["experience"]["store-in-grave"] is True
+        assert tumba["experience"]["store"] == 1.0
+        assert tumba["protection"]["enabled"] is False
+
+    def test_la_tumba_es_un_bloque_que_bedrock_ve(self, generados: dict[str, str]) -> None:
+        g = yaml.safe_load(generados["plugins/GravesX/config/grave.yml"])
+        assert g["settings"]["default"]["default"]["block"]["enabled"] is True
 
     def test_los_admins_tambien_dejan_tumba(self, generados: dict[str, str]) -> None:
         # essentials.* incluye keepinv: sin quitárselo, el admin no pierde nada
-        # y AxGraves no le hace tumba.
+        # y no le queda tumba.
         guion = generados["mensajes/luckperms-grupos.txt"]
         assert "lp group admin permission set essentials.keepinv false" in guion
         assert "lp group admin permission set essentials.keepxp false" in guion
