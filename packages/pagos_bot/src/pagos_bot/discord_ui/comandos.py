@@ -23,6 +23,7 @@ import discord
 from discord import app_commands
 
 from pagos_bot.discord_ui import botones, tarjetas, textos
+from pagos_bot.domain.auditoria import Actor
 from pagos_bot.domain.calendario import Periodo
 from pagos_bot.domain.cobro import MesDeCobro, Reparto
 from pagos_bot.services.ajustes import ServicioDeAjustes
@@ -44,6 +45,11 @@ async def _listo(interaccion: discord.Interaction, texto: str) -> None:
     await interaccion.response.send_message(
         view=tarjetas.listo(texto), allowed_mentions=tarjetas.SIN_MENCIONES
     )
+
+
+def _actor(interaccion: discord.Interaction) -> Actor:
+    """Quién hizo la acción, para el libro de movimientos."""
+    return Actor(discord_id=interaccion.user.id, nombre=interaccion.user.display_name)
 
 
 def _leer_mes(texto: str | None) -> Periodo | None:
@@ -111,6 +117,21 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
     #  Pagos: solo el tesorero o el rol de admin
     # ===================================================================== #
 
+    @tree.command(name="auditoria", description="Los últimos movimientos del cobro.")
+    @app_commands.default_permissions(manage_guild=True)
+    @app_commands.describe(cuantos="Cuántos movimientos enseñar (1 a 25).")
+    async def auditoria(
+        interaccion: discord.Interaction,
+        cuantos: app_commands.Range[int, 1, 25] = 10,
+    ) -> None:
+        if not await es_admin(interaccion):
+            return
+        await interaccion.response.send_message(
+            view=tarjetas.auditoria(servicio.movimientos(cuantos)),
+            allowed_mentions=tarjetas.SIN_MENCIONES,
+            ephemeral=True,
+        )
+
     @tree.command(name="confirmar", description="Confirma que te llegó el pago de alguien.")
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(
@@ -123,7 +144,7 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
         if not await es_admin(interaccion):
             return
         try:
-            cobro = servicio.confirmar(quien.id, _leer_mes(mes))
+            cobro = servicio.confirmar(quien.id, _leer_mes(mes), actor=_actor(interaccion))
         except ErrorDeCobro as exc:
             await _problema(interaccion, str(exc))
             return
@@ -145,7 +166,7 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
         if not await es_admin(interaccion):
             return
         try:
-            cobro = servicio.desmarcar(quien.id, _leer_mes(mes))
+            cobro = servicio.desmarcar(quien.id, _leer_mes(mes), actor=_actor(interaccion))
         except ErrorDeCobro as exc:
             await _problema(interaccion, str(exc))
             return
@@ -167,7 +188,7 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
         if not await es_admin(interaccion):
             return
         try:
-            cobro = servicio.eximir(quien.id, _leer_mes(mes))
+            cobro = servicio.eximir(quien.id, _leer_mes(mes), actor=_actor(interaccion))
         except ErrorDeCobro as exc:
             await _problema(interaccion, str(exc))
             return
@@ -203,7 +224,7 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
             return
         etiqueta = (nombre or quien.display_name).strip()
         try:
-            cuota = ajustes.agregar_miembro(quien.id, etiqueta, monto)
+            cuota = ajustes.agregar_miembro(quien.id, etiqueta, monto, actor=_actor(interaccion))
         except ErrorDeCobro as exc:
             await _problema(interaccion, str(exc))
             return
@@ -223,7 +244,7 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
                 (p.nombre for p in servicio.config.participantes if p.discord_id == quien.id),
                 quien.display_name,
             )
-            que_paso = ajustes.quitar_miembro(quien.id)
+            que_paso = ajustes.quitar_miembro(quien.id, actor=_actor(interaccion))
         except ErrorDeCobro as exc:
             await _problema(interaccion, str(exc))
             return
@@ -246,7 +267,9 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
         if not await es_admin(interaccion):
             return
         try:
-            nuevo = ajustes.cambiar_monto(quien.id, monto, este_mes=este_mes)
+            nuevo = ajustes.cambiar_monto(
+                quien.id, monto, este_mes=este_mes, actor=_actor(interaccion)
+            )
         except ErrorDeCobro as exc:
             await _problema(interaccion, str(exc))
             return
@@ -261,7 +284,7 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
         if not await es_admin(interaccion):
             return
         try:
-            ajustes.renombrar(quien.id, nombre)
+            ajustes.renombrar(quien.id, nombre, actor=_actor(interaccion))
         except ErrorDeCobro as exc:
             await _problema(interaccion, str(exc))
             return
@@ -298,7 +321,7 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
         if not await es_admin(interaccion):
             return
         try:
-            ajustes.cambiar_dia(dia)
+            ajustes.cambiar_dia(dia, actor=_actor(interaccion))
         except ErrorDeCobro as exc:
             await _problema(interaccion, str(exc))
             return
@@ -310,7 +333,7 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
         if not await es_admin(interaccion):
             return
         try:
-            total = ajustes.cambiar_total(monto)
+            total = ajustes.cambiar_total(monto, actor=_actor(interaccion))
         except ErrorDeCobro as exc:
             await _problema(interaccion, str(exc))
             return
@@ -330,7 +353,7 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
         if not await es_admin(interaccion):
             return
         try:
-            ajustes.cambiar_reparto(Reparto(como))
+            ajustes.cambiar_reparto(Reparto(como), actor=_actor(interaccion))
         except ErrorDeCobro as exc:
             await _problema(interaccion, str(exc))
             return
@@ -354,7 +377,7 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
         if not await es_admin(interaccion):
             return
         try:
-            ajustes.cambiar_avisos(dias_antes, cada_dias)
+            ajustes.cambiar_avisos(dias_antes, cada_dias, actor=_actor(interaccion))
         except ErrorDeCobro as exc:
             await _problema(interaccion, str(exc))
             return
@@ -372,7 +395,7 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
         if not await es_admin(interaccion):
             return
         try:
-            ajustes.cambiar_hora(hora)
+            ajustes.cambiar_hora(hora, actor=_actor(interaccion))
         except ErrorDeCobro as exc:
             await _problema(interaccion, str(exc))
             return
@@ -387,7 +410,7 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
         if not await es_admin(interaccion):
             return
         try:
-            ajustes.cambiar_tesorero(quien.id, quien.display_name)
+            ajustes.cambiar_tesorero(quien.id, quien.display_name, actor=_actor(interaccion))
         except ErrorDeCobro as exc:
             await _problema(interaccion, str(exc))
             return
@@ -403,7 +426,7 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
         if not await es_admin(interaccion):
             return
         try:
-            ajustes.cambiar_rol_admin(rol.id if rol else 0)
+            ajustes.cambiar_rol_admin(rol.id if rol else 0, actor=_actor(interaccion))
         except ErrorDeCobro as exc:
             await _problema(interaccion, str(exc))
             return

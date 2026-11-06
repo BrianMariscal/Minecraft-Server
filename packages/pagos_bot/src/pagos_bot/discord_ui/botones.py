@@ -17,6 +17,7 @@ from typing import Any, Self
 import discord
 
 from pagos_bot.discord_ui import tarjetas, textos
+from pagos_bot.domain.auditoria import Actor
 from pagos_bot.domain.calendario import Periodo
 from pagos_bot.domain.cobro import Cuota, MesDeCobro
 from pagos_bot.services.cobros import ErrorDeCobro, ServicioDeCobros
@@ -30,6 +31,11 @@ Boton = discord.ui.DynamicItem[discord.ui.Button[Any]]
 def id_confirmar(de_quien: int, periodo: Periodo) -> str:
     """El custom_id del botón "Sí me llegó" de ese pago."""
     return f"pagos:confirmar:{de_quien}:{periodo.clave}"
+
+
+def _actor(interaccion: discord.Interaction) -> Actor:
+    """Quién picó el botón, para el libro de movimientos."""
+    return Actor(discord_id=interaccion.user.id, nombre=interaccion.user.display_name)
 
 
 def servicio_de(interaccion: discord.Interaction) -> ServicioDeCobros:
@@ -63,7 +69,7 @@ async def ya_pague(interaccion: discord.Interaction) -> None:
     """Lo que pasa al picar "Ya pagué" o al escribir /pague."""
     servicio = servicio_de(interaccion)
     try:
-        mes = servicio.dijo_que_pago(interaccion.user.id)
+        mes = servicio.dijo_que_pago(interaccion.user.id, actor=_actor(interaccion))
     except ErrorDeCobro as exc:
         await interaccion.response.send_message(view=tarjetas.problema(str(exc)), ephemeral=True)
         return
@@ -144,7 +150,7 @@ class BotonConfirmar(Boton, template=PLANTILLA_CONFIRMAR):
             return
 
         try:
-            mes = servicio.confirmar(self.de_quien, self.periodo)
+            mes = servicio.confirmar(self.de_quien, self.periodo, actor=_actor(interaction))
         except ErrorDeCobro as exc:
             await interaction.response.send_message(
                 view=tarjetas.problema(str(exc)), ephemeral=True

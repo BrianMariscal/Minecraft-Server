@@ -143,3 +143,23 @@ class TestValidacion:
     def test_sin_archivo(self, tmp_path: Path) -> None:
         with pytest.raises(ErrorDeConfig, match="no encontré el manifest"):
             Manifest.desde_archivo(tmp_path / "no-existe.yml")
+
+
+class TestVanillaTweaks:
+    def test_la_clave_de_cache_es_estable(self, proyecto: Path) -> None:
+        ruta = proyecto / "minecraft" / "manifest.yml"
+        primera = Manifest.desde_archivo(ruta).vanilla_tweaks
+        segunda = Manifest.desde_archivo(ruta).vanilla_tweaks
+        assert primera is not None and segunda is not None
+        assert primera.clave_de_cache == segunda.clave_de_cache
+        assert len(primera.clave_de_cache) == 12
+
+    def test_la_clave_cambia_si_cambia_el_manifest(self, proyecto: Path) -> None:
+        vt = Manifest.desde_archivo(proyecto / "minecraft" / "manifest.yml").vanilla_tweaks
+        assert vt is not None
+        original = vt.clave_de_cache
+        otra_version = vt.model_copy(update={"version_mc": "26.2"})
+        otro_pack = vt.packs[0].model_copy(update={"sha256": "b" * 64})
+        otros_packs = vt.model_copy(update={"packs": [otro_pack, *vt.packs[1:]]})
+        assert otra_version.clave_de_cache != original
+        assert otros_packs.clave_de_cache != original

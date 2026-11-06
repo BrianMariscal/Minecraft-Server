@@ -34,7 +34,9 @@ Los **28 artefactos** descargables tienen versión y hash fijados en
 - 5 packs de Vanilla Tweaks.
 
 `mc build` descarga, calcula el SHA256 y solo entonces copia el archivo. Si un
-hash no coincide, el build falla. Con `latest`, un reinicio cualquiera podría
+hash no coincide, el build falla. La única excepción es el ZIP contenedor de
+Vanilla Tweaks: cambia de bytes entre generaciones, así que se verifican los
+5 packs de adentro, que sí están pinneados. Con `latest`, un reinicio cualquiera podría
 traer una versión nueva de Paper o de un plugin y romper el servidor sin que
 nadie lo haya decidido. `mc update` es la vía para revisar y aplicar versiones
 nuevas de forma consciente.
@@ -96,6 +98,7 @@ La arquitectura no usa un tercer contenedor para respaldos:
 | `mc-hd-pagos` | Bot de Discord y su SQLite; solo arranca con `pagos.activo` |
 | `mc-backup.timer` | Respaldo local cada 6 horas |
 | `mc-backup-verify.timer` | Verificación semanal de los respaldos |
+| `mc-backup-drill.timer` | Simulacro mensual de restauración |
 | `mc-monitor.timer` | Revisión horaria de respaldo, disco y servidor |
 | `mc-copiar-respaldos.timer` | Copia diaria del VPS a la PC (timer de usuario) |
 

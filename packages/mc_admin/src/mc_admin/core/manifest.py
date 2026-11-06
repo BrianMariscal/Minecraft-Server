@@ -6,6 +6,8 @@ toca el disco (eso es `infra.archivos`).
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from enum import StrEnum
 from pathlib import Path
@@ -103,15 +105,32 @@ class PackVanillaTweaks(_Base):
 class VanillaTweaks(_Base):
     """Vanilla Tweaks no da URLs fijas; hay que pedirle el ZIP por POST.
 
-    El ZIP que devuelve sí es reproducible byte a byte para la misma selección,
-    así que podemos fijar su sha256 igual que cualquier otro artefacto.
+    El ZIP contenedor NO es estable byte a byte: cambia aunque la selección
+    sea la misma. Por eso no se fija su sha256; lo que se verifica es cada
+    datapack de adentro, que sí está pinneado. El nombre del caché se deriva
+    de la versión, la selección y esos hashes, así que un cambio en el
+    manifest obliga a bajar el ZIP otra vez.
     """
 
     version_mc: str = Field(pattern=r"^\d+(\.\d+){0,2}$")
     url: str = Field(pattern=r"^https://")
     seleccion: dict[str, list[str]]
-    sha256_zip: Sha256
     packs: list[PackVanillaTweaks] = Field(min_length=1)
+
+    @property
+    def clave_de_cache(self) -> str:
+        """Una clave corta y estable para el ZIP y la carpeta de salida."""
+        material = json.dumps(
+            {
+                "version": self.version_mc,
+                "seleccion": self.seleccion,
+                "packs": [[p.archivo, p.sha256] for p in self.packs],
+            },
+            sort_keys=True,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        return hashlib.sha256(material.encode()).hexdigest()[:12]
 
     @field_validator("seleccion")
     @classmethod

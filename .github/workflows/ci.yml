@@ -36,7 +36,7 @@ jobs:
       - name: mypy (estricto)
         run: uv run mypy packages
 
-      - name: pytest
+      - name: pytest (cobertura mínima 67%)
         run: uv run pytest --cov=mc_admin --cov=pagos_bot --cov-report=term-missing
 
   docker:

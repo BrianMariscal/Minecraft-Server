@@ -14,6 +14,7 @@ from __future__ import annotations
 from datetime import date
 
 from pagos_bot.config import PagosConfig
+from pagos_bot.domain.auditoria import RegistroDeAuditoria
 from pagos_bot.domain.calendario import Agenda, Periodo
 from pagos_bot.domain.cobro import Cuota, Estado, MesDeCobro
 from pagos_bot.domain.dinero import Dinero
@@ -301,4 +302,66 @@ def ayuda_de_ajustes() -> str:
         "-# `/miembro agregar` · `/miembro quitar` · `/miembro monto` · `/miembro nombre`\n"
         "-# `/ajustes dia` · `/ajustes total` · `/ajustes reparto` · `/ajustes avisos` · "
         "`/ajustes hora` · `/ajustes tesorero` · `/ajustes rol`"
+    )
+
+
+# --------------------------------------------------------------------------- #
+#  Auditoría
+# --------------------------------------------------------------------------- #
+
+DESCRIPCIONES = {
+    "pago.avisado": "avisó que pagó",
+    "pago.confirmado": "confirmó el pago",
+    "pago.desmarcado": "regresó a pendiente el pago",
+    "pago.eximido": "eximió del mes",
+    "miembro.agregado": "agregó a la banda",
+    "miembro.quitado": "quitó de la banda",
+    "miembro.monto": "cambió el monto mensual",
+    "miembro.renombrado": "renombró",
+    "ajuste.total": "cambió el total del VPS",
+    "ajuste.reparto": "cambió el reparto",
+    "ajuste.rol": "cambió el rol de admin",
+    "ajuste.tesorero": "cambió al tesorero",
+}
+
+
+def renglon_auditoria(registro: RegistroDeAuditoria) -> str:
+    """Una línea legible de un movimiento del cobro."""
+    d = registro.detalle
+    objetivo = d.get("objetivo", "")
+    if registro.accion == "ajuste.dia":
+        texto = f"cambió el día de pago a **{d.get('dia', '?')}**"
+    elif registro.accion == "ajuste.avisos":
+        texto = (
+            f"cambió los avisos a **{d.get('dias_antes', '?')} días antes** y "
+            f"**cada {d.get('cada_dias_despues', '?')} días**"
+        )
+    elif registro.accion == "ajuste.hora":
+        texto = f"cambió la hora de los avisos a **{d.get('hora', '?')}**"
+    elif registro.accion == "cuota.monto":
+        texto = f"cambió la cuota de **{objetivo}** a **{d.get('monto', '?')}**"
+    elif registro.accion == "mes.precio":
+        texto = f"actualizó el precio de los meses abiertos a **{d.get('total', '?')}**"
+    elif registro.accion.startswith(("pago.", "miembro.")):
+        texto = DESCRIPCIONES.get(registro.accion, registro.accion)
+        if objetivo:
+            texto += f" a **{objetivo}**"
+        if monto := d.get("monto"):
+            texto += f" ({monto})"
+    else:
+        texto = DESCRIPCIONES.get(registro.accion, registro.accion)
+        if objetivo:
+            texto += f" a **{objetivo}**"
+        if (valor := d.get("total")) and valor not in texto:
+            texto += f" ({valor})"
+
+    cuando = registro.cuando.strftime("%Y-%m-%d %H:%M")
+    mes = f" · {registro.periodo.nombre}" if registro.periodo else ""
+    return f"`{cuando}` **{registro.actor.nombre}** {texto}{mes}"
+
+
+def sin_movimientos() -> str:
+    return (
+        "Todavía no hay movimientos. El primero va a aparecer cuando alguien "
+        "pague o cambie un ajuste."
     )

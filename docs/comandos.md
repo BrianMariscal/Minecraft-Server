@@ -41,8 +41,10 @@ modifican el servidor o los datos tienen `--dry-run` cuando aplica.
 | `mc backup now` | Crea un respaldo sin apagar el servidor |
 | `mc backup list` | Muestra los respaldos disponibles |
 | `mc backup verify` | Revisa checksum, contenido y bases SQLite |
+| `mc backup drill` | Simulacro: extrae el último respaldo a un temporal y valida el mundo y las bases |
+| `mc backup drill 20261031-011258 --guardar` | Simulacro de uno concreto, dejando lo extraído para revisarlo |
 | `mc backup prune` | Borra los respaldos que salen de la retención |
-| `mc backup status` | Muestra el último respaldo, su edad, el disco y el último error |
+| `mc backup status` | Muestra el último respaldo, su edad, el disco, el último error y el último simulacro |
 | `mc backup restore ultimo` | Restaura el último respaldo, con doble confirmación |
 
 ## El mundo

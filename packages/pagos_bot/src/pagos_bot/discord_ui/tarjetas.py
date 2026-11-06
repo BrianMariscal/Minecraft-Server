@@ -18,6 +18,7 @@ from discord import ui
 
 from pagos_bot.config import PagosConfig
 from pagos_bot.discord_ui import textos
+from pagos_bot.domain.auditoria import RegistroDeAuditoria
 from pagos_bot.domain.calendario import Agenda
 from pagos_bot.domain.cobro import Cuota, MesDeCobro
 
@@ -170,3 +171,22 @@ def ajustes(config: PagosConfig) -> ui.LayoutView:
     ]
     hijos += [_separador(), _texto(textos.ayuda_de_ajustes())]
     return _tarjeta(textos.COLOR_AJUSTES, *hijos)
+
+
+def auditoria(registros: list[RegistroDeAuditoria]) -> ui.LayoutView:
+    """`/auditoria`: los últimos movimientos, del más nuevo al más viejo.
+
+    Van todos en un solo bloque de texto: con 25 movimientos, un separador
+    por renglón pasaría del límite de componentes de Discord.
+    """
+    cuerpo = (
+        "\n".join(textos.renglon_auditoria(r) for r in registros)
+        if registros
+        else textos.sin_movimientos()
+    )
+    return _tarjeta(
+        textos.COLOR_AJUSTES,
+        _texto("## 🧾 Movimientos del cobro\n-# Solo se agregan: no se editan ni se borran"),
+        _separador(),
+        _texto(cuerpo),
+    )

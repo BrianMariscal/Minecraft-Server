@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 
 from pagos_bot.config import PagosConfig
+from pagos_bot.domain.auditoria import Actor, RegistroDeAuditoria
 from pagos_bot.domain.calendario import Agenda, Periodo
 from pagos_bot.domain.cobro import Cuota, Estado, MesDeCobro, abrir_mes
 from pagos_bot.domain.dinero import Dinero
@@ -56,6 +57,33 @@ class ServicioDeCobros:
             cada_dias_despues=config.avisos.cada_dias_despues,
             zona=config.zona,
         )
+
+    # -- auditoría ---------------------------------------------------------- #
+
+    def auditar(
+        self,
+        accion: str,
+        *,
+        actor: Actor | None = None,
+        periodo: Periodo | None = None,
+        objetivo_id: int | None = None,
+        detalle: dict[str, str] | None = None,
+    ) -> None:
+        """Apunta un movimiento en el libro. Sin actor, es el bot."""
+        self.repo.anotar_auditoria(
+            RegistroDeAuditoria(
+                cuando=self.ahora(),
+                actor=actor or Actor.sistema(),
+                accion=accion,
+                periodo=periodo,
+                objetivo_id=objetivo_id,
+                detalle=detalle or {},
+            )
+        )
+
+    def movimientos(self, cuantos: int = 20) -> list[RegistroDeAuditoria]:
+        """Los últimos movimientos del cobro, del más nuevo al más viejo."""
+        return self.repo.leer_auditoria(cuantos)
 
     # -- el mes ------------------------------------------------------------ #
 
@@ -172,7 +200,7 @@ class ServicioDeCobros:
 
     # -- marcar pagos ------------------------------------------------------- #
 
-    def dijo_que_pago(self, discord_id: int) -> MesDeCobro:
+    def dijo_que_pago(self, discord_id: int, *, actor: Actor | None = None) -> MesDeCobro:
         """Alguien le picó a "Ya pagué" o escribió /pague.
 
         Se anota en el mes MÁS VIEJO que deba: primero se salda lo atrasado.
@@ -190,6 +218,17 @@ class ServicioDeCobros:
         if pendiente is not None:
             nuevo = pendiente.con_estado(discord_id, Estado.POR_CONFIRMAR, self.ahora())
             self.repo.guardar_mes(nuevo, self.config.reparto)
+            cuota = nuevo.cuota_de(discord_id)
+            self.auditar(
+                "pago.avisado",
+                actor=actor,
+                periodo=nuevo.periodo,
+                objetivo_id=discord_id,
+                detalle={
+                    "objetivo": cuota.participante.nombre if cuota else str(discord_id),
+                    "monto": str(cuota.monto) if cuota else "",
+                },
+            )
             return nuevo
 
         # Nada pendiente. Si ya avisó, no volvemos a etiquetar al tesorero
@@ -210,7 +249,13 @@ class ServicioDeCobros:
         msg = "ya tienes el mes pagado y confirmado, no tienes que hacer nada."
         raise ErrorDeCobro(msg)
 
-    def confirmar(self, discord_id: int, periodo: Periodo | None = None) -> MesDeCobro:
+    def confirmar(
+        self,
+        discord_id: int,
+        periodo: Periodo | None = None,
+        *,
+        actor: Actor | None = None,
+    ) -> MesDeCobro:
         """El tesorero confirma que sí llegó el dinero.
 
         Sin mes, confirma lo más viejo que esa persona tenga: primero lo que
@@ -228,6 +273,16 @@ class ServicioDeCobros:
         nuevo = mes.con_estado(discord_id, Estado.PAGADO, self.ahora())
         self.repo.guardar_mes(nuevo, self.config.reparto)
         self._cerrar_si_ya_esta(nuevo)
+        self.auditar(
+            "pago.confirmado",
+            actor=actor,
+            periodo=nuevo.periodo,
+            objetivo_id=discord_id,
+            detalle={
+                "objetivo": cuota.participante.nombre,
+                "monto": str(cuota.monto),
+            },
+        )
         return nuevo
 
     def _mes_a_confirmar(self, discord_id: int) -> MesDeCobro:
@@ -243,30 +298,60 @@ class ServicioDeCobros:
         msg = "esa persona no debe nada: ya está al corriente."
         raise ErrorDeCobro(msg)
 
-    def desmarcar(self, discord_id: int, periodo: Periodo | None = None) -> MesDeCobro:
+    def desmarcar(
+        self,
+        discord_id: int,
+        periodo: Periodo | None = None,
+        *,
+        actor: Actor | None = None,
+    ) -> MesDeCobro:
         """Regresa a alguien a pendiente (se equivocaron, se devolvió el pago...)."""
         mes = self.mes_de(periodo)
-        if mes.cuota_de(discord_id) is None:
+        cuota = mes.cuota_de(discord_id)
+        if cuota is None:
             msg = f"esa persona no está en la lista de {mes.periodo.nombre}."
             raise ErrorDeCobro(msg)
         nuevo = mes.con_estado(discord_id, Estado.PENDIENTE, self.ahora())
         self.repo.guardar_mes(nuevo, self.config.reparto)
         # Si el mes ya estaba cerrado, ya no: vuelve a faltar alguien.
         self.repo.reabrir(nuevo.periodo)
+        self.auditar(
+            "pago.desmarcado",
+            actor=actor,
+            periodo=nuevo.periodo,
+            objetivo_id=discord_id,
+            detalle={"objetivo": cuota.participante.nombre, "estado_anterior": cuota.estado.value},
+        )
         return nuevo
 
-    def eximir(self, discord_id: int, periodo: Periodo | None = None) -> MesDeCobro:
+    def eximir(
+        self,
+        discord_id: int,
+        periodo: Periodo | None = None,
+        *,
+        actor: Actor | None = None,
+    ) -> MesDeCobro:
         """Sacar a alguien del mes sin que cuente como que debe."""
         mes = self.mes_de(periodo)
-        if mes.cuota_de(discord_id) is None:
+        cuota = mes.cuota_de(discord_id)
+        if cuota is None:
             msg = f"esa persona no está en la lista de {mes.periodo.nombre}."
             raise ErrorDeCobro(msg)
         nuevo = mes.con_estado(discord_id, Estado.EXENTO, self.ahora())
         self.repo.guardar_mes(nuevo, self.config.reparto)
         self._cerrar_si_ya_esta(nuevo)
+        self.auditar(
+            "pago.eximido",
+            actor=actor,
+            periodo=nuevo.periodo,
+            objetivo_id=discord_id,
+            detalle={"objetivo": cuota.participante.nombre, "monto": str(cuota.monto)},
+        )
         return nuevo
 
-    def cambiar_precio_de_meses_abiertos(self, total: Dinero) -> None:
+    def cambiar_precio_de_meses_abiertos(
+        self, total: Dinero, *, actor: Actor | None = None
+    ) -> None:
         """El precio nuevo del VPS aplica al mes en curso y al siguiente.
 
         Los meses ya pasados conservan el precio que tenían: así el historial
@@ -277,12 +362,29 @@ class ServicioDeCobros:
         siguiente = self.repo.leer_mes(actual.periodo.siguiente())
         if siguiente is not None:
             meses.append(siguiente)
+        cambiados: list[Periodo] = []
         for mes in meses:
+            if mes.total == total:
+                continue
             nuevo = mes.con_total(total)
             self.repo.guardar_mes(nuevo, self.config.reparto)
             self._cerrar_si_ya_esta(nuevo)
+            cambiados.append(mes.periodo)
+        if not cambiados:
+            return
+        self.auditar(
+            "mes.precio",
+            actor=actor,
+            periodo=actual.periodo,
+            detalle={
+                "total": str(total),
+                "meses": ", ".join(p.clave for p in cambiados),
+            },
+        )
 
-    def cambiar_monto_del_mes(self, discord_id: int, monto: Dinero) -> MesDeCobro:
+    def cambiar_monto_del_mes(
+        self, discord_id: int, monto: Dinero, *, actor: Actor | None = None
+    ) -> MesDeCobro:
         """Cambia lo que le toca a alguien en el mes en curso, si no ha pagado."""
         mes = self.mes_actual()
         cuota = mes.cuota_de(discord_id)
@@ -294,6 +396,17 @@ class ServicioDeCobros:
             raise ErrorDeCobro(msg)
         nuevo = mes.con_monto(discord_id, monto)
         self.repo.guardar_mes(nuevo, self.config.reparto)
+        self.auditar(
+            "cuota.monto",
+            actor=actor,
+            periodo=nuevo.periodo,
+            objetivo_id=discord_id,
+            detalle={
+                "objetivo": cuota.participante.nombre,
+                "monto_anterior": str(cuota.monto),
+                "monto": str(monto),
+            },
+        )
         return nuevo
 
     def _cerrar_si_ya_esta(self, mes: MesDeCobro) -> None:

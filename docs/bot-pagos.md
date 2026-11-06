@@ -220,6 +220,7 @@ propósito: si el tesorero no lo vio, el dinero no está.
 | `/confirmar @persona [mes]` | Te llegó su pago (sin `mes`: lo más viejo que deba) |
 | `/desmarcar @persona [mes]` | La regresas a pendiente (se equivocó, se devolvió el pago) |
 | `/eximir @persona [mes]` | Ese mes no le toca pagar, y no cuenta como que debe |
+| `/auditoria [cuantos]` | Los últimos movimientos del cobro: quién confirmó, desmarcó, eximió o cambió un ajuste |
 
 `mes` se escribe como `2026-10`. Si no lo pones, `/desmarcar` y `/eximir`
 usan el mes actual.
@@ -291,6 +292,16 @@ quedó con `/ajustes ver`.
 | Avisar antes o más seguido | `/ajustes avisos 5 1` |
 | Cambiar de tesorero | `/ajustes tesorero @Tesorero` |
 
+### Revisar quién movió qué
+
+Cada confirmación, desmarque, exención, alta o cambio de ajuste se guarda en
+una tabla de **solo agregar** (`auditoria`). `/auditoria` enseña los últimos
+movimientos con la fecha, quién los hizo, el mes y los valores del cambio.
+No se editan ni se borran: si alguien confirma un pago por error, queda el
+movimiento y después el contrario (`/desmarcar`), no un hueco. El bot también
+apunta lo que hace solo, como actualizar el precio de los meses abiertos, con
+el actor `sistema`.
+
 ### Que deje de cobrar
 
 En `settings.yml`:
@@ -327,6 +338,10 @@ Y `mc build && mc restart`. El contenedor del bot ya no arranca.
   log y vuelve a intentar: un bot caído no le cobra a nadie.
 - **La base de datos es SQLite** en un volumen, y **entra en los respaldos**
   automáticos junto con el mundo.
+- **El libro de movimientos solo crece.** La tabla `auditoria` no tiene
+  `UPDATE` ni `DELETE`: cada acción del tesorero o del bot deja un renglón con
+  actor, fecha, mes y detalle. Así se puede reconstruir qué pasó sin depender
+  de los logs del contenedor, que se rotan.
 
 ---
 

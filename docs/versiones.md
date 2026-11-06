@@ -279,10 +279,11 @@ que cuadran.
 | Modrinth | la mayoría de los plugins y datapacks | sha256 que calculamos nosotros |
 | GeyserMC | Geyser, Floodgate y el add-on de SQLite | sha256 **confirmado contra su propia API** |
 | GitHub releases | EssentialsX, AuthMe | sha256 que calculamos nosotros |
-| vanillatweaks.net | los 5 packs de Vanilla Tweaks | sha256 del ZIP **y** de cada pack de adentro |
+| vanillatweaks.net | los 5 packs de Vanilla Tweaks | sha256 de **cada pack** de adentro |
 
 Vanilla Tweaks no da URLs fijas: hay que mandarle un POST con la lista de
-packs y contesta con un link de id aleatorio. Lo bueno es que el ZIP que
-entrega **sí es idéntico byte a byte** para la misma selección (verificado
-generándolo dos veces), así que su sha256 se puede fijar igual que todo lo
-demás.
+packs y contesta con un link de id aleatorio. El ZIP contenedor **no es
+estable byte a byte** entre generaciones, así que no se fija su sha256. Lo
+que sí se verifica es el sha256 de cada datapack de adentro, contra la lista
+`packs` del manifest. La clave del caché incluye la versión, la selección y
+esos hashes: si cambia cualquiera, se baja el ZIP otra vez.

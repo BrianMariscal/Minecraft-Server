@@ -126,20 +126,23 @@ def obtener_artefacto(
 def obtener_vanilla_tweaks(
     vt: VanillaTweaks, cache: Path, cliente: httpx.Client | None = None
 ) -> list[tuple[str, Path]]:
-    """Pide el ZIP a vanillatweaks.net, lo verifica y saca los datapacks.
+    """Pide el ZIP a vanillatweaks.net y saca los datapacks verificados.
 
     vanillatweaks.net no da URLs fijas: hay que mandarle un POST con la lista
-    de packs y te contesta con un link de id aleatorio. El ZIP sí es idéntico
-    byte a byte para la misma selección, así que su sha256 se puede fijar y lo
-    verificamos igual que todo lo demás.
+    de packs y te contesta con un link de id aleatorio. El ZIP contenedor no
+    es estable byte a byte, así que no se verifica entero: se verifica cada
+    datapack de adentro contra el sha256 del manifest. La clave del caché
+    incluye versión, selección y esos hashes, para no reusar un ZIP viejo
+    después de actualizar el manifest.
 
     Returns:
         Una lista de (nombre del datapack, ruta del zip ya verificado).
     """
     cache.mkdir(parents=True, exist_ok=True)
-    zip_cache = cache / f"{vt.sha256_zip[:12]}-vanilla-tweaks.zip"
+    clave = vt.clave_de_cache
+    zip_cache = cache / f"vt-{clave}.zip"
 
-    if not (zip_cache.is_file() and sha256_de(zip_cache) == vt.sha256_zip):
+    if not zip_cache.is_file():
         propio = cliente is None
         cliente = cliente or httpx.Client(headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT)
         try:
@@ -175,14 +178,14 @@ def obtener_vanilla_tweaks(
             if propio:
                 cliente.close()
 
-        _verificar(zip_cache, vt.sha256_zip, "el ZIP de Vanilla Tweaks")
-
-    return _extraer_packs(vt, zip_cache, cache)
+    return _extraer_packs(vt, zip_cache, cache, clave)
 
 
-def _extraer_packs(vt: VanillaTweaks, zip_cache: Path, cache: Path) -> list[tuple[str, Path]]:
+def _extraer_packs(
+    vt: VanillaTweaks, zip_cache: Path, cache: Path, clave: str
+) -> list[tuple[str, Path]]:
     """Saca cada datapack del ZIP contenedor y verifica su sha256."""
-    salida = cache / f"vt-{vt.sha256_zip[:12]}"
+    salida = cache / f"vt-{clave}"
     salida.mkdir(parents=True, exist_ok=True)
     esperados = {p.archivo: p.sha256 for p in vt.packs}
 

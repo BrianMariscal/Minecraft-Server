@@ -7,7 +7,7 @@
 # ---------------------------------------------------------------------------
 [project]
 name = "minecraft-hd"
-version = "1.0.0"
+version = "1.1.0"
 description = "Servidor de Minecraft HD: CLI de administración y bot de pagos del VPS"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -162,3 +162,14 @@ pythonpath = ["packages/mc_admin/src", "packages/pagos_bot/src"]
 addopts = "-q --strict-markers --strict-config"
 asyncio_mode = "auto"
 filterwarnings = ["error"]
+
+# ---------------------------------------------------------------------------
+# Cobertura: el piso no se negocia hacia abajo.
+# ---------------------------------------------------------------------------
+# El número es el que ya tenía el proyecto cuando se midió por primera vez.
+# Si un cambio lo baja, el test falla: así no se pierde cobertura sin darse
+# cuenta. Para subirlo, cambia `fail_under` en el mismo commit que agrega
+# los tests; nunca lo bajes para que pase un cambio.
+[tool.coverage.report]
+fail_under = 67
+precision = 1

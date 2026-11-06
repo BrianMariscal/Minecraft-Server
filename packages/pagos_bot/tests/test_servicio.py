@@ -8,6 +8,7 @@ import pytest
 from ayudas import momento
 
 from pagos_bot.config import PagosConfig, ParticipanteConfig
+from pagos_bot.domain.auditoria import Actor
 from pagos_bot.domain.calendario import Periodo
 from pagos_bot.domain.cobro import Estado
 from pagos_bot.domain.dinero import Dinero
@@ -347,3 +348,47 @@ class TestAvisoPrevioCruzandoMes:
         assert aviso is not None
         assert aviso.tipo == AVISO_PREVIO
         assert aviso.mes.periodo == Periodo(2026, 10)
+
+
+class TestAuditoria:
+    def test_confirmar_deja_quien_y_cuando(self, svc: ServicioCongelado) -> None:
+        ana = Actor(discord_id=1, nombre="Ana")
+        svc.dijo_que_pago(2, actor=ana)
+        svc.confirmar(2, actor=ana)
+
+        movimientos = svc.movimientos()
+        assert [m.accion for m in movimientos] == ["pago.confirmado", "pago.avisado"]
+        confirmado = movimientos[0]
+        assert confirmado.actor == ana
+        assert confirmado.periodo == Periodo(2026, 10)
+        assert confirmado.objetivo_id == 2
+        assert confirmado.detalle["objetivo"] == "Pepe"
+        assert confirmado.detalle["monto"] == "$112.50"
+
+    def test_sin_actor_queda_como_sistema(self, svc: ServicioCongelado) -> None:
+        svc.confirmar(3)
+        [movimiento] = svc.movimientos()
+        assert movimiento.actor == Actor.sistema()
+        assert movimiento.accion == "pago.confirmado"
+
+    def test_desmarcar_y_eximir_tambien_se_anotan(self, svc: ServicioCongelado) -> None:
+        svc.confirmar(2)
+        svc.desmarcar(2)
+        svc.eximir(3)
+        assert [m.accion for m in svc.movimientos(3)] == [
+            "pago.eximido",
+            "pago.desmarcado",
+            "pago.confirmado",
+        ]
+
+    def test_el_libro_no_se_pierde_al_reabrir_la_base(
+        self, svc: ServicioCongelado, repo: RepositorioPagos
+    ) -> None:
+        svc.confirmar(2)
+        svc.movimientos()  # fuerza una lectura
+        repo.cerrar()
+        reabierto = RepositorioPagos(repo.ruta)
+        try:
+            assert [m.accion for m in reabierto.leer_auditoria()] == ["pago.confirmado"]
+        finally:
+            reabierto.cerrar()

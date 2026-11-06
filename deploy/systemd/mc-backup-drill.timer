@@ -1,0 +1,12 @@
+[Unit]
+Description=Simulacro mensual de restauración de Minecraft HD
+
+[Timer]
+# Primer domingo de cada mes, después de la verificación semanal.
+OnCalendar=Sun *-*-1..7 10:00:00
+Persistent=true
+RandomizedDelaySec=15m
+Unit=mc-backup-drill.service
+
+[Install]
+WantedBy=timers.target

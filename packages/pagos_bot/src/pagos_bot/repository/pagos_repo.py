@@ -6,12 +6,14 @@ Quien decide qué significa cada cosa es `domain` y `services`.
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
+from pagos_bot.domain.auditoria import Actor, RegistroDeAuditoria
 from pagos_bot.domain.calendario import Periodo
 from pagos_bot.domain.cobro import Cuota, Estado, MesDeCobro, Participante, Reparto
 from pagos_bot.domain.dinero import Dinero
@@ -191,6 +193,47 @@ class RepositorioPagos:
                 (periodo.clave, tipo, dia.isoformat(), cuando.isoformat()),
             )
 
+    # -- auditoría --------------------------------------------------------- #
+
+    def anotar_auditoria(self, registro: RegistroDeAuditoria) -> None:
+        """Agrega un movimiento al libro. Nunca se actualiza ni se borra."""
+        with self._transaccion() as cx:
+            cx.execute(
+                "INSERT INTO auditoria "
+                "(cuando, actor_id, actor_nombre, accion, periodo, objetivo_id, detalle) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    registro.cuando.isoformat(),
+                    registro.actor.discord_id,
+                    registro.actor.nombre,
+                    registro.accion,
+                    registro.periodo.clave if registro.periodo else None,
+                    registro.objetivo_id,
+                    json.dumps(registro.detalle, ensure_ascii=False, sort_keys=True),
+                ),
+            )
+
+    def leer_auditoria(self, limite: int = 20) -> list[RegistroDeAuditoria]:
+        """Los últimos movimientos, del más nuevo al más viejo."""
+        registros: list[RegistroDeAuditoria] = []
+        for fila in self._cx.execute("SELECT * FROM auditoria ORDER BY id DESC LIMIT ?", (limite,)):
+            registros.append(
+                RegistroDeAuditoria(
+                    cuando=_a_fecha(fila["cuando"]) or datetime.min.replace(tzinfo=UTC),
+                    actor=Actor(
+                        discord_id=int(fila["actor_id"]),
+                        nombre=str(fila["actor_nombre"]),
+                    ),
+                    accion=str(fila["accion"]),
+                    periodo=Periodo.de_clave(fila["periodo"]) if fila["periodo"] else None,
+                    objetivo_id=int(fila["objetivo_id"])
+                    if fila["objetivo_id"] is not None
+                    else None,
+                    detalle=_a_detalle(fila["detalle"]),
+                )
+            )
+        return registros
+
 
 def _a_fecha(valor: str | None) -> datetime | None:
     if not valor:
@@ -199,3 +242,14 @@ def _a_fecha(valor: str | None) -> datetime | None:
         return datetime.fromisoformat(valor)
     except ValueError:  # pragma: no cover — datos corruptos
         return None
+
+
+def _a_detalle(valor: object) -> dict[str, str]:
+    """El JSON guardado, convertido a un dict de strings."""
+    try:
+        datos = json.loads(str(valor))
+    except (TypeError, ValueError):  # pragma: no cover — datos corruptos
+        return {}
+    if not isinstance(datos, dict):
+        return {}
+    return {str(k): str(v) for k, v in datos.items()}

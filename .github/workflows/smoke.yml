@@ -1,0 +1,54 @@
+# El CI normal prueba el código con dobles: no toca la red ni Docker.
+# Este smoke sí baja los 28 artefactos reales y verifica su SHA256, para
+# enterarnos el lunes si un plugin desapareció, cambió de URL o cambió de
+# contenido. También se puede lanzar a mano desde Actions.
+name: Smoke de descargas
+
+on:
+  schedule:
+    # Lunes 09:00 en México (15:00 UTC).
+    - cron: "0 15 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  descargas:
+    name: Bajar y verificar los artefactos fijados
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Preparar settings.yml y .env de prueba
+        run: |
+          cp settings.example.yml settings.yml
+          printf 'RCON_PASSWORD=smoke\n' > .env
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Instalar dependencias (las mismas de uv.lock)
+        run: uv sync --locked
+
+      - name: Bajar, verificar SHA256 y generar configs
+        run: uv run mc build
+
+      - name: El segundo build debe ser idempotente
+        run: |
+          uv run mc build --dry-run --todo | tee /tmp/plan.txt
+          if grep -q "hay que bajarlo" /tmp/plan.txt; then
+            echo "::error::el segundo build todavía quiere bajar artefactos"
+            exit 1
+          fi
+
+      - name: Los artefactos quedaron completos
+        run: |
+          test -f data/server.properties
+          test -f data/plugins/Geyser-Spigot.jar
+          test -f data/plugins/floodgate-spigot.jar
+          test -d data/world/datapacks
+          echo "jars de plugins:" && find data/plugins -name '*.jar' | wc -l
+          echo "datapacks:" && find data/world/datapacks -type f | wc -l

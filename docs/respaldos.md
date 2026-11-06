@@ -1,11 +1,13 @@
 # Respaldos
 
-El proyecto tiene cuatro capas de protección:
+El proyecto tiene cinco capas de protección:
 
 1. **Respaldo local automático** cada 6 horas, sin apagar el servidor.
 2. **Verificación semanal** de todos los respaldos.
-3. **Copia diaria a la PC** por SSH, fuera del VPS.
-4. **Alertas por Discord** si un respaldo falla o el servidor se queda sin
+3. **Simulacro mensual de restauración**: se extrae el último respaldo en un
+   temporal y se comprueba que el mundo y las bases SQLite abren.
+4. **Copia diaria a la PC** por SSH, fuera del VPS.
+5. **Alertas por Discord** si un respaldo falla o el servidor se queda sin
    respaldo reciente.
 
 Los respaldos locales viven en `backups/`. La copia externa vive en
@@ -93,6 +95,8 @@ La copia externa y las alertas se configuran en `.env` y en los timers, no en
 | `mc backup list` | Lista los respaldos y su tamaño |
 | `mc backup verify` | Revisa SHA256, contenido y bases SQLite de todos |
 | `mc backup verify 20261031-011258` | Revisa uno concreto |
+| `mc backup drill` | Simulacro: extrae el último respaldo en un temporal y lo valida |
+| `mc backup drill 20261031-011258 --guardar` | Simulacro de uno concreto, dejando lo extraído para revisarlo |
 | `mc backup prune` | Borra los que salen de la ventana de retención |
 | `mc backup prune --dry-run` | Muestra qué borraría, sin borrar |
 | `mc backup status` | Último respaldo, edad, disco y último error |
@@ -119,6 +123,8 @@ Los archivos están en `deploy/systemd/`:
 | `mc-backup.timer` | Cada 6 horas |
 | `mc-backup-verify.service` | Verifica todos los respaldos |
 | `mc-backup-verify.timer` | Domingos a las 09:00 |
+| `mc-backup-drill.service` | Simulacro de restauración del último respaldo |
+| `mc-backup-drill.timer` | Primer domingo de cada mes, a las 10:00 |
 | `mc-monitor.service` | Revisa respaldo, disco y servidor |
 | `mc-monitor.timer` | Cada hora |
 | `mc-backup-alerta.service` | Envía una alerta si falla un respaldo |
@@ -129,7 +135,7 @@ Instalación:
 cd ~/minecraft-hd
 sudo install -m 644 deploy/systemd/*.service deploy/systemd/*.timer /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now mc-backup.timer mc-monitor.timer mc-backup-verify.timer
+sudo systemctl enable --now mc-backup.timer mc-monitor.timer mc-backup-verify.timer mc-backup-drill.timer
 ```
 
 Comprobación:
@@ -142,6 +148,32 @@ journalctl -u mc-backup.service -n 50 --no-pager
 
 El servicio tiene `TimeoutStartSec=1h` porque un mundo pregenerado puede tardar
 varios minutos en comprimirse.
+
+---
+
+## Simulacro de restauración
+
+Verificar el `.tgz` no es lo mismo que restaurarlo. El simulacro hace la
+parte peligrosa del restore —extraer el mundo y abrir las bases— pero en una
+carpeta temporal, sin apagar el servidor ni tocar `data/`:
+
+```bash
+mc backup drill                 # el más reciente
+mc backup drill 20261031-011258 # uno concreto
+mc backup drill --guardar       # deja lo extraído para revisarlo a mano
+```
+
+Qué revisa:
+
+1. SHA256, contenido y `BACKUP_INFO.json`, igual que `mc backup verify`.
+2. Que el tar se pueda extraer completo.
+3. Que exista `world/level.dat` y no esté vacío.
+4. Que cada base SQLite extraída pase `integrity_check`.
+
+El resultado queda en `backups/estado.json` y se ve en `mc backup status`.
+El timer lo corre el **primer domingo de cada mes** y, si falla, dispara la
+alerta de Discord. Necesita espacio libre suficiente para descomprimir el
+mundo: el doble del tamaño del respaldo, aproximadamente.
 
 ---
 

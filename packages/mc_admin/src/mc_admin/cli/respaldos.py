@@ -450,6 +450,49 @@ def _problemas_de(ruta: Path) -> list[str]:
     return problemas
 
 
+def _simulacro_de_restauracion(ruta: Path, destino: Path) -> list[str]:
+    """Extrae un respaldo a una carpeta temporal y revisa que sirva.
+
+    No toca `data/` ni el servidor: es la misma extracción que hace un
+    restore, pero a un lugar desechable. Así se comprueba de verdad que el
+    archivo abre, que trae el mundo y que las bases SQLite quedan sanas.
+    """
+    problemas = _problemas_de(ruta)
+    if problemas:
+        return problemas
+
+    try:
+        with tarfile.open(ruta) as tar:
+            tar.extractall(destino, filter="data")
+    except (OSError, tarfile.TarError) as exc:
+        return [f"no se pudo extraer: {exc}"]
+
+    nivel = destino / "world" / "level.dat"
+    if not nivel.is_file() or nivel.stat().st_size == 0:
+        problemas.append("el mundo extraído no trae world/level.dat")
+
+    for base in sorted(destino.rglob("*")):
+        if not base.is_file() or not base.name.endswith((".db", ".sqlite", ".sqlite3")):
+            continue
+        if base.name.endswith((".mv.db", ".h2.db")) or not sqlite.es_sqlite(base):
+            continue
+        if not sqlite.esta_sana(base):
+            problemas.append(f"la base {base.relative_to(destino)} no pasa integrity_check")
+    return problemas
+
+
+def _registrar_simulacro(ctx: Contexto, archivo: str, problemas: list[str]) -> None:
+    """Deja en estado.json cómo salió el último simulacro."""
+    estado = _leer_json(_ruta_estado(ctx)) or {}
+    estado["ultimo_simulacro"] = {
+        "momento": _ahora(ctx).isoformat(),
+        "archivo": archivo,
+        "correcto": not problemas,
+        "problemas": problemas,
+    }
+    _escribir_json(_ruta_estado(ctx), estado)
+
+
 def _segundos_intervalo(texto: str) -> int:
     """Convierte `6h`, `30m` o `1d` a segundos."""
     unidades = {"m": 60, "h": 3600, "d": 86400}
@@ -532,6 +575,46 @@ def backup_verify(
         consola.salir_con_error(exc)
 
 
+@app.command("drill")
+def backup_drill(
+    identificador: str = typer.Argument("ultimo", help="El id del respaldo, o `ultimo`."),
+    guardar: bool = typer.Option(
+        False, "--guardar", help="Deja lo extraído en una carpeta para revisarlo."
+    ),
+) -> None:
+    """Simulacro: extrae un respaldo a un temporal y revisa que sirva."""
+    try:
+        ctx = Contexto.cargar()
+        elegido = core.buscar(_leer_respaldos(ctx), identificador)
+        archivo = ctx.carpeta_respaldos / elegido.archivo
+
+        consola.titulo("Simulacro de restauración")
+        consola.info(f"Respaldo: [dato]{elegido.archivo}[/dato]")
+        consola.info(f"Del     : {elegido.fecha_bonita(_zona(ctx))}")
+        consola.info(f"Tamaño  : {elegido.tamano_legible}")
+        consola.tenue("  No se toca el mundo ni el servidor: se extrae aparte.")
+
+        if guardar:
+            destino = Path(tempfile.mkdtemp(prefix="mc-drill-"))
+            problemas = _simulacro_de_restauracion(archivo, destino)
+            consola.tenue(f"  Lo extraído quedó en {destino}")
+        else:
+            with tempfile.TemporaryDirectory(prefix="mc-drill-") as temporal:
+                problemas = _simulacro_de_restauracion(archivo, Path(temporal))
+
+        _registrar_simulacro(ctx, elegido.archivo, problemas)
+        if problemas:
+            for problema in problemas:
+                consola.mal(f"  {problema}")
+            raise ErrorDeRespaldo(
+                "el simulacro encontró problemas en el respaldo",
+                pista="No lo borres: revisa el error y prueba con otro respaldo.",
+            )
+        consola.ok("el respaldo se extrae completo, el mundo abre y las bases están sanas")
+    except ErrorMc as exc:
+        consola.salir_con_error(exc)
+
+
 @app.command("prune")
 def backup_prune(
     dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Solo enseña qué borraría."),
@@ -589,6 +672,10 @@ def backup_status() -> None:
             t.add_row("Último", "ninguno")
         libre = shutil.disk_usage(ctx.raiz).free / 1024**3
         t.add_row("Disco libre", f"{libre:.1f} GB")
+        simulacro = estado.get("ultimo_simulacro")
+        if isinstance(simulacro, dict):
+            resultado = "correcto" if simulacro.get("correcto") else "con problemas"
+            t.add_row("Último simulacro", f"{simulacro.get('momento', '?')} ({resultado})")
         consola.consola.print(t)
 
         if encontrados:

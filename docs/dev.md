@@ -39,6 +39,10 @@ uv run pytest                   # tests
 uv run pytest --cov=mc_admin --cov=pagos_bot
 ```
 
+La cobertura tiene un piso de **67%** (`fail_under` en `pyproject.toml`).
+Si un cambio la baja, `pytest` falla: no se baja el número para que pase un
+commit; se agregan tests o se justifica el cambio en el mismo commit.
+
 El `pre-commit` ejecuta, antes de cada commit:
 
 - Limpieza de espacios y fin de archivo.
@@ -49,13 +53,14 @@ El `pre-commit` ejecuta, antes de cada commit:
 
 ## Los tests
 
-Son **575 tests**. Ninguno levanta un contenedor ni abre un socket: Docker y RCON se sustituyen por dobles. Los tests parten de `settings.example.yml`, el `manifest.yml` y las plantillas **reales**, así que detectan cambios que rompan el formato del chat, la duplicación de pistones, las rutas de los datapacks o las reglas del bot de pagos.
+Son **601 tests**. Ninguno levanta un contenedor ni abre un socket: Docker y RCON se sustituyen por dobles. Los tests parten de `settings.example.yml`, el `manifest.yml` y las plantillas **reales**, así que detectan cambios que rompan el formato del chat, la duplicación de pistones, las rutas de los datapacks o las reglas del bot de pagos.
 
 La configuración compartida está en `pyproject.toml`:
 
 - `pytest` recoge `packages/mc_admin/tests` y `packages/pagos_bot/tests`.
 - `mypy` revisa también los tests, con reglas relajadas solo donde un test necesita una aserción directa.
 - `ruff` prohíbe `print()` fuera de la capa CLI.
+- `coverage` falla si el total baja de 67%.
 
 ## Estructura del repositorio
 
@@ -91,7 +96,7 @@ minecraft-hd/
 │       └── Dockerfile
 │
 ├── deploy/
-│   ├── systemd/              ← respaldo, verificación y monitor
+│   ├── systemd/              ← respaldo, verificación, simulacro y monitor
 │   └── pc/                   ← copia diaria del VPS a la PC
 │
 ├── data/                     ← datos del servidor (lo genera mc build)
@@ -109,6 +114,7 @@ minecraft-hd/
 | `mc-hd-pagos` | Bot de Discord y su SQLite; solo arranca con `pagos.activo` |
 | `mc-backup.timer` | Respaldo local cada 6 horas |
 | `mc-backup-verify.timer` | Verificación semanal de los respaldos |
+| `mc-backup-drill.timer` | Simulacro mensual de restauración |
 | `mc-monitor.timer` | Revisión horaria de respaldo, disco y servidor |
 | `mc-copiar-respaldos.timer` | Copia diaria del VPS a la PC (timer de usuario) |
 
@@ -120,9 +126,15 @@ El workflow `.github/workflows/ci.yml` corre en `main`, en `produccion` y en cad
 
 1. `ruff` (lint y formato).
 2. `mypy` estricto.
-3. `pytest` con cobertura.
+3. `pytest` con cobertura mínima de 67%.
 4. `docker compose --profile pagos config`.
 5. Build de la imagen del bot de pagos.
 6. `gitleaks` sobre el historial.
+
+El workflow `.github/workflows/smoke.yml` corre los lunes (o a mano desde
+Actions) y hace lo que el CI normal evita a propósito: baja los 28 artefactos
+reales, verifica sus SHA256 y comprueba que un segundo `mc build` no cambie
+nada. Así se detecta si un plugin desapareció, cambió de URL o publicó otra
+versión sin avisar.
 
 El badge del README apunta a la rama `main`.

@@ -1,11 +1,13 @@
 # Minecraft HD
 
-> Servidor de Minecraft multiplataforma en producción: Java y Bedrock en el mismo mundo, Docker, CLI con **575 tests**, version pinning con **SHA256** y bot de pagos automatizado.
+> Servidor de Minecraft multiplataforma en producción: Java y Bedrock en el mismo mundo, Docker, CLI con **601 tests**, version pinning con **SHA256** y bot de pagos automatizado.
 
 [![CI](https://github.com/BrianMariscal/Minecraft-Server/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BrianMariscal/Minecraft-Server/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-575%20passed-brightgreen)](https://github.com/BrianMariscal/Minecraft-Server/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-601%20passed-brightgreen)](https://github.com/BrianMariscal/Minecraft-Server/actions/workflows/ci.yml)
+[![Cobertura](https://img.shields.io/badge/coverage-68%25-brightgreen)](https://github.com/BrianMariscal/Minecraft-Server/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 Servidor privado para un grupo de hasta 15 jugadores: cuentas no premium, Java y Bedrock en el mismo mundo y todo en español de México. Corre en un VPS Linux y se administra con `mc`, una CLI hecha en Python.
 
@@ -13,7 +15,7 @@ Servidor privado para un grupo de hasta 15 jugadores: cuentas no premium, Java y
 
 ## Arquitectura
 
-Dos contenedores y cuatro timers (tres del sistema y uno de usuario). Los respaldos **no** son un contenedor: los ejecuta systemd con `mc backup now`, para que sigan funcionando aunque el servidor de Minecraft esté apagado.
+Dos contenedores y cinco timers (cuatro del sistema y uno de usuario). Los respaldos **no** son un contenedor: los ejecuta systemd con `mc backup now`, para que sigan funcionando aunque el servidor de Minecraft esté apagado.
 
 ```mermaid
 flowchart LR
@@ -27,7 +29,7 @@ flowchart LR
         Server["mc-hd-servidor<br/>Paper 26.1.2 · Java 25"]
         RCON["RCON<br/>127.0.0.1:25575"]
         CLI["CLI mc<br/>Typer + Rich"]
-        Timers["Timers systemd<br/>respaldo · verificación · monitor · copia"]
+        Timers["Timers systemd<br/>respaldo · verificación · simulacro · monitor · copia"]
         Backups[("data/ y backups/")]
         Pagos["mc-hd-pagos<br/>discord.py + SQLite"]
         PagosDB[("pagos-datos/")]
@@ -53,8 +55,8 @@ flowchart LR
 
 ## Decisiones clave
 
-- **Supply chain verificable:** los **28 artefactos** descargables (17 plugins, la base SQLite de Floodgate, 5 datapacks y 5 packs de Vanilla Tweaks) están fijados con versión y **SHA256**. `mc build` falla si un hash no coincide; nunca instala `latest`.
-- **575 tests que no dependen de Docker:** ningún test levanta un contenedor ni abre un socket. Docker y RCON se sustituyen por dobles, y los tests parten de `settings.example.yml`, `manifest.yml` y las plantillas reales.
+- **Supply chain verificable:** los **28 artefactos instalables** (18 plugins, incluida la base SQLite de Floodgate, 5 datapacks y 5 packs de Vanilla Tweaks) están fijados con versión y **SHA256**. `mc build` falla si un hash no coincide; nunca instala `latest`. El ZIP contenedor de Vanilla Tweaks no se fija porque no es reproducible byte a byte: se verifican los 5 packs de adentro.
+- **601 tests que no dependen de Docker:** ningún test levanta un contenedor ni abre un socket. Docker y RCON se sustituyen por dobles, y los tests parten de `settings.example.yml`, `manifest.yml` y las plantillas reales. La cobertura tiene un piso de **67%** que el CI hace cumplir.
 - **Tipos y validación en serio:** `mypy` en modo estricto, `ruff` para lint y formato, y `pydantic` para validar `settings.yml` y `.env`. Las configs se generan con **Jinja2**, no se editan a mano en `data/`.
 - **Versiones fijadas con intención:** Paper **26.1.2** y Java 25, no la versión más nueva: EssentialsX todavía no tiene release estable para 26.3. El detalle está en [docs/decisiones.md](docs/decisiones.md).
 - **Salud observable:** `mc doctor` revisa puertos, RAM, disco, TPS, versiones y traducciones; `mc-monitor.timer` vigila respaldo, disco y servidor cada hora y avisa por Discord.
@@ -75,6 +77,29 @@ mc status   # ve quién está conectado
 
 La guía completa para montarlo desde cero está en **[docs/vps.md](docs/vps.md)**. El servidor real no tiene URL pública: se entra por invitación y la dirección se comparte aparte.
 
+## Así se ve
+
+Salida real de `mc doctor` en el VPS de producción:
+
+```text
+Revisando Minecraft HD
+✓ Docker: funcionando (5.6.0)
+✓ Memoria: 7.7 GB disponibles, el servidor pide 4G
+✓ Disco: 173.8 GB libres
+✓ Puerto 25565 (Java): lo usa el servidor, que está encendido
+✓ Puerto 19132 (Bedrock): lo usa el servidor, que está encendido
+✓ Puerto 19133 (Bedrock WebRTC): lo usa el servidor, que está encendido
+✓ Versiones: Minecraft 26.1.2, todo cuadra
+✓ Secretos (.env): todo lo necesario está lleno
+✓ Logo: logo/logo.png listo, se convierte a 64x64 al arrancar
+✓ Docker Compose: versión, memoria y puertos al día con settings.yml
+✓ Traducciones: no encontré mensajes en inglés
+✓ TPS: 20.0 de 20
+
+Resumen
+  Todo en orden.
+```
+
 ## Seguridad
 
 - **SHA256 en cada descarga:** plugins, datapacks y packs de Vanilla Tweaks se verifican antes de instalarse; un hash distinto aborta el build.
@@ -84,9 +109,22 @@ La guía completa para montarlo desde cero está en **[docs/vps.md](docs/vps.md)
 
 ## Testing
 
-**575 tests. Ninguno levanta un contenedor ni abre un socket:** Docker y RCON se sustituyen por dobles, y los tests parten de `settings.example.yml`, `manifest.yml` y las plantillas reales.
+**601 tests. Ninguno levanta un contenedor ni abre un socket:** Docker y RCON se sustituyen por dobles, y los tests parten de `settings.example.yml`, `manifest.yml` y las plantillas reales.
 
-Se corren con `uv run pytest`; la cobertura, con `uv run pytest --cov=mc_admin --cov=pagos_bot`.
+Se corren con `uv run pytest`; la cobertura, con `uv run pytest --cov=mc_admin --cov=pagos_bot`. `pyproject.toml` fija `fail_under = 67`: si un cambio baja la cobertura, el test falla. Además, un **smoke semanal** en GitHub Actions baja los 28 artefactos reales y comprueba que `mc build` siga siendo idempotente.
+
+## Limitaciones
+
+- Está hecho para **un servidor y un grupo concretos**, no es un panel multi-tenant ni un SaaS. `settings.yml` asume una sola instancia.
+- El bot de pagos maneja **una moneda (MXN)**, un guild y un canal. No es un sistema de cobros genérico.
+- El **libro de recetas de Bedrock** es independiente del de Java. Desbloquear el Fabricador en Java no lo desbloquea en Bedrock: ahí hay que obtener un dropper para que aparezca.
+- La versión está fijada a **Paper 26.1.2 / Java 25** a propósito, porque EssentialsX todavía no tiene release estable para 26.3. Subirla requiere probar plugins y regenerar configs.
+- La cobertura es **68%**, no 100%: los módulos que hablan con Discord o Docker se prueban con dobles y algunas ramas de arranque quedan fuera.
+- El servidor **no tiene URL pública**: se entra por invitación y la dirección se comparte aparte.
+
+## Licencia
+
+[MIT](LICENSE). El código se puede reutilizar; los datos reales (nombres, IDs, mundos y secretos) no están en el repositorio.
 
 ## Documentación
 
@@ -97,7 +135,7 @@ Se corren con `uv run pytest`; la cobertura, con `uv run pytest --cov=mc_admin -
 | **[docs/administrar.md](docs/administrar.md)** | Whitelist, admins, pregen, regenerar el mundo y CoreProtect |
 | **[docs/conectarse.md](docs/conectarse.md)** | Cómo entra la banda desde Java, Bedrock y consolas |
 | **[docs/vincular-cuentas.md](docs/vincular-cuentas.md)** | Tener el mismo personaje en Java y en Bedrock |
-| **[docs/respaldos.md](docs/respaldos.md)** | Respaldos automáticos, verificación, copia a la PC, alertas y restore |
+| **[docs/respaldos.md](docs/respaldos.md)** | Respaldos automáticos, verificación, simulacro de restore, copia a la PC, alertas y restore |
 | **[docs/bot-pagos.md](docs/bot-pagos.md)** | Crear el bot de Discord y configurar los cobros del VPS |
 | **[docs/versiones.md](docs/versiones.md)** | Qué versión está fijada, por qué y cómo subirla |
 | **[docs/decisiones.md](docs/decisiones.md)** | Las decisiones de diseño que conviene conocer |

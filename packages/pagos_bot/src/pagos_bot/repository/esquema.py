@@ -1,6 +1,6 @@
 """El esquema de la base de datos y sus migraciones.
 
-Esquema versionado a mano en vez de Alembic: son tres tablas y el bot corre
+Esquema versionado a mano en vez de Alembic: son cuatro tablas y el bot corre
 solo en este proyecto. Alembic sería más máquina de la que hace falta, y
 una dependencia más que mantener.
 
@@ -13,7 +13,7 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import Callable
 
-VERSION_ACTUAL = 2
+VERSION_ACTUAL = 3
 
 
 def _v1(cx: sqlite3.Connection) -> None:
@@ -76,9 +76,37 @@ def _v2(cx: sqlite3.Connection) -> None:
     )
 
 
+def _v3(cx: sqlite3.Connection) -> None:
+    """El libro de movimientos del cobro.
+
+    Solo se agrega: no hay UPDATE ni DELETE en esta tabla. Guarda el actor
+    (quien lo hizo), la acción, el mes y un detalle en JSON con los valores
+    que tenía el cambio. Así se puede reconstruir qué pasó sin depender de
+    los logs del contenedor, que se rotan.
+    """
+    cx.executescript(
+        """
+        CREATE TABLE auditoria (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            cuando        TEXT NOT NULL,      -- ISO 8601 con zona
+            actor_id      INTEGER NOT NULL,   -- 0 = el bot
+            actor_nombre  TEXT NOT NULL,
+            accion        TEXT NOT NULL,      -- pago.confirmado, ajuste.total...
+            periodo       TEXT,               -- '2026-10', si aplica
+            objetivo_id   INTEGER,            -- a quién le tocó, si aplica
+            detalle       TEXT NOT NULL       -- JSON con valores del cambio
+        );
+
+        CREATE INDEX idx_auditoria_cuando ON auditoria(cuando);
+        CREATE INDEX idx_auditoria_periodo ON auditoria(periodo);
+        """
+    )
+
+
 MIGRACIONES: list[tuple[int, Callable[[sqlite3.Connection], None]]] = [
     (1, _v1),
     (2, _v2),
+    (3, _v3),
 ]
 
 

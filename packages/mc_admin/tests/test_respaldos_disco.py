@@ -302,3 +302,36 @@ class TestSnapshots:
         assert _cuantas_filas(base) == 6
         assert not Path(f"{base}-wal").exists()
         assert sqlite.esta_sana(base)
+
+
+class TestSimulacro:
+    def test_extrae_el_mundo_y_valida_las_bases(self, tmp_path: Path) -> None:
+        tar_ruta = tmp_path / "world-20261001-120000.tgz"
+        _tar_de_itzg(
+            tar_ruta,
+            {
+                "world/level.dat": b"mundo",
+                "pagos-datos/pagos.sqlite": _bytes_de_una_base(tmp_path, 3),
+            },
+        )
+        destino = tmp_path / "extraido"
+        assert cli._simulacro_de_restauracion(tar_ruta, destino) == []
+        assert (destino / "world" / "level.dat").read_bytes() == b"mundo"
+
+    def test_un_mundo_sin_level_dat_no_sirve(self, tmp_path: Path) -> None:
+        tar_ruta = tmp_path / "world-20261001-120000.tgz"
+        _tar_de_itzg(tar_ruta, {"world/region/r.0.0.mca": b"x"})
+        problemas = cli._simulacro_de_restauracion(tar_ruta, tmp_path / "extraido")
+        assert any("level.dat" in p for p in problemas)
+
+    def test_una_base_rota_se_detecta_al_extraer(self, tmp_path: Path) -> None:
+        tar_ruta = tmp_path / "world-20261001-120000.tgz"
+        _tar_de_itzg(
+            tar_ruta,
+            {
+                "world/level.dat": b"mundo",
+                "plugins/CoreProtect/database.db": b"SQLite format 3\x00" + b"basura" * 100,
+            },
+        )
+        problemas = cli._simulacro_de_restauracion(tar_ruta, tmp_path / "extraido")
+        assert any("integrity_check" in p for p in problemas)

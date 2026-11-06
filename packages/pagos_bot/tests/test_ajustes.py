@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import re
 import sqlite3
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -19,7 +20,8 @@ from ayudas import momento
 from test_servicio import ServicioCongelado
 
 from pagos_bot.config import PagosConfig, ParticipanteConfig
-from pagos_bot.discord_ui import botones, tarjetas
+from pagos_bot.discord_ui import botones, tarjetas, textos
+from pagos_bot.domain.auditoria import Actor, RegistroDeAuditoria
 from pagos_bot.domain.calendario import Periodo
 from pagos_bot.domain.cobro import Estado, Reparto
 from pagos_bot.domain.dinero import Dinero
@@ -328,6 +330,20 @@ class TestTarjetas:
         assert componentes <= MAX_COMPONENTES
         assert texto <= MAX_TEXTO
 
+    def test_auditoria_cabe(self, mucha_gente: ServicioCongelado) -> None:
+        for i in range(25):
+            mucha_gente.auditar(
+                "pago.confirmado",
+                actor=Actor(discord_id=i, nombre=f"Persona con nombre largo {i}"),
+                periodo=Periodo(2026, 10),
+                objetivo_id=i,
+                detalle={"objetivo": f"Persona con nombre largo {i}", "monto": "$112.50"},
+            )
+        vista = tarjetas.auditoria(mucha_gente.movimientos(25))
+        componentes, texto = _medir(vista.to_components())
+        assert componentes <= MAX_COMPONENTES
+        assert texto <= MAX_TEXTO
+
     def test_el_estado_no_menciona_a_nadie(self) -> None:
         """/pagos nombra a toda la banda: no debe sonarle a nadie."""
         assert tarjetas.SIN_MENCIONES.users is False
@@ -359,3 +375,102 @@ class TestBotones:
         """Los "Ya pagué" de antes de 1.1 tenían el mismo custom_id: siguen jalando."""
         assert re.fullmatch(botones.ID_YA_PAGUE, "pagos:ya_pague")
         assert re.fullmatch(r"pagos:confirmar", "pagos:confirmar")
+
+
+class TestAuditoriaDeAjustes:
+    def test_los_cambios_llevan_actor_y_valores(
+        self, svc: ServicioCongelado, ajustes: ServicioDeAjustes
+    ) -> None:
+        ana = Actor(discord_id=1, nombre="Ana")
+        ajustes.cambiar_dia(15, actor=ana)
+        ajustes.cambiar_total("500", actor=ana)
+
+        movimientos = svc.movimientos()
+        assert [m.accion for m in movimientos] == ["mes.precio", "ajuste.total", "ajuste.dia"]
+        assert all(m.actor == ana for m in movimientos)
+        assert movimientos[-1].detalle["dia"] == "15"
+        assert movimientos[1].detalle["total"] == "$500.00"
+
+    def test_agregar_y_quitar_miembro(
+        self, svc: ServicioCongelado, ajustes: ServicioDeAjustes
+    ) -> None:
+        ajustes.agregar_miembro(50, "Nuevo", "35.50")
+        ajustes.quitar_miembro(50)
+        acciones = [m.accion for m in svc.movimientos()]
+        assert acciones == [
+            "pago.eximido",
+            "miembro.quitado",
+            "miembro.agregado",
+        ]
+
+
+class TestRenglonesDeAuditoria:
+    @staticmethod
+    def _movimiento(accion: str, detalle: dict[str, str]) -> RegistroDeAuditoria:
+        return RegistroDeAuditoria(
+            cuando=datetime(2026, 10, 5, 12, 0, tzinfo=UTC),
+            actor=Actor(discord_id=1, nombre="Ana"),
+            accion=accion,
+            periodo=Periodo(2026, 10),
+            detalle=detalle,
+        )
+
+    @pytest.mark.parametrize(
+        ("accion", "detalle", "esperado"),
+        [
+            ("ajuste.dia", {"dia": "15"}, "día de pago a **15**"),
+            (
+                "ajuste.avisos",
+                {"dias_antes": "3", "cada_dias_despues": "2"},
+                "3 días antes",
+            ),
+            ("ajuste.hora", {"hora": "11:00"}, "hora de los avisos a **11:00**"),
+            (
+                "cuota.monto",
+                {"objetivo": "Pepe", "monto": "$120.00"},
+                "cuota de **Pepe** a **$120.00**",
+            ),
+            ("mes.precio", {"total": "$500.00"}, "precio de los meses abiertos"),
+            (
+                "pago.confirmado",
+                {"objetivo": "Pepe", "monto": "$100.00"},
+                "confirmó el pago a **Pepe** ($100.00)",
+            ),
+            ("ajuste.total", {"total": "$500.00"}, "total del VPS ($500.00)"),
+            ("ajuste.reparto", {"objetivo": "Pepe"}, "cambió el reparto a **Pepe**"),
+        ],
+    )
+    def test_cada_movimiento_se_lee_claro(
+        self, accion: str, detalle: dict[str, str], esperado: str
+    ) -> None:
+        linea = textos.renglon_auditoria(self._movimiento(accion, detalle))
+        assert esperado in linea
+        assert "Ana" in linea
+        assert "octubre de 2026" in linea
+
+    def test_sin_movimientos_lo_dice(self) -> None:
+        texto = repr(tarjetas.auditoria([]).to_components())
+        assert "Todavía no hay movimientos" in texto
+
+    def test_miembros_vacio_y_los_dos_descuadres(self, config: PagosConfig) -> None:
+        vacio = config.model_copy(update={"participantes": []})
+        assert "Nadie todavía" in textos.miembros(vacio)
+
+        reparto = Reparto.PERSONALIZADO
+        de_mas = config.model_copy(
+            update={
+                "reparto": reparto,
+                "participantes": [
+                    ParticipanteConfig(nombre="Ana", discord_id=1, monto_mxn=Decimal("500.00"))
+                ],
+            }
+        )
+        de_menos = de_mas.model_copy(
+            update={
+                "participantes": [
+                    ParticipanteConfig(nombre="Ana", discord_id=1, monto_mxn=Decimal("300.00"))
+                ]
+            }
+        )
+        assert "más que el total" in (textos.descuadre(de_mas) or "")
+        assert "no alcanzan" in (textos.descuadre(de_menos) or "")

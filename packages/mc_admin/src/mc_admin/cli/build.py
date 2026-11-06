@@ -237,7 +237,7 @@ def ejecutar(ctx: Contexto) -> None:
 
         # --- Vanilla Tweaks --------------------------------------------- #
         if manifest.vanilla_tweaks:
-            consola.paso("Pidiéndole los packs a vanillatweaks.net...")
+            consola.paso("Preparando los datapacks de Vanilla Tweaks...")
             packs = descargas.obtener_vanilla_tweaks(
                 manifest.vanilla_tweaks, ctx.carpeta_cache, cliente
             )

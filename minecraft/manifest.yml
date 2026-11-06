@@ -208,13 +208,14 @@ datapacks:
 #  Vanilla Tweaks
 # ---------------------------------------------------------------------------
 #  vanillatweaks.net no da URLs fijas: hay que mandar un POST con la lista de
-#  packs y te devuelve un link con un id aleatorio. Lo bueno es que el ZIP que
-#  entrega SI es byte a byte identico en cada generacion (verificado el
-#  2026-09-30 generandolo dos veces), asi que su sha256 si se puede fijar.
+#  packs y te devuelve un link con un id aleatorio. El ZIP contenedor NO es
+#  estable byte a byte entre generaciones (cambia el empaquetado), asi que su
+#  sha256 no se fija: lo que se verifica es cada datapack de adentro.
 #
-#  `mc build` manda el POST, baja el ZIP, verifica `sha256_zip`, lo descomprime
-#  y verifica el sha256 de cada datapack de adentro contra `packs`. Si cualquiera
-#  falla, no se instala nada.
+#  `mc build` manda el POST, baja el ZIP, lo descomprime y verifica el sha256
+#  de cada datapack contra `packs`. Si cualquiera falla, no se instala nada.
+#  El caché se invalida solo cuando cambia la versión, la selección o algún
+#  hash de `packs`.
 #
 #  Dos packs que pediste NO existen para 26.x y quedaron fuera:
 #    - "invisible item frames": ya no esta ni en datapacks ni en crafting tweaks.
@@ -223,7 +224,7 @@ datapacks:
 vanilla_tweaks:
   version_mc: "26.1"
   url: "https://vanillatweaks.net/assets/server/zipdatapacks.php"
-  # Cuerpo exacto del POST. El orden importa para que el ZIP salga identico.
+  # Cuerpo exacto del POST.
   seleccion:
     "Decorative/Cosmetic":
       - "armor statues"
@@ -233,8 +234,6 @@ vanilla_tweaks:
       - "anti enderman grief"
     "Convenience":
       - "timber"
-  # sha256 del ZIP contenedor que devuelve vanillatweaks.net.
-  sha256_zip: "b8b1a600e3db506f2ff08c096e186554d98863fa66a8f9c27304b503da326aed"
   # Cada datapack de adentro, con su sha256. El nombre tiene que coincidir
   # exacto: asi detectamos si Vanilla Tweaks subio una version nueva.
   packs:
