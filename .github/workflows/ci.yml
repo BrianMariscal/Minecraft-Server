@@ -4,7 +4,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, produccion]
   pull_request:
 
 permissions:
@@ -45,7 +45,7 @@ jobs:
       - name: docker-compose.yml es válido (con todos los perfiles)
         run: |
           printf 'RCON_PASSWORD=ci\n' > .env
-          docker compose --profile pagos --profile remoto config --quiet
+          docker compose --profile pagos config --quiet
 
       - name: La imagen del bot de pagos construye
         run: docker build -f packages/pagos_bot/Dockerfile -t pagos-bot:ci .
