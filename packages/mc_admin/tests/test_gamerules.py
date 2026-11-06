@@ -1,9 +1,9 @@
 """Gamerules: los nombres de 26.x y las dimensiones donde aplican.
 
 Estos nombres NO salieron de la documentación: salieron de leer el
-game_rules.dat que generó un Paper 26.1.2 de verdad. Con los nombres viejos
+game_rules.dat que generó un Paper 26.1.2 real. Con los nombres viejos
 en camelCase el servidor contesta "Incorrect argument" y la regla no aplica,
-sin más aviso.
+sin otro aviso.
 """
 
 from __future__ import annotations

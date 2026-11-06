@@ -139,7 +139,7 @@ class MesDeCobro:
 
     @property
     def juntado(self) -> Dinero:
-        """Lo que de verdad ya entró (solo lo confirmado)."""
+        """Lo que ya entró (solo lo confirmado)."""
         return sumar([c.monto for c in self.pagados])
 
     @property
@@ -205,7 +205,7 @@ def abrir_mes(
 
     Con reparto `iguales`, el total se divide sin perder centavos. Con
     `personalizado`, cada quien paga lo suyo y el total de settings.yml se
-    usa nada más como referencia.
+    usa solo como referencia.
 
     Raises:
         ValueError: si no hay participantes, o si falta algún monto fijo.

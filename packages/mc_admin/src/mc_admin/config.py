@@ -20,6 +20,7 @@ from mc_admin.errores import ErrorDeConfig
 
 # Nombres de archivo que esperamos en la raíz del proyecto.
 ARCHIVO_SETTINGS = "settings.yml"
+ARCHIVO_SETTINGS_EJEMPLO = "settings.example.yml"
 ARCHIVO_ENV = ".env"
 ARCHIVO_ENV_EJEMPLO = ".env.example"
 
@@ -66,9 +67,8 @@ class Servidor(_Base):
 class Versiones(_Base):
     minecraft: str = Field(pattern=r"^\d+(\.\d+){0,2}$")
     imagen_servidor: str = Field(min_length=1)
-    imagen_respaldos: str = Field(min_length=1)
 
-    @field_validator("imagen_servidor", "imagen_respaldos")
+    @field_validator("imagen_servidor")
     @classmethod
     def _sin_latest(cls, v: str) -> str:
         """Prohibimos tags móviles: el proyecto se construye reproducible."""
@@ -107,13 +107,14 @@ class Rendimiento(_Base):
 class Puertos(_Base):
     java: Puerto
     bedrock: Puerto
+    # Puerto UDP de WebRTC para NetherNet. Geyser 2.12 usa `bedrock` también
+    # para la señalización TCP, pero RakNet y NetherNet no pueden compartir UDP.
+    bedrock_webrtc: Puerto = 19133
     rcon: Puerto
 
     @model_validator(mode="after")
     def _sin_repetidos(self) -> Self:
-        # bedrock es UDP, así que puede repetir número con un TCP sin choque,
-        # pero lo prohibimos igual para no confundir al configurar el firewall.
-        usados = [self.java, self.bedrock, self.rcon]
+        usados = [self.java, self.bedrock, self.bedrock_webrtc, self.rcon]
         repetidos = {p for p in usados if usados.count(p) > 1}
         if repetidos:
             msg = (
@@ -176,33 +177,9 @@ class Tecnico(_Base):
     duplicacion_portal_end: bool
 
 
-class RespaldoRemoto(_Base):
-    activo: bool = False
-    destino: str = ""
-    # Subir 1-3 GB a la nube cada 6 horas es mucho; una vez al día basta.
-    intervalo: str = Field(default="24h", pattern=r"^\d+[mhd]$")
-
-    @model_validator(mode="after")
-    def _destino_si_activo(self) -> Self:
-        if self.activo and not self.destino:
-            msg = (
-                "respaldos.remoto.activo es true pero respaldos.remoto.destino está "
-                "vacío. Pon el remoto de rclone, por ejemplo 'gdrive:minecraft-hd'"
-            )
-            raise ValueError(msg)
-        if self.activo and ":" not in self.destino:
-            msg = (
-                f"respaldos.remoto.destino '{self.destino}' no trae el remoto de rclone. "
-                "Se escribe remoto:carpeta, por ejemplo 'gdrive:minecraft-hd'"
-            )
-            raise ValueError(msg)
-        return self
-
-
 class Respaldos(_Base):
     intervalo: str = Field(pattern=r"^\d+[mhd]$")
     conservar_dias: int = Field(ge=1, le=365)
-    remoto: RespaldoRemoto
 
 
 class Recordatorio(_Base):
@@ -471,9 +448,16 @@ def cargar_settings(raiz: Path) -> Settings:
     """
     ruta = raiz / ARCHIVO_SETTINGS
     if not ruta.is_file():
+        if (raiz / ARCHIVO_SETTINGS_EJEMPLO).is_file():
+            pista = (
+                f"Copia {ARCHIVO_SETTINGS_EJEMPLO} a {ARCHIVO_SETTINGS} y edítalo, "
+                "o corre `mc setup` para que lo haga por ti."
+            )
+        else:
+            pista = "Corre `mc` desde la carpeta del proyecto, la que tiene settings.yml."
         raise ErrorDeConfig(
             f"no encontré {ARCHIVO_SETTINGS} en {raiz}",
-            pista="Corre `mc` desde la carpeta del proyecto, la que tiene settings.yml.",
+            pista=pista,
         )
 
     try:
@@ -497,7 +481,7 @@ def cargar_settings(raiz: Path) -> Settings:
 
 
 def _leer_archivo_env(ruta: Path) -> dict[str, str]:
-    """Parsea un .env sencillo: CLAVE=valor, # comentarios, líneas vacías."""
+    """Parsea un .env simple: CLAVE=valor, # comentarios, líneas vacías."""
     datos: dict[str, str] = {}
     for numero, linea in enumerate(ruta.read_text(encoding="utf-8").splitlines(), start=1):
         limpia = linea.strip()
@@ -537,12 +521,19 @@ def cargar_secretos(raiz: Path, *, usar_entorno: bool = True) -> Secretos:
 
 
 def encontrar_raiz(inicio: Path | None = None) -> Path:
-    """Busca hacia arriba la carpeta del proyecto (la que tiene settings.yml)."""
+    """Busca hacia arriba la carpeta del proyecto.
+
+    Sirve tanto si ya existe settings.yml como si solo está la plantilla
+    settings.example.yml, para que `mc setup` pueda crear el archivo.
+    """
     actual = (inicio or Path.cwd()).resolve()
     for candidata in (actual, *actual.parents):
-        if (candidata / ARCHIVO_SETTINGS).is_file():
+        if (candidata / ARCHIVO_SETTINGS).is_file() or (
+            candidata / ARCHIVO_SETTINGS_EJEMPLO
+        ).is_file():
             return candidata
     raise ErrorDeConfig(
-        f"no encontré {ARCHIVO_SETTINGS} ni aquí ni en ninguna carpeta de arriba",
-        pista="Métete a la carpeta del proyecto (la que tiene settings.yml).",
+        f"no encontré {ARCHIVO_SETTINGS} ni {ARCHIVO_SETTINGS_EJEMPLO} "
+        "ni aquí ni en ninguna carpeta de arriba",
+        pista="Métete a la carpeta del proyecto (la que tiene settings.example.yml).",
     )

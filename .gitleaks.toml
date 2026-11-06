@@ -10,7 +10,7 @@ useDefault = true
 
 [[allowlists]]
 # ---------------------------------------------------------------------
-#  Los `discord_id` de settings.yml NO son secretos.
+#  Los `discord_id` de settings.example.yml NO son secretos.
 # ---------------------------------------------------------------------
 #  gitleaks confunde tres cosas distintas:
 #
@@ -26,12 +26,13 @@ useDefault = true
 #  que esté cerca de la palabra "discord", así que marca la lista de
 #  participantes del bot de pagos.
 #
-#  El permiso va acotado a tres cosas a la vez: solo el archivo
-#  settings.yml, solo líneas que sean EXACTAMENTE `discord_id: <número>`, y
-#  solo esa regla. Si alguien pega un token en ese mismo archivo, o un
-#  número de esos en cualquier otro archivo, gitleaks lo sigue atrapando.
-description = "IDs de usuario de Discord en settings.yml: son públicos, no credenciales"
+#  El permiso va acotado a tres cosas a la vez: solo la configuración
+#  (settings.example.yml en el repo, settings.yml en local), solo líneas que
+#  sean EXACTAMENTE `discord_id: <número>`, y solo esa regla. Si alguien pega
+#  un token en ese mismo archivo, o un número de esos en cualquier otro
+#  archivo, gitleaks lo sigue atrapando.
+description = "IDs de usuario de Discord en la configuración: son públicos, no credenciales"
 targetRules = ["discord-client-id"]
-paths = ['''^settings\.yml$''']
+paths = ['''^settings(\.example)?\.yml$''']
 regexTarget = "line"
 regexes = ['''^\s*discord_id:\s*\d{17,20}\s*$''']

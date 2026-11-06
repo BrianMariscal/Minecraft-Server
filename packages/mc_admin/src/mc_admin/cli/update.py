@@ -36,13 +36,13 @@ def update(
         comparaciones: list[Comparacion] = []
         artefactos = manifest.artefactos
         with catalogo.crear_cliente() as cliente:
-            for i, (_, a) in enumerate(artefactos, start=1):
+            for i, (destino, a) in enumerate(artefactos, start=1):
                 consola.consola.print(
                     f"[tenue]  {i:>2}/{len(artefactos)}  revisando {a.nombre}...[/tenue]",
                     end="\r",
                 )
                 comparaciones.append(
-                    catalogo.buscar_novedades(a.nombre, a.version, a.url, mc, cliente)
+                    catalogo.buscar_novedades(a.nombre, a.version, a.url, mc, cliente, destino)
                 )
         consola.consola.print(" " * 60, end="\r")
 
@@ -51,7 +51,7 @@ def update(
         # --- Lo que sí se puede subir ------------------------------------ #
         if aplicables:
             consola.titulo("Hay versión nueva")
-            t = consola.tabla("", ["Plugin", "Ahorita", "Nueva", "Canal"])
+            t = consola.tabla("", ["Plugin", "Actual", "Nueva", "Canal"])
             for c in sorted(aplicables, key=lambda x: x.nombre):
                 color = _color_de(c)
                 t.add_row(

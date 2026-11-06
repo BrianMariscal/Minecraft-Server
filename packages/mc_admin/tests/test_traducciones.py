@@ -72,7 +72,7 @@ class TestRevisarArchivos:
 
 
 class TestNuestrasTraduccionesEstanEnEspanol:
-    """Contra los archivos de traducción que de verdad se versionan."""
+    """Contra los archivos de traducción versionados."""
 
     def test_las_traducciones_propias_pasan_el_detector(self, proyecto: Path) -> None:
         carpeta = proyecto / "minecraft" / "translations" / "es_mx"

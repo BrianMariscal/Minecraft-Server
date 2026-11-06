@@ -18,7 +18,7 @@ Minecraft, al lado del MOTD.
 
 ## Si no pones logo
 
-No pasa nada: el servidor arranca igual, nada más sin icono. `mc doctor` te
+No pasa nada: el servidor arranca igual, solo sin icono. `mc doctor` te
 lo va a recordar como aviso, no como error.
 
 ## Después de ponerlo
@@ -33,5 +33,5 @@ vuélvelo a agregar.
 
 ---
 
-`logo.png` está en `.gitignore` a propósito: la imagen es tuya y no tiene
+`logo.png` está en `.gitignore` por diseño: la imagen es tuya y no tiene
 por qué vivir en el repositorio.

@@ -153,6 +153,14 @@ class TestCrossplay:
         assert geyser["motd"]["passthrough-motd"] is True
         assert geyser["java"]["auth-type"] == "floodgate"
 
+    def test_geyser_acepta_raknet_y_nethernet(self, generados: dict[str, str]) -> None:
+        """Bedrock 26.60 ya no usa RakNet; los clientes viejos sí."""
+        geyser = yaml.safe_load(generados["plugins/Geyser-Spigot/config.yml"])
+        bedrock = geyser["bedrock"]
+        assert bedrock["transport"] == "both"
+        assert bedrock["port"] == 19132
+        assert bedrock["webrtc-port"] == 19133
+
     def test_cooldown_type_es_un_valor_valido(self, generados: dict[str, str]) -> None:
         """Geyser solo acepta crosshair, hotbar o disabled."""
         geyser = yaml.safe_load(generados["plugins/Geyser-Spigot/config.yml"])

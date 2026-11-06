@@ -1,6 +1,6 @@
 """Configuración del bot: lee la sección `pagos` de settings.yml y el .env.
 
-Comparte settings.yml con el resto del proyecto a propósito: un solo archivo
+Comparte settings.yml con el resto del proyecto por diseño: un solo archivo
 que editar. El bot lo monta de solo lectura en su contenedor.
 """
 
@@ -153,7 +153,12 @@ class Entorno(_Base):
             )
             raise ErrorDeConfig(msg)
 
-        alertas = os.environ.get("ALERTAS_CANAL_ID", "").strip()
+        # Si no hay canal de alertas aparte, se usa el de pagos: es mejor
+        # recibir el aviso ahí que dejarlo solo en el log.
+        alertas = (
+            os.environ.get("ALERTAS_CANAL_ID", "").strip()
+            or os.environ.get("PAGOS_CANAL_ID", "").strip()
+        )
         try:
             return cls(
                 token=os.environ["PAGOS_BOT_TOKEN"],

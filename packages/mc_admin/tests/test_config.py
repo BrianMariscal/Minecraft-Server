@@ -1,4 +1,4 @@
-"""settings.yml y .env: que validen de verdad y expliquen el error."""
+"""settings.yml y .env: que validen bien y expliquen el error."""
 
 from __future__ import annotations
 
@@ -29,8 +29,8 @@ def editar(proyecto: Path, cambios: dict[str, Any]) -> None:
 
 
 class TestCargarSettings:
-    def test_el_settings_real_del_proyecto_es_valido(self, proyecto: Path) -> None:
-        """Si este test falla, el settings.yml que se versiona está roto."""
+    def test_el_settings_de_ejemplo_es_valido(self, proyecto: Path) -> None:
+        """Si este test falla, settings.example.yml está roto."""
         s = cargar_settings(proyecto)
         assert s.servidor.nombre == "Minecraft HD"
         assert s.versiones.minecraft == "26.1.2"
@@ -76,6 +76,11 @@ class TestReglasDeNegocio:
 
     def test_puertos_repetidos_se_rechazan(self, proyecto: Path) -> None:
         editar(proyecto, {"puertos": {"rcon": 25565}})
+        with pytest.raises(ErrorDeConfig, match="puertos repetidos"):
+            cargar_settings(proyecto)
+
+    def test_puerto_webrtc_repetido_se_rechaza(self, proyecto: Path) -> None:
+        editar(proyecto, {"puertos": {"bedrock_webrtc": 25565}})
         with pytest.raises(ErrorDeConfig, match="puertos repetidos"):
             cargar_settings(proyecto)
 

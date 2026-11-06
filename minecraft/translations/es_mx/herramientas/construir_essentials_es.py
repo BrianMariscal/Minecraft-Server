@@ -164,7 +164,7 @@ def traducir_argumentos(texto):
 print("script listo", file=sys.stderr)
 
 # --------------------------------------------------------------------------
-#  Textos que escribimos a mano: los que de verdad lee un jugador.
+#  Textos que escribimos a mano: los que lee un jugador.
 #  Tono mexicano, corto, natural. Nada de "Por favor, proceda a...".
 # --------------------------------------------------------------------------
 A_MANO = {
@@ -302,7 +302,7 @@ A_MANO = {
 }
 
 # --------------------------------------------------------------------------
-#  Claves donde la traduccion del jar tiene errores de verdad: perdio los
+#  Claves donde la traduccion del jar tiene errores reales: perdio los
 #  {0}/{1} que EssentialsX rellena, o trae pegado el texto de otra clave.
 #  Verificado comparando contra messages.properties del mismo jar.
 # --------------------------------------------------------------------------
@@ -463,7 +463,7 @@ CABECERA = """\
 #  ---------------------------------------------------------------------
 #  Por que no usamos tal cual el espanol que trae EssentialsX
 #  ---------------------------------------------------------------------
-#  1. BUG DE VERDAD: su traduccion cambio "<command>" por "<comando>".
+#  1. BUG REAL: su traduccion cambio "<command>" por "<comando>".
 #     EssentialsX sustituye la cadena literal "<command>" por el nombre real
 #     del comando (Essentials.java:842, .replace("<command>", commandLabel)).
 #     Con "<comando>" no sustituye nada, asi que en espanol TODA la ayuda

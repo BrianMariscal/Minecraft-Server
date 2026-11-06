@@ -118,7 +118,7 @@ def _arrancar(ctx: Contexto) -> None:
 
 def _guardar_y_apagar(ctx: Contexto) -> None:
     """Guarda el mundo y apaga todo."""
-    # `save-all flush` espera a que de verdad esté en el disco. Luego
+    # `save-all flush` espera a que esté en el disco. Luego
     # `compose down` manda SIGTERM, la imagen de itzg hace un `stop` limpio y
     # el compose le da 2 minutos antes de matarlo.
     try:

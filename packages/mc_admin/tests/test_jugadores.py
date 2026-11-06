@@ -110,7 +110,7 @@ class TestAgregarYQuitar:
 
 
 class TestUUIDs:
-    """Verificados contra un Paper 26.1.2 de verdad (whitelist.json y ops.json)."""
+    """Verificados contra un Paper 26.1.2 real (whitelist.json y ops.json)."""
 
     def test_offline_igual_que_el_servidor(self) -> None:
         assert uuid_offline("Pepe") == "6eed0e07-3df7-3e33-9aa2-baa999bb44ee"

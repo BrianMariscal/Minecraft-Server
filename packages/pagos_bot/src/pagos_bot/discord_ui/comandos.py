@@ -138,7 +138,7 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
 
     @tree.command(name="desmarcar", description="Regresa a alguien a pendiente.")
     @app_commands.default_permissions(manage_guild=True)
-    @app_commands.describe(quien="A quién.", mes="De qué mes, como 2026-10. Si no, el de ahorita.")
+    @app_commands.describe(quien="A quién.", mes="De qué mes, como 2026-10. Si no, el actual.")
     async def desmarcar(
         interaccion: discord.Interaction, quien: discord.User, mes: str | None = None
     ) -> None:
@@ -159,7 +159,7 @@ def registrar(tree: app_commands.CommandTree, servicio: ServicioDeCobros) -> Non
     @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(
         quien="A quién no le toca pagar.",
-        mes="De qué mes, como 2026-10. Si no, el de ahorita.",
+        mes="De qué mes, como 2026-10. Si no, el actual.",
     )
     async def eximir(
         interaccion: discord.Interaction, quien: discord.User, mes: str | None = None

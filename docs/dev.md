@@ -12,7 +12,7 @@ Los tests **no** necesitan Docker: no levantan contenedores ni abren sockets.
 ## Instalación
 
 ```bash
-git clone git@github.com:BrianMariscal/Minecraft-Server.git
+git clone https://github.com/BrianMariscal/Minecraft-Server.git
 cd Minecraft-Server
 
 uv sync
@@ -20,6 +20,14 @@ uv run pre-commit install
 ```
 
 `uv sync` instala el workspace de `packages/mc_admin` y `packages/pagos_bot`, más las herramientas de desarrollo: ruff, mypy, pytest, pytest-cov y pre-commit.
+
+El repositorio no versiona `settings.yml`: ese archivo lleva los nombres, Discord IDs y XUIDs reales. Para desarrollo, crea tu copia desde la plantilla:
+
+```bash
+cp settings.example.yml settings.yml
+```
+
+`mc setup` también la crea sola la primera vez.
 
 ## lint, tipos y tests
 
@@ -41,7 +49,7 @@ El `pre-commit` ejecuta, antes de cada commit:
 
 ## Los tests
 
-Son **575 tests**. Ninguno levanta un contenedor ni abre un socket: Docker y RCON se sustituyen por dobles. Los tests leen el `settings.yml`, el `manifest.yml` y las plantillas **reales**, así que detectan cambios que rompan el formato del chat, la duplicación de pistones, las rutas de los datapacks o las reglas del bot de pagos.
+Son **575 tests**. Ninguno levanta un contenedor ni abre un socket: Docker y RCON se sustituyen por dobles. Los tests parten de `settings.example.yml`, el `manifest.yml` y las plantillas **reales**, así que detectan cambios que rompan el formato del chat, la duplicación de pistones, las rutas de los datapacks o las reglas del bot de pagos.
 
 La configuración compartida está en `pyproject.toml`:
 
@@ -53,7 +61,8 @@ La configuración compartida está en `pyproject.toml`:
 
 ```text
 minecraft-hd/
-├── settings.yml              ← lo único que se edita normalmente
+├── settings.example.yml      ← plantilla con datos ficticios
+├── settings.yml              ← tu configuración (no entra a git)
 ├── .env                      ← secretos (no entra a git)
 ├── .env.example              ← plantilla comentada
 ├── docker-compose.yml        ← los dos contenedores
@@ -116,4 +125,4 @@ El workflow `.github/workflows/ci.yml` corre en `main`, en `produccion` y en cad
 5. Build de la imagen del bot de pagos.
 6. `gitleaks` sobre el historial.
 
-El badge del README apunta a la rama `produccion`. Si el repositorio es privado, el badge solo se ve al iniciar sesión en GitHub.
+El badge del README apunta a la rama `main`.

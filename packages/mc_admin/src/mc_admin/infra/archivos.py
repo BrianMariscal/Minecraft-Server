@@ -160,9 +160,9 @@ def ram_total_gb() -> float | None:
 def actualizar_settings(raiz: Path, cambios: dict[str, list[str] | dict[str, int]]) -> None:
     """Reescribe claves de settings.yml conservando comentarios y formato.
 
-    settings.yml está documentado a propósito, así que no podemos cargarlo y
+    settings.yml está documentado por diseño, así que no podemos cargarlo y
     volcarlo con PyYAML (tira los comentarios). ruamel.yaml hace round-trip
-    de verdad: lee, nos deja cambiar el valor y lo vuelve a escribir con sus
+    real: lee, nos deja cambiar el valor y lo vuelve a escribir con sus
     comentarios y su indentación intactos.
 
     `cambios` usa rutas con punto: "admins", "whitelist.java".

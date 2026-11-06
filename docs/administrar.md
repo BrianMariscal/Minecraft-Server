@@ -265,12 +265,16 @@ servidor:
 
 ## Respaldos
 
-Los automáticos corren **cada 6 horas** sin apagar el servidor, y se
-conservan **7 días**. No hay que hacer nada.
+Los automáticos corren **cada 6 horas** sin apagar el servidor, se verifican
+solos los domingos y se conservan **7 días**. Además, la PC baja una copia
+diaria. No hay que hacer nada.
 
 ```bash
 mc backup now              # uno ya, ahora
 mc backup list             # ver los que hay
+mc backup verify           # revisar checksum, contenido y bases
+mc backup prune            # borrar los que salen de la retención
+mc backup status           # último respaldo, edad, disco y último error
 mc backup restore ultimo   # restaurar el más reciente
 mc backup restore 20260930-143000
 mc backup restore ultimo --dry-run   # ver qué trae sin aplicar
@@ -346,7 +350,8 @@ mc update       # qué hay nuevo
 
 ```
 minecraft-hd/
-├── settings.yml              ← LO ÚNICO que editas normalmente
+├── settings.example.yml      ← la plantilla pública
+├── settings.yml              ← tu configuración (no entra a git)
 ├── .env                      ← los secretos (no entra a git)
 ├── docker-compose.yml
 │
@@ -357,8 +362,9 @@ minecraft-hd/
 │   └── generated/            ← las configs generadas, CON comentarios
 │
 ├── data/                     ← lo que usa el servidor (lo hace mc build)
-├── backups/                  ← los respaldos
+├── backups/                  ← los respaldos locales
 ├── pagos-datos/              ← la base de datos del bot de pagos
+├── deploy/                   ← timers de systemd y copia a la PC
 ├── logo/                     ← aquí va logo.png
 ├── docs/                     ← estas guías
 └── packages/                 ← el código de `mc` y del bot

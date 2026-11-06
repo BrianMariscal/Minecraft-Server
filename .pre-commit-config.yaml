@@ -25,8 +25,8 @@ repos:
 
   # Detección de secretos: evita que un token de Discord llegue a git.
   # La configuración está en .gitleaks.toml, que parte de TODAS las reglas
-  # que trae gitleaks y solo permite los `discord_id` de settings.yml, que
-  # son IDs de usuario (públicos), no tokens.
+  # que trae gitleaks y solo permite los `discord_id` de settings.example.yml
+  # (o settings.yml local), que son IDs de usuario (públicos), no tokens.
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.0
     hooks:

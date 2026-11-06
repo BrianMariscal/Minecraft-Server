@@ -27,18 +27,39 @@ El proyecto corre en **26.1.2** porque es la versión más reciente que
 |---|---|---|
 | **EssentialsX 2.22.0** | **26.1.2** | Es el cuello de botella. Da `/home`, `/sethome`, `/spawn`, `/tpa`, `/back` y el formato del chat. Su último release estable (mayo 2026) soporta hasta 26.1.2, y sus builds de desarrollo siguen en la línea 2.22.1, que son solo parches. |
 | **AuthMe Reloaded 6.0.1** | **26.1** (probado) | Sin AuthMe no hay servidor no premium seguro. |
-| Geyser 2.11.3 (Spigot) | 26.2 | Sin Geyser no entra nadie de Bedrock. |
+| Geyser 2.12.1 (Spigot) | 26.3 | Sin Geyser no entra nadie de Bedrock. Emula un cliente Java 26.3 y necesita ViaVersion. |
+| ViaVersion 5.12.2 | 26.3 | Traduce a los clientes de Java más nuevos que el servidor. Geyser lo usa para entrar. |
 | CoreProtect 24.1 | 26.2 | Es la única red de seguridad contra grifeo. |
 | Towns and Towers (datapack) | 26.2 | El mod llega a 26.3, pero el **datapack** se quedó en 26.2. Y necesitamos el datapack, no el mod: es lo que hace que Bedrock lo vea bien. |
 
 Subir a 26.2 obligaría a usar un build de desarrollo de EssentialsX (con
 riesgo en `/back`, `/home` y todo lo que toca ítems) y AuthMe sin probar.
-Subir a 26.3 además dejaría fuera a Geyser, CoreProtect y Towns and Towers.
+Subir a 26.3 además dejaría fuera a CoreProtect y Towns and Towers.
 
 ### Minecraft 26.x pide Java 25
 
 No Java 21. Por eso la imagen es `itzg/minecraft-server:2026.9.2-java25`.
 Si la cambias a una `-java21`, el servidor no arranca.
+
+### Bedrock: NetherNet y RakNet al mismo tiempo
+
+Bedrock 26.60 dejó de conectar por RakNet el 27 de octubre de 2026. Geyser
+2.12.1 trae NetherNet para esos clientes, pero no viene activado de fábrica.
+La plantilla usa `transport: both`:
+
+- **RakNet**, por UDP `19132`, sigue atendiendo a los clientes viejos.
+- **NetherNet** usa TCP `19132` para la señalización y UDP `19133` para el
+  juego.
+
+Los dos transportes no pueden compartir el mismo puerto UDP. Por eso el
+firewall abre `19132/tcp`, `19132/udp` y `19133/udp`, y `settings.yml` tiene
+`puertos.bedrock_webrtc` para cambiar el último. Si algún día ya no entra
+nadie con un cliente viejo, `transport: nethernet` permite cerrar el UDP de
+RakNet; mientras haya clientes sin actualizar, se queda en `both`.
+
+Geyser 2.12.1 se anuncia como cliente Java 26.3, así que necesita ViaVersion
+5.12.2 para hablar con un servidor 26.1.2. Sin ViaVersion, un cliente Bedrock
+actualizado no podría entrar.
 
 ---
 
@@ -62,7 +83,7 @@ veía nada: el 2026-10-06 un jugador de Bedrock se murió y no encontró ni la
 tumba ni sus cosas.
 
 Ahora va **GravesX 2026.4.9.2**: release estable, declara soporte 26.1.2,
-está en Modrinth (URL y sha256 fijables) y pone un **bloque de verdad** (una
+está en Modrinth (URL y sha256 fijables) y pone un **bloque real** (una
 cabeza) donde mueres, que Geyser le enseña a Bedrock como a cualquier otro
 bloque. Además integra Floodgate y al reaparecer te da una brújula que apunta
 a tu tumba.
@@ -90,7 +111,7 @@ como en los *crafting tweaks*):
 | **invisible item frames** | ❌ ya no existe para 26.x |
 | **right-click harvest** | ❌ ya no existe para 26.x |
 
-No se sustituyeron por plugins de terceros a propósito: los que hay son de
+No se sustituyeron por plugins de terceros por diseño: los que hay son de
 autores sin reputación y cada uno es una dependencia más que se puede romper
 en la siguiente actualización.
 
@@ -99,7 +120,7 @@ en la siguiente actualización.
 Se pidió "un plugin ligero compatible con Geyser". Se usa el datapack
 **Timber de Vanilla Tweaks** (v2.1.19), que es mejor para este caso:
 
-- Es 100% vanilla del lado del servidor, así que Bedrock lo ve perfecto vía
+- Es 100% vanilla del lado del servidor, así que Bedrock lo ve bien vía
   Geyser, sin nada que instalar.
 - No es un plugin más que mantener ni que se pueda romper al actualizar.
 - Se actualiza junto con los otros packs de Vanilla Tweaks.
@@ -113,7 +134,7 @@ No existe uno mantenido para 26.x, así que no se puso.
 
 ## Piezas que no se pidieron pero hacen falta
 
-Estas dos salieron de arrancar el servidor de verdad y leer lo que avisaba:
+Estas dos salieron de arrancar el servidor real y leer lo que avisaba:
 
 ### VaultUnlocked 2.20.3
 
@@ -153,11 +174,11 @@ En 26.x pasaron de `camelCase` a `snake_case`:
 
 ```
 ❌ gamerule playersSleepingPercentage 1     <- lo que dice toda la documentación
-✅ gamerule players_sleeping_percentage 1   <- lo que de verdad funciona
+✅ gamerule players_sleeping_percentage 1   <- lo que funciona
 ```
 
 Con el nombre viejo el servidor contesta `Incorrect argument for command` y
-**la regla no se aplica**, sin más aviso que esa línea. Es facilísimo creer
+**la regla no se aplica**, sin otro aviso que esa línea. Es muy fácil creer
 que quedó puesta.
 
 ### Las gamerules ahora son por dimensión
@@ -172,7 +193,7 @@ world/dimensions/minecraft/the_end/data/minecraft/game_rules.dat
 
 Por eso `mc start` las aplica con `execute in <dimensión> run gamerule ...`.
 Los nombres que usa `mc` no salieron de la documentación: salieron de leer el
-`game_rules.dat` que generó un Paper 26.1.2 de verdad.
+`game_rules.dat` que generó un Paper 26.1.2 real.
 
 ### Cuatro avisos de "loot table" en cada arranque (son normales)
 

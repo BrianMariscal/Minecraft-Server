@@ -1,0 +1,11 @@
+[Unit]
+Description=Verificación semanal de los respaldos de Minecraft HD
+
+[Timer]
+OnCalendar=Sun *-*-* 09:00:00
+Persistent=true
+RandomizedDelaySec=10m
+Unit=mc-backup-verify.service
+
+[Install]
+WantedBy=timers.target

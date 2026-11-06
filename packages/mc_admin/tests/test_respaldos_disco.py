@@ -1,4 +1,4 @@
-"""Respaldos de verdad en disco: la base del bot de pagos entra y sale sana.
+"""Respaldos reales en disco: la base del bot de pagos entra y sale sana.
 
 Lo delicado es SQLite en modo WAL: lo último escrito puede vivir en el
 archivo -wal. Copiar a lo bruto con el bot escribiendo, o restaurar dejando
@@ -8,6 +8,7 @@ un -wal viejo junto a la base, deja una base que no abre.
 from __future__ import annotations
 
 import io
+import json
 import sqlite3
 import tarfile
 from contextlib import closing
@@ -133,7 +134,7 @@ class TestRestaurarBaseDePagos:
         assert _cuantas_filas(ctx.raiz / "pagos-datos" / "pagos.sqlite") == 5
 
     def test_un_wal_viejo_no_se_le_aplica_encima(self, ctx: Contexto, tmp_path: Path) -> None:
-        # Lo de "ahorita": una base con su -wal lleno.
+        # Lo del WAL: una base con su -wal lleno.
         actual = ctx.raiz / "pagos-datos" / "pagos.sqlite"
         viejo = _base_en_wal(actual, filas=9)
         tar_ruta = tmp_path / "world-20261001-120000.tgz"
@@ -167,3 +168,137 @@ class TestRestaurarBaseDePagos:
         with tarfile.open(tar_ruta) as tar:
             cli._restaurar_base_de_pagos(ctx, tar)
         assert _cuantas_filas(actual) == 1
+
+
+def _bytes_de_una_base_con_wal(ruta: Path, filas: int) -> tuple[bytes, bytes]:
+    """Bytes de la base y de su -wal, capturados antes de cerrar la conexión."""
+    cx = _base_en_wal(ruta, filas)
+    try:
+        base = ruta.read_bytes()
+        wal = Path(f"{ruta}-wal").read_bytes()
+    finally:
+        cx.close()
+    return base, wal
+
+
+class TestSnapshots:
+    def test_una_base_viva_entra_fotografiada(self, ctx: Contexto) -> None:
+        base = ctx.raiz / "data" / "plugins" / "CoreProtect" / "database.db"
+        cx = _base_en_wal(base, filas=4)
+        try:
+            destino = cli.crear_respaldo(ctx)
+        finally:
+            cx.close()
+
+        with tarfile.open(destino) as tar:
+            nombres = tar.getnames()
+            assert "plugins/CoreProtect/database.db" in nombres
+            assert not [n for n in nombres if n.endswith(("-wal", "-shm"))]
+            datos = tar.extractfile("plugins/CoreProtect/database.db")
+            assert datos is not None
+            extraida = ctx.raiz / "coreprotect.db"
+            extraida.write_bytes(datos.read())
+        assert _cuantas_filas(extraida) == 4
+        assert sqlite.esta_sana(extraida)
+
+    def test_guarda_info_y_checksums(self, ctx: Contexto) -> None:
+        destino = cli.crear_respaldo(ctx)
+        with tarfile.open(destino) as tar:
+            datos = tar.extractfile("BACKUP_INFO.json")
+            assert datos is not None
+            info = json.loads(datos.read())
+        assert info["formato"] == 1
+        assert info["etiqueta"] == "world"
+        assert info["archivos"] >= 1
+        assert "settings.yml" not in info["bases_sqlite"]
+
+        sha = destino.with_name(destino.name + ".sha256")
+        metadatos = destino.with_name(destino.name + ".json")
+        assert sha.is_file()
+        assert metadatos.is_file()
+        assert cli._sha256(destino) == sha.read_text(encoding="utf-8").split()[0]
+        assert cli._problemas_de(destino) == []
+
+    def test_verify_detecta_un_archivo_roto(self, ctx: Contexto, tmp_path: Path) -> None:
+        cli.crear_respaldo(ctx)
+        roto = tmp_path / "roto.tgz"
+        roto.write_bytes(b"esto no es un tar")
+        assert cli._problemas_de(roto)
+
+    def test_un_respaldo_viejo_sin_ficha_no_se_reporta_danado(
+        self, ctx: Contexto, tmp_path: Path
+    ) -> None:
+        viejo = tmp_path / "world-20261001-120000.tgz"
+        _tar_de_itzg(viejo, {"world/level.dat": b"x"})
+        assert cli._problemas_de(viejo) == []
+
+    def test_un_log_de_h2_con_sufijo_db_no_se_confunde_con_sqlite(
+        self, ctx: Contexto, tmp_path: Path
+    ) -> None:
+        """GravesX deja graves.data.trace.db, que es texto y no una base."""
+        tar_ruta = tmp_path / "world-20261001-120000.tgz"
+        _tar_de_itzg(
+            tar_ruta,
+            {
+                "world/level.dat": b"x",
+                "plugins/GravesX/data/graves.data.trace.db": (
+                    b"2026-10-31 01:16:30 database: could not close the database\n"
+                ),
+            },
+        )
+        assert cli._problemas_de(tar_ruta) == []
+
+    def test_verify_sigue_detectando_una_base_sqlite_rota(
+        self, ctx: Contexto, tmp_path: Path
+    ) -> None:
+        tar_ruta = tmp_path / "world-20261001-120000.tgz"
+        _tar_de_itzg(
+            tar_ruta,
+            {
+                "world/level.dat": b"x",
+                "plugins/CoreProtect/database.db": b"SQLite format 3\x00" + b"basura" * 100,
+            },
+        )
+        problemas = cli._problemas_de(tar_ruta)
+        assert any("database.db" in p and "integrity_check" in p for p in problemas)
+
+    def test_consolidar_wal_viejo_de_coreprotect(self, ctx: Contexto, tmp_path: Path) -> None:
+        base_bytes, wal_bytes = _bytes_de_una_base_con_wal(tmp_path / "origen.db", filas=5)
+        tar_ruta = tmp_path / "world-20261001-120000.tgz"
+        _tar_de_itzg(
+            tar_ruta,
+            {
+                "plugins/CoreProtect/database.db": base_bytes,
+                "plugins/CoreProtect/database.db-wal": wal_bytes,
+            },
+        )
+
+        with tarfile.open(tar_ruta) as tar:
+            miembros = [m for m in tar.getmembers() if "CoreProtect" in m.name]
+            tar.extractall(ctx.carpeta_datos, members=miembros, filter="data")
+            cli._consolidar_bases_extraidas(ctx, tar)
+
+        base = ctx.carpeta_datos / "plugins" / "CoreProtect" / "database.db"
+        assert _cuantas_filas(base) == 5
+        assert not Path(f"{base}-wal").exists()
+        assert not Path(f"{base}-shm").exists()
+        assert sqlite.esta_sana(base)
+
+    def test_restaurar_pagos_con_wal_viejo(self, ctx: Contexto, tmp_path: Path) -> None:
+        base_bytes, wal_bytes = _bytes_de_una_base_con_wal(tmp_path / "origen.db", filas=6)
+        tar_ruta = tmp_path / "world-20261001-120000.tgz"
+        _tar_de_itzg(
+            tar_ruta,
+            {
+                "pagos-datos/pagos.sqlite": base_bytes,
+                "pagos-datos/pagos.sqlite-wal": wal_bytes,
+            },
+        )
+
+        with tarfile.open(tar_ruta) as tar:
+            cli._restaurar_base_de_pagos(ctx, tar)
+
+        base = ctx.raiz / "pagos-datos" / "pagos.sqlite"
+        assert _cuantas_filas(base) == 6
+        assert not Path(f"{base}-wal").exists()
+        assert sqlite.esta_sana(base)

@@ -3,6 +3,9 @@
 *.env
 !.env.example
 
+# Configuración local: el repo solo trae settings.example.yml.
+settings.yml
+
 # Configs generadas por `mc build` a partir de templates + settings.yml.
 minecraft/generated/
 
@@ -58,3 +61,6 @@ Thumbs.db
 # Tarballs sueltos (copias del proyecto para mudarlo de VPS).
 *.tar.gz
 *.tgz
+
+# Copias de rollback locales (jars y configs viejas).
+rollback/

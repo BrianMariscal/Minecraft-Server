@@ -74,7 +74,7 @@ ignore = [
     "S101",     # assert: lo usamos en tests
     # EM101/EM102 piden sacar el mensaje a una variable antes de lanzar. Aquí no
     # aplica: nuestras excepciones (ErrorMc y sus hijas) reciben el mensaje como
-    # primer argumento a propósito, porque ES el texto que se le muestra al
+    # primer argumento por diseño, porque ES el texto que se le muestra al
     # usuario. Obligar a una variable temporal en cada raise solo agrega ruido.
     "EM101",
     "EM102",
@@ -82,7 +82,7 @@ ignore = [
     # con Error porque el código está en español: ErrorDeConfig, ErrorDeRcon.
     "N818",
     # RUF001 se queja de los emojis que usamos en los estados del bot
-    # (➖ junto a ✅ 🕓 ❌). Son a propósito: así se ven parejos en Discord.
+    # (➖ junto a ✅ 🕓 ❌). Son intencionales: así se ven parejos en Discord.
     "RUF001",
 ]
 
@@ -91,7 +91,7 @@ ignore = [
 "packages/mc_admin/src/mc_admin/cli/*" = ["T20"]
 # Los generadores de traducciones son herramientas que se corren a mano
 # cuando se actualiza un plugin, no código del servidor. Imprimen a la
-# terminal a propósito (es su salida) y no arrastran la ceremonia de tipos
+# terminal por diseño (es su salida) y no arrastran la ceremonia de tipos
 # del resto del proyecto.
 # E501 también: estos archivos traen tablas de traducción donde partir una
 # línea a la mitad de una frase en español la hace ilegible.
@@ -100,6 +100,9 @@ ignore = [
 ]
 # En tests relajamos type hints y seguridad.
 "packages/*/tests/*" = ["ANN", "S", "ARG", "DTZ"]
+# El script de copia corre en la PC, no en el paquete: ejecuta ssh y rsync
+# por diseño y reporta a la salida estándar para que quede en el journal.
+"deploy/pc/*" = ["S603", "S607", "TRY300", "TRY301"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["mc_admin", "pagos_bot"]
@@ -130,12 +133,12 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 # --- Los tests se revisan, pero con menos ceremonia ---------------------
-#  Siguen pasando por mypy (ahí es donde se atrapan los errores de verdad),
-#  nada más les apagamos tres cosas que en un test son ruido y no un bug:
+#  Siguen pasando por mypy (ahí es donde se atrapan los errores reales),
+#  solo les apagamos tres cosas que en un test son ruido y no un bug:
 #
 #  - `union-attr`: un test hace `mes.cuota_de(1).estado` porque SABE que
 #    existe; meter un `assert ... is not None` antes de cada aserción no
-#    aporta nada y tapa lo que el test de verdad verifica.
+#    aporta nada y tapa lo que el test comprueba.
 #  - `no-untyped-def`: un test no necesita anotar sus fixtures.
 #  - `import-not-found`: `ayudas.py` es un módulo hermano que pytest resuelve
 #    poniendo la carpeta de tests en sys.path; mypy no lo sabe.

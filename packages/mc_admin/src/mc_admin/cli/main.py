@@ -1,7 +1,7 @@
 """Punto de entrada de `mc`.
 
 Junta todos los comandos y configura el logging. La ayuda y los mensajes
-están en español de México a propósito: esto lo va a usar la banda, no un
+están en español de México por diseño: esto lo va a usar la banda, no un
 administrador de sistemas.
 """
 
@@ -12,6 +12,7 @@ import logging
 import typer
 
 from mc_admin import __version__
+from mc_admin.cli import alertas as cli_alertas
 from mc_admin.cli import build as cli_build
 from mc_admin.cli import consola
 from mc_admin.cli import doctor as cli_doctor
@@ -83,6 +84,12 @@ app.add_typer(cli_respaldos.app, name="backup")
 # --- Mundo -------------------------------------------------------------------- #
 app.command("pregen", help="Pregenera el mapa con Chunky.")(cli_mundo.pregen)
 app.add_typer(cli_mundo.app, name="world")
+
+# --- Alertas ------------------------------------------------------------------ #
+app.command("alert", help="Manda una alerta al canal de Discord.")(cli_alertas.alert)
+app.command("monitor", help="Revisa respaldo, disco y servidor; avisa si algo falla.")(
+    cli_alertas.monitor
+)
 
 # --- Mantenimiento ------------------------------------------------------------ #
 app.command("update", help="Revisa si hay versiones nuevas de los plugins.")(cli_update.update)

@@ -1,0 +1,11 @@
+[Unit]
+Description=Revisión cada hora de Minecraft HD
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=2m
+Unit=mc-monitor.service
+
+[Install]
+WantedBy=timers.target

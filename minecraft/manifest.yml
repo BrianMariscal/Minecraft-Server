@@ -20,10 +20,10 @@ compatible_con: "26.1.2"
 plugins:
   geyser:
     nombre: "Geyser-Spigot"
-    version: "2.11.3-b1247"
+    version: "2.12.1-b1279"
     archivo: "Geyser-Spigot.jar"
-    url: "https://download.geysermc.org/v2/projects/geyser/versions/2.11.3/builds/1247/downloads/spigot"
-    sha256: "6fed2d9711e2db3c365508ec10db36d06a0199abd226159d23d57f82662fd7a6"
+    url: "https://download.geysermc.org/v2/projects/geyser/versions/2.12.1/builds/1279/downloads/spigot"
+    sha256: "234fa467a32bbc780bd495296eb18fa0fbd7af8dab41f137ed5f7a45aabfbb90"
     nota: "Puente para que entren jugadores de Bedrock. sha256 verificado contra la API de GeyserMC."
 
   floodgate:
@@ -46,10 +46,10 @@ plugins:
 
   viaversion:
     nombre: "ViaVersion"
-    version: "5.12.0"
-    archivo: "ViaVersion-5.12.0.jar"
-    url: "https://cdn.modrinth.com/data/P1OZGk5p/versions/FaishMnD/ViaVersion-5.12.0.jar"
-    sha256: "c4d512fa9760fa41d17abaedde12aa1f4c9bde920d0a992fe0fc016962f126be"
+    version: "5.12.2"
+    archivo: "ViaVersion-5.12.2.jar"
+    url: "https://cdn.modrinth.com/data/P1OZGk5p/versions/Fkfcr89K/ViaVersion-5.12.2.jar"
+    sha256: "c0b63badcb0f7d38f4443e06820f2b8142dd4f0d3b0511f9330ff1050430e6b2"
     nota: "Tolera clientes de Java mas nuevos que el servidor."
 
   vault:
@@ -138,7 +138,7 @@ plugins:
     archivo: "GravesX-2026.4.9.2.jar"
     url: "https://cdn.modrinth.com/data/vCFaodCy/versions/OpYRNo98/GravesX-2026.4.9.2.jar"
     sha256: "62253de35ee5f61dc70acd8f851d2fafb8e42954c3f3f4b1aae390a94bbbdb11"
-    nota: "Tumbas al morir. Pone un bloque de verdad (una cabeza), que Bedrock si ve; AxGraves las dibujaba solo con paquetes y en Bedrock no aparecian."
+    nota: "Tumbas al morir. Pone un bloque real (una cabeza), que Bedrock si ve; AxGraves las dibujaba solo con paquetes y en Bedrock no aparecian."
 
   chestsort:
     nombre: "Chestsort+"
@@ -252,4 +252,4 @@ vanilla_tweaks:
       nota: "Los endermans dejan de levantar bloques."
     - archivo: "timber v2.1.19 (MC 26.1).zip"
       sha256: "2c1aa2b8105834408679656ce760069e3cebeb08825befd026013daaeb870654"
-      nota: "Tala de arbol completo. Datapack en vez de plugin: es vanilla puro, asi que Bedrock lo ve perfecto via Geyser."
+      nota: "Tala de arbol completo. Datapack en vez de plugin: es vanilla puro, asi que Bedrock lo ve bien via Geyser."

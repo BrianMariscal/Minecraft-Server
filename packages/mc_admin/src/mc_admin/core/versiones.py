@@ -46,7 +46,7 @@ class Comparacion:
 def _partes(version: str) -> tuple[int | str, ...]:
     """Parte una versión en trozos comparables.
 
-    Aguanta las formas raras que de verdad usan estos proyectos:
+    Aguanta las formas raras que usan estos proyectos:
     "2.11.3-b1247", "v5.5.71-bukkit", "5.28-paper", "26.1-datapack".
     Los números se comparan como números; lo demás como texto.
     """

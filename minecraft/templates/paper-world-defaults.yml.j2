@@ -103,7 +103,7 @@ chunks:
 
 collisions:
   # Paper usa 8. Lo dejamos: bajarlo rompe los criaderos de aldeanos y las
-  # granjas que apilan mobs a propósito.
+  # granjas que apilan mobs intencionalmente.
   max-entity-collisions: 8
   # false por defecto y así se queda: el daño por amontonamiento mataría a
   # los mobs apilados de las granjas.
@@ -151,7 +151,7 @@ tick-rates:
       # Paper usa -1 (cada tick). Revalidar los puntos de interés del
       # aldeano es de lo más caro que hay cuando tienes muchos. Ponerlo en
       # 60 ticks (3 s) baja el costo sin que se note: los aldeanos siguen
-      # encontrando su estación de trabajo y su cama, nada más la revisan
+      # encontrando su estación de trabajo y su cama, solo la revisan
       # cada 3 segundos en lugar de 20 veces por segundo.
       validatenearbypoi: 60
 

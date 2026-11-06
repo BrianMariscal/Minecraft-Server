@@ -1,0 +1,10 @@
+[Unit]
+Description=Aviso de respaldo fallido de Minecraft HD
+
+[Service]
+Type=oneshot
+User=minecraft
+Group=minecraft
+WorkingDirectory=/home/minecraft/minecraft-hd
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/minecraft/minecraft-hd/.venv/bin/mc alert --titulo "Respaldo fallido" "El respaldo automático falló. Revisa journalctl -u mc-backup.service"

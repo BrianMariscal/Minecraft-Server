@@ -14,7 +14,7 @@ SHA_VALIDO = "a" * 64
 
 
 class TestManifestReal:
-    """Contra el manifest.yml que de verdad se versiona."""
+    """Contra el manifest.yml versionado."""
 
     @pytest.fixture
     def manifest(self, proyecto: Path) -> Manifest:

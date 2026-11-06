@@ -10,6 +10,10 @@ La dirección y el puerto cambian según en qué juegues.
 Cambia `tu-direccion.com` por la de tu servidor (ve `docs/vps.md` si todavía
 no tienes una).
 
+**Si juegas en Bedrock 26.60 o más nuevo**, el servidor ya acepta NetherNet.
+No hay que cambiar nada: la dirección y el puerto siguen siendo los mismos.
+Las versiones anteriores siguen entrando por RakNet.
+
 ---
 
 ## Antes de nada: pide que te agreguen
@@ -97,9 +101,11 @@ con su diagonal, igual que en PC:
 Lo más común, en orden:
 
 1. **El puerto.** Tiene que ser `19132`, no `25565`.
-2. **La red.** Prueba con datos móviles en lugar de wifi; algunos módems de
+2. **La versión.** Si tu Minecraft es 26.60 o más nuevo, actualiza la app.
+   El servidor acepta NetherNet, pero una app vieja no.
+3. **La red.** Prueba con datos móviles en lugar de wifi; algunos módems de
    casa bloquean UDP.
-3. **No estás en la whitelist.** Pide que te agreguen con tu gamertag.
+4. **No estás en la whitelist.** Pide que te agreguen con tu gamertag.
 
 ---
 

@@ -1,7 +1,7 @@
 """Lógica de respaldos: nombrar, ordenar y elegir cuál restaurar.
 
 Pura: trabaja con nombres de archivo y fechas. Crear, listar en disco y
-restaurar de verdad es trabajo de `infra`.
+restaurar es trabajo de `infra`.
 """
 
 from __future__ import annotations

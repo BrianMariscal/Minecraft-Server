@@ -19,16 +19,14 @@ log = obtener("docker")
 
 # Nombres de los servicios del docker-compose.yml.
 SERVICIO_MINECRAFT = "minecraft"
-SERVICIO_RESPALDOS = "respaldos"
 SERVICIO_PAGOS = "pagos-bot"
-SERVICIO_RESPALDOS_REMOTO = "respaldos-remoto"
 # Los perfiles que existen en el compose. Para APAGAR los nombramos todos:
 # si algo estuvo prendido y luego lo apagaste en settings.yml, su contenedor
 # seguiría corriendo y `compose down` sin el perfil ni lo vería.
-PERFILES = ("pagos", "remoto")
+PERFILES = ("pagos",)
 TIMEOUT_NORMAL = 120
 # La primera vez baja las imágenes (~1 GB) y construye la del bot. En un VPS
-# con internet lento eso pasa de 5 minutos fácil.
+# con internet lento eso tarda más de 5 minutos con facilidad.
 TIMEOUT_ARRANQUE = 900
 # El apagado tiene stop_grace_period: 2m en el compose; le damos de sobra.
 TIMEOUT_APAGADO = 300

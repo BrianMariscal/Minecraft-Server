@@ -2,7 +2,7 @@
 
 Cada chequeo es una función pura que recibe datos ya leídos y devuelve un
 `Hallazgo`. Quien va por los datos (puertos, RAM, TPS, disco) es `infra`; aquí
-nada más decidimos si está bien, regular o mal, y qué decirle al usuario.
+solo decidimos si está bien, regular o mal, y qué decirle al usuario.
 
 Partirlo así nos deja probar el diagnóstico completo sin Docker ni servidor.
 """
@@ -66,7 +66,7 @@ class Reporte:
 # Cuánta RAM hay que dejarle a lo demás, APARTE de lo que pide el servidor.
 #
 # El heap que pides (MEMORY=6G) no es todo lo que gasta Java: encima van los
-# metaspace, los buffers de red y el stack de cada hilo, fácil 1 GB más. Y
+# metaspace, los buffers de red y el stack de cada hilo, hasta 1 GB más. Y
 # luego el sistema, el bot de pagos y el contenedor de respaldos.
 #
 # Con 2 GB de colchón va bien. Con menos, funciona pero el VPS va a andar
@@ -76,7 +76,7 @@ class Reporte:
 COLCHON_COMODO_GB = 2.0
 # Debajo de este colchón ya no arranca bien: lo marcamos como error.
 COLCHON_MINIMO_GB = 1.0
-# Un mundo pregenerado de radio 3000 más 7 días de respaldos pesa fácil 20 GB.
+# Un mundo pregenerado de radio 3000 más 7 días de respaldos pesa alrededor de 20 GB.
 DISCO_MINIMO_GB = 15.0
 # Debajo de 18 TPS ya se siente el lag al minar y al pelear.
 TPS_ACEPTABLE = 18.0
@@ -271,20 +271,6 @@ def revisar_compose(al_dia: bool) -> Hallazgo:
         Nivel.AVISO,
         "las variables de .env no coinciden con settings.yml",
         "Corre `mc build && mc restart` para aplicar lo que cambiaste.",
-    )
-
-
-def revisar_rclone(activo: bool, existe_conf: bool, ruta: str) -> Hallazgo | None:
-    """Con respaldo remoto prendido, rclone tiene que estar configurado."""
-    if not activo:
-        return None
-    if existe_conf:
-        return Hallazgo("Respaldo remoto", Nivel.BIEN, f"rclone configurado ({ruta})")
-    return Hallazgo(
-        "Respaldo remoto",
-        Nivel.MAL,
-        f"respaldos.remoto está prendido pero no existe {ruta}",
-        "Configura rclone en este VPS siguiendo docs/respaldos.md.",
     )
 
 

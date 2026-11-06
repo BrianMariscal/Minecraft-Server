@@ -8,6 +8,7 @@ internet (ver docs/vps.md).
 from __future__ import annotations
 
 import re
+import signal
 import socket
 from collections.abc import Iterator
 from contextlib import contextmanager, suppress
@@ -28,10 +29,22 @@ TIMEOUT_LARGO = 120
 #
 # OJO: NO se pueden tomar los números en orden de aparición. Los "1m, 5m, 15m"
 # del encabezado son números también, así que el primero que aparece es el 1
-# de "1m" y leeríamos 1 TPS con el servidor perfecto. Hay que cortar en el
+# de "1m" y leeríamos 1 TPS con el servidor sano. Hay que cortar en el
 # ":" y tomar los números de DESPUÉS.
 _RE_TPS = re.compile(r"(\d+\.\d+|\d+)")
 _RE_CODIGOS_COLOR = re.compile(r"§.")
+
+
+def _cancelar_alarma() -> None:
+    """Cancela el SIGALRM que mcrcon deja armado si una lectura falla.
+
+    mcrcon usa `signal.alarm` para sus timeouts, pero no lo apaga cuando la
+    lectura lanza una excepción. Si no lo cancelamos, la alarma sobrante
+    interrumpe el siguiente `time.sleep` y suelta un `MCRconException` crudo
+    en medio de `mc restart`.
+    """
+    if hasattr(signal, "SIGALRM"):
+        signal.alarm(0)
 
 
 def limpiar(texto: str) -> str:
@@ -71,16 +84,19 @@ def abrir(conexion: Conexion, timeout: int = TIMEOUT) -> Iterator[MCRcon]:
     try:
         cliente.connect()
     except (ConnectionRefusedError, TimeoutError) as exc:
+        _cancelar_alarma()
         raise ErrorDeRcon(
             f"el servidor no contesta en {conexion.host}:{conexion.puerto}",
             pista="¿Está encendido? Revisa con `mc status` y arranca con `mc start`.",
         ) from exc
     except socket.gaierror as exc:
+        _cancelar_alarma()
         raise ErrorDeRcon(
             f"no pude resolver el nombre '{conexion.host}'",
             pista="Si corres `mc` fuera de Docker, el host debe ser 127.0.0.1.",
         ) from exc
     except Exception as exc:
+        _cancelar_alarma()
         mensaje = str(exc).lower()
         if "authentic" in mensaje or "password" in mensaje or "login" in mensaje:
             raise ErrorDeRcon(
@@ -96,6 +112,7 @@ def abrir(conexion: Conexion, timeout: int = TIMEOUT) -> Iterator[MCRcon]:
         yield cliente
     finally:
         # Cerrar nunca debe tumbar nada: si el socket ya murió, da igual.
+        _cancelar_alarma()
         with suppress(Exception):
             cliente.disconnect()
 
@@ -131,7 +148,7 @@ def mandar_varios(conexion: Conexion, comandos: list[str], timeout: int = TIMEOU
 def leer_tps(conexion: Conexion) -> float | None:
     """Pregunta los TPS al servidor. None si no se pudo.
 
-    Devuelve el promedio del último minuto, que es el que de verdad dice si
+    Devuelve el promedio del último minuto, que es el que indica si
     el servidor va mal AHORA.
     """
     try:

@@ -1,0 +1,16 @@
+[Unit]
+Description=Verificación semanal de los respaldos de Minecraft HD
+Documentation=file:///home/minecraft/minecraft-hd/docs/respaldos.md
+OnFailure=mc-backup-alerta.service
+
+[Service]
+Type=oneshot
+User=minecraft
+Group=minecraft
+WorkingDirectory=/home/minecraft/minecraft-hd
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/minecraft/minecraft-hd/.venv/bin/mc backup verify
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=1h

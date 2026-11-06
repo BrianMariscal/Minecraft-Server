@@ -40,7 +40,7 @@ log = logging.getLogger("pagos")
 # healthcheck falle, así que el bot tiene que caerse él mismo.
 MAXIMO_SIN_DISCORD_SEGUNDOS = 15 * 60
 
-# Ver canales, Enviar mensajes, Insertar enlaces y Leer el historial: nada más.
+# Ver canales, Enviar mensajes, Insertar enlaces y Leer el historial: solo eso.
 PERMISOS_DEL_BOT = 84992
 
 # La foto de la base que usa `mc backup restore` si la principal sale dañada.
@@ -64,7 +64,7 @@ def configurar_log() -> None:
 class BotDePagos(discord.Client):
     """El bot.
 
-    Hereda de discord.Client y no de commands.Bot a propósito: solo usamos
+    Hereda de discord.Client y no de commands.Bot por diseño: solo usamos
     comandos slash y botones, así que no hace falta la maquinaria de
     comandos de prefijo. De paso nos evita el aviso de discord.py sobre el
     intent privilegiado de contenido de mensajes, que no tenemos por qué
@@ -72,7 +72,7 @@ class BotDePagos(discord.Client):
     """
 
     def __init__(self, config: PagosConfig, entorno: Entorno, servicio: ServicioDeCobros) -> None:
-        # Solo los intents que de verdad usamos.
+        # Solo los intents que usamos.
         super().__init__(intents=discord.Intents.default())
         self.config = config
         self.entorno = entorno
@@ -167,7 +167,7 @@ class BotDePagos(discord.Client):
     async def marcar_vivo(self) -> None:
         """Para el healthcheck del contenedor, y el perro guardián.
 
-        Solo marca vivo si de verdad hay conexión con Discord. Y si lleva
+        Solo marca vivo si hay conexión con Discord. Y si lleva
         demasiado sin ella, se sale para que Docker lo reinicie.
         """
         if self._sin_discord_desde is None:
@@ -235,7 +235,7 @@ async def arrancar() -> int:
         config = cargar_pagos(RUTA_SETTINGS)
         entorno = Entorno.desde_entorno()
     except ErrorDeConfig as exc:
-        # Sin traceback a propósito: el mensaje de ErrorDeConfig ya dice
+        # Sin traceback por diseño: el mensaje de ErrorDeConfig ya dice
         # qué está mal y dónde. Un traceback aquí solo asusta.
         log.error("no puedo arrancar:\n%s", exc)  # noqa: TRY400
         return 1

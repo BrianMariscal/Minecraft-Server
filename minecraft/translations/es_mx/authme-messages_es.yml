@@ -25,7 +25,7 @@
 #  ESTO es lo primero que ve cualquiera que entra al servidor. Tiene que ser
 #  clarísimo: la mitad de la banda entra desde el celular.
 registration:
-    disabled: '&cAhorita no se puede registrar nadie.'
+    disabled: '&cEn este momento no se puede registrar nadie.'
     name_taken: '&cEse nombre ya está registrado.'
     register_request: '&eRegístrate para jugar: &f/register tuContraseña tuContraseña'
     command_usage: '&cSe usa así: &f/register contraseña contraseña'
@@ -82,7 +82,7 @@ misc:
     password_changed: '&a¡Listo, cambié tu contraseña!'
     logout: '&aSaliste de tu cuenta.'
     reload: '&aRecargué la configuración y la base de datos.'
-    usage_change_password: '&cSe usa así: &f/changepw contraseñaDeAhorita contraseñaNueva'
+    usage_change_password: '&cSe usa así: &f/changepw contraseñaActual contraseñaNueva'
     accounts_owned_self: 'Tienes %count cuentas:'
     accounts_owned_other: '%name tiene %count cuentas:'
 

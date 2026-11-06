@@ -1,27 +1,73 @@
 # Respaldos
 
-Hay dos formas de respaldar, y las dos están puestas:
+El proyecto tiene cuatro capas de protección:
 
-1. **Automática**, cada 6 horas, sin apagar el servidor. Es la que trabaja
-   sola.
-2. **A mano**, con `mc backup now`, para antes de tocar algo.
+1. **Respaldo local automático** cada 6 horas, sin apagar el servidor.
+2. **Verificación semanal** de todos los respaldos.
+3. **Copia diaria a la PC** por SSH, fuera del VPS.
+4. **Alertas por Discord** si un respaldo falla o el servidor se queda sin
+   respaldo reciente.
+
+Los respaldos locales viven en `backups/`. La copia externa vive en
+`~/Respaldos_Minecraft_HD/` en la PC.
 
 ---
 
-## Los automáticos
+## Qué hace el motor de respaldos
 
-Los hace el contenedor `respaldos` (`itzg/mc-backup`) y no hay que hacer
-nada.
+`mc backup now` ejecuta este procedimiento:
 
-| | |
-|---|---|
-| Cada cuándo | **6 horas** |
-| Se conservan | **7 días** |
-| Dónde | `backups/` |
-| ¿Apaga el servidor? | **No** |
-| Si no hay nadie conectado | Se salta el respaldo (no tiene caso repetir lo mismo) |
+1. Pide al servidor `save-off` y `save-all flush` por RCON, para que el mundo
+   quede quieto en disco.
+2. Detecta las bases SQLite dentro de `data/` y las del bot de pagos.
+3. Pide a SQLite una **foto consistente** de cada base con su API de respaldo.
+   Así no importa que el servidor o el bot sigan escribiendo.
+4. Escribe el archivo `.tgz` en un nombre temporal y lo renombra al final.
+   Nunca queda un respaldo a medias con nombre definitivo.
+5. Agrega `BACKUP_INFO.json` dentro del archivo, con fecha, versión de
+   Minecraft, lista de bases y número de archivos.
+6. Calcula el SHA256 y escribe dos archivos al lado: `.sha256` y `.json`.
+7. Actualiza `estado.json` con el resultado y vuelve a activar `save-on`.
 
-Se cambian en `settings.yml`:
+Un bloqueo con `flock` impide que dos respaldos se ejecuten a la vez. Si el
+servidor está apagado, el respaldo se hace igual, sin RCON.
+
+### Qué entra
+
+- El mundo completo, con sus dimensiones, datapacks y datos de jugadores.
+- Las configs de los plugins.
+- Las bases SQLite: CoreProtect, AuthMe, GSit, Floodgate y las dos del bot de
+  pagos.
+- El `settings.yml` con el que se hizo el respaldo.
+
+### Qué no entra
+
+Los jars de los plugins, `cache/`, `logs/`, `libraries/`, `versions/` y el
+punto de montaje vacío `pagos-datos/` dentro de `data/`.
+
+Todo eso se regenera con `mc build` o lo vuelve a crear el servidor. Incluirlo
+solo aumenta el tamaño del respaldo.
+
+### Formato de los archivos
+
+```
+backups/
+├── world-20261031-011258.tgz
+├── world-20261031-011258.tgz.sha256
+├── world-20261031-011258.tgz.json
+├── estado.json
+└── .bloqueo
+```
+
+Los respaldos anteriores al motor nuevo pueden llamarse `.tar.gz` y no tener
+sidecars. `mc backup verify` los revisa igual; solo los respaldos nuevos
+exigen `BACKUP_INFO.json`.
+
+---
+
+## Configuración
+
+En `settings.yml`:
 
 ```yaml
 respaldos:
@@ -29,254 +75,317 @@ respaldos:
   conservar_dias: 7
 ```
 
-### Cómo respalda sin apagar nada
+- `intervalo` describe la frecuencia esperada. El timer de systemd es quien
+  dispara el respaldo.
+- `conservar_dias` es la ventana de retención. `mc backup prune` borra los
+  respaldos más viejos junto con sus sidecars.
 
-1. Le dice al servidor `save-off`: deja de escribir al disco.
-2. `save-all flush`: guarda lo que trae en memoria.
-3. Copia los archivos, que en ese momento están quietos.
-4. `save-on`: el servidor sigue normal.
-
-Nadie se desconecta y nadie pierde nada.
-
-### Qué entra en el respaldo
-
-- El mundo completo (`world`, `world_nether`, `world_the_end`), con los
-  datapacks.
-- Las configs de todos los plugins.
-- Las bases de datos: CoreProtect, AuthMe, LuckPerms y la vinculación de
-  cuentas de Floodgate.
-- La base de datos del **bot de pagos** (`pagos-datos/`), más una foto que
-  el bot saca cada hora con la API de SQLite. Si la base principal de un
-  respaldo saliera dañada, `mc backup restore` usa la foto.
-- El `settings.yml` con el que se hizo.
-
-### Qué NO entra, y por qué
-
-Los jars de los plugins, `cache/`, `logs/`, `libraries/`, y
-`versions/`.
-
-Todo eso **se regenera solo** con `mc build` y pesa muchísimo. Un respaldo
-que también guarda 110 MB de jars es un respaldo que vas a borrar por falta
-de espacio justo cuando lo necesites.
+La copia externa y las alertas se configuran en `.env` y en los timers, no en
+`settings.yml`.
 
 ---
 
-## A mano
+## Comandos
 
-```bash
-mc backup now
-```
+| Comando | Qué hace |
+|---|---|
+| `mc backup now` | Crea un respaldo en caliente |
+| `mc backup list` | Lista los respaldos y su tamaño |
+| `mc backup verify` | Revisa SHA256, contenido y bases SQLite de todos |
+| `mc backup verify 20261031-011258` | Revisa uno concreto |
+| `mc backup prune` | Borra los que salen de la ventana de retención |
+| `mc backup prune --dry-run` | Muestra qué borraría, sin borrar |
+| `mc backup status` | Último respaldo, edad, disco y último error |
+| `mc backup restore ultimo` | Restaura el más reciente |
+| `mc backup restore <id> --dry-run` | Muestra qué trae, sin tocar nada |
 
-Hazlo **antes** de:
-
-- Actualizar un plugin
-- Cambiar algo grande en `settings.yml`
-- Un `mc world reset`
-- Un rollback grande de CoreProtect
-
-`mc world reset` y `mc backup restore` ya hacen uno solos antes de tocar
-nada, pero uno extra no sobra.
+Haz un respaldo manual antes de actualizar un plugin, cambiar algo grande en
+`settings.yml`, regenerar el mundo o hacer un rollback de CoreProtect.
+`mc world reset` y `mc backup restore` ya crean uno antes de tocar nada.
 
 ---
 
-## Ver los que hay
+## Respaldos automáticos con systemd
+
+Los respaldos ya no viven en un contenedor. Los ejecuta un timer de systemd
+con el usuario `minecraft`, que llama a `mc backup now` y después a
+`mc backup prune`.
+
+Los archivos están en `deploy/systemd/`:
+
+| Unit | Cuándo |
+|---|---|
+| `mc-backup.service` | Ejecuta el respaldo y la poda |
+| `mc-backup.timer` | Cada 6 horas |
+| `mc-backup-verify.service` | Verifica todos los respaldos |
+| `mc-backup-verify.timer` | Domingos a las 09:00 |
+| `mc-monitor.service` | Revisa respaldo, disco y servidor |
+| `mc-monitor.timer` | Cada hora |
+| `mc-backup-alerta.service` | Envía una alerta si falla un respaldo |
+
+Instalación:
 
 ```bash
-mc backup list
+cd ~/minecraft-hd
+sudo install -m 644 deploy/systemd/*.service deploy/systemd/*.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now mc-backup.timer mc-monitor.timer mc-backup-verify.timer
 ```
 
-```
-                  Respaldos
-  id                Cuándo                           Tamaño
-  20260930-180000   30 de septiembre 2026, 18:00     1.2 GB
-  20260930-120000   30 de septiembre 2026, 12:00     1.2 GB
-  20260930-060000   30 de septiembre 2026, 06:00     1.1 GB
+Comprobación:
 
-  3 respaldo(s), se conservan 7 días.
-  Restaurar: mc backup restore 20260930-180000  (o `ultimo`)
+```bash
+systemctl list-timers --all | grep mc-
+sudo systemctl start mc-backup.service
+journalctl -u mc-backup.service -n 50 --no-pager
 ```
+
+El servicio tiene `TimeoutStartSec=1h` porque un mundo pregenerado puede tardar
+varios minutos en comprimirse.
+
+---
+
+## Copia diaria a la PC
+
+Un respaldo que vive en el mismo VPS no protege contra la pérdida del VPS. La
+copia externa se hace por SSH desde la PC, sin credenciales nuevas: usa la
+misma llave con la que administras el servidor.
+
+El script está en `deploy/pc/copiar_respaldos.py`. Hace esto:
+
+1. Pregunta al VPS cuál es el respaldo más reciente.
+2. Lo baja con `rsync` a `~/Respaldos_Minecraft_HD/AAAA-MM-DD/`.
+3. Verifica el SHA256 contra el sidecar.
+4. Escribe un `SHA256SUMS` de la carpeta.
+5. Borra las carpetas de más de 14 días.
+
+Instalación en la PC:
+
+```bash
+mkdir -p ~/.local/bin ~/.config/systemd/user ~/.config/minecraft-hd
+install -m 755 deploy/pc/copiar_respaldos.py ~/.local/bin/
+install -m 644 deploy/pc/mc-copiar-respaldos.service \
+                deploy/pc/mc-copiar-respaldos.timer \
+                ~/.config/systemd/user/
+
+cat > ~/.config/minecraft-hd/copiar.env <<'EOF'
+MC_SSH=usuario@tu-vps
+MC_SSH_KEY=~/.ssh/id_ed25519
+EOF
+chmod 600 ~/.config/minecraft-hd/copiar.env
+
+systemctl --user daemon-reload
+systemctl --user enable --now mc-copiar-respaldos.timer
+
+# Para que el timer funcione aunque no tengas sesión abierta:
+sudo loginctl enable-linger "$USER"
+```
+
+Comprobación:
+
+```bash
+systemctl --user list-timers mc-copiar-respaldos.timer
+systemctl --user start mc-copiar-respaldos.service
+tail -20 ~/Respaldos_Minecraft_HD/copiar.log
+sha256sum -c ~/Respaldos_Minecraft_HD/AAAA-MM-DD/SHA256SUMS
+```
+
+Variables del script:
+
+| Variable | Valor por defecto |
+|---|---|
+| `MC_SSH` | Obligatorio; por ejemplo `usuario@tu-vps` |
+| `MC_SSH_KEY` | `~/.ssh/id_ed25519` |
+| `MC_RESPALDOS_REMOTOS` | `~/minecraft-hd/backups` |
+| `MC_RESPALDOS_PC` | `~/Respaldos_Minecraft_HD` |
+| `MC_RESPALDOS_PC_DIAS` | `14` |
+
+`MC_SSH` y `MC_SSH_KEY` se leen del archivo
+`~/.config/minecraft-hd/copiar.env`; no se guardan en el repositorio.
+
+El timer corre a las 03:15, con hasta 15 minutos de retraso aleatorio. Si la
+PC está apagada a esa hora, systemd lo ejecuta al siguiente encendido gracias
+a `Persistent=true`.
+
+---
+
+## Alertas por Discord
+
+`mc alert` manda un mensaje al canal configurado. `mc monitor` revisa tres
+cosas y avisa si alguna falla:
+
+- El respaldo más reciente tiene más de 8 horas.
+- Quedan menos de 15 GB libres.
+- El contenedor de Minecraft no está corriendo o no está sano.
+
+```bash
+mc alert --titulo "Prueba" "Mensaje de prueba"
+mc alert --seco --titulo "Prueba" "Solo imprime el texto"
+mc monitor
+mc monitor --horas-max 12 --disco-minimo-gb 20
+```
+
+El canal se toma de `ALERTAS_CANAL_ID`. Si está vacío, se usa
+`PAGOS_CANAL_ID`. El token es el mismo del bot de pagos. No hace falta un
+webhook aparte.
+
+Para evitar spam, `mc monitor` guarda una huella del problema en
+`backups/.monitor.json` y no repite la misma alerta hasta que pasan 6 horas.
+Cuando todo está bien, borra ese archivo.
+
+`mc-backup.service` y `mc-backup-verify.service` tienen
+`OnFailure=mc-backup-alerta.service`, así que un fallo del timer también llega
+a Discord.
 
 ---
 
 ## Restaurar
 
 ```bash
-mc backup restore ultimo --dry-run   # primero mira qué trae
+mc backup restore ultimo --dry-run
 mc backup restore ultimo
 ```
 
-Acepta varias formas de decir cuál:
+El comando:
 
-```bash
-mc backup restore ultimo             # el más reciente
-mc backup restore 20260930-180000    # el id completo
-mc backup restore 20260930           # un prefijo, si no es ambiguo
-```
-
-Lo que hace, en orden:
-
-1. Te dice **qué respaldo es, de cuándo y cuánto pesa**.
-2. Te pide **doble confirmación**: un sí/no y luego teclear `RESTAURAR`.
-3. Hace un **respaldo de lo que hay ahora** (por si te arrepientes).
+1. Muestra qué respaldo es, de cuándo y cuánto pesa.
+2. Pide doble confirmación: primero sí/no, después la palabra `RESTAURAR`.
+3. Crea un respaldo de lo que hay ahora, con etiqueta
+   `antes-de-restaurar`.
 4. Apaga el servidor.
-5. Borra los mundos de ahorita y extrae los del respaldo.
-6. Te dice dónde quedó el respaldo de antes.
+5. Borra los mundos actuales y extrae los del respaldo.
+6. Consolida las bases SQLite que vengan con un `-wal` viejo.
+7. Restaura la base del bot de pagos.
+8. Deja el respaldo previo en `backups/` por si hay que volver.
 
-Luego:
+Después:
 
 ```bash
 mc start
 ```
 
-### `settings.yml` no se restaura solo
+### Qué no se restaura solo
 
-El respaldo lo trae adentro, pero **no se escribe encima del tuyo**. Si
-cambiaste la configuración a propósito, pisártela sin avisar sería una
-grosería.
-
-Si lo quieres de vuelta, sácalo a mano:
+El `settings.yml` va dentro del respaldo, pero no se escribe encima del
+actual. Si quieres recuperarlo:
 
 ```bash
-tar xzf backups/world-20260930-180000.tgz settings.yml -O > settings-del-respaldo.yml
+tar xzf backups/world-20261031-011258.tgz settings.yml -O > settings-del-respaldo.yml
 diff settings.yml settings-del-respaldo.yml
 ```
 
-### La base de datos del bot de pagos sí se restaura
+La base del bot de pagos sí se restaura, porque forma parte del mismo punto en
+el tiempo que el mundo.
 
-Esa sí, junto con el mundo: si restauras, lo coherente es que las cuentas del
-mes también regresen a ese punto.
+### Respaldos viejos con WAL
 
----
-
-## Una copia fuera del VPS
-
-Un respaldo que vive en el mismo disco que el servidor **no es un respaldo**:
-si el VPS se muere, se van los dos.
-
-Esto viene **apagado** por defecto porque necesita que configures una cuenta.
-
-### 1. Instalar rclone en el VPS
-
-```bash
-curl https://rclone.org/install.sh | sudo bash
-```
-
-### 2. Configurarlo
-
-```bash
-rclone config
-```
-
-Es un menú interactivo. Para Google Drive:
-
-1. `n` (new remote)
-2. Nombre: `gdrive`
-3. Escoge `drive` de la lista
-4. Deja client_id y client_secret vacíos (dale Enter)
-5. Scope: `1` (acceso completo)
-6. Lo demás en blanco
-7. **`Use web browser to automatically authenticate? → n`** ← importante en
-   un VPS sin navegador
-8. Te da un comando para correr **en tu computadora**. Córrelo, te abre el
-   navegador, autorizas, y te da un token.
-9. Pega el token en el VPS.
-
-Para Backblaze B2 es más simple: escoge `b2` y pon tu Key ID y Application
-Key.
-
-### 3. Probar que jala
-
-```bash
-rclone lsd gdrive:
-rclone mkdir gdrive:minecraft-hd
-```
-
-### 4. Prenderlo
-
-En `settings.yml`:
-
-```yaml
-respaldos:
-  remoto:
-    activo: true
-    destino: "gdrive:minecraft-hd"
-```
-
-    intervalo: "24h"      # cada cuándo sube una copia
-```
-
-Y:
-
-```bash
-mc build      # revisa que exista ~/.config/rclone/rclone.conf
-mc restart
-```
-
-`mc build` parte el destino en remoto (`gdrive`) y carpeta (`minecraft-hd`)
-y prende un contenedor aparte, `respaldos-remoto`, que lee el
-`rclone.conf` de tu usuario en el VPS. No hay nada que poner en `.env`.
-
-Los respaldos locales en `backups/` siguen igual: el remoto es **además**,
-no en vez de.
-
-### 5. Comprobar
-
-```bash
-mc status                     # debe salir respaldos-remoto corriendo
-mc logs -s respaldos-remoto   # el primero sale a los 2 minutos de arrancar
-rclone ls gdrive:minecraft-hd
-```
-
-Si en el log ves que rclone no encuentra el remoto, revisa que el nombre
-antes de los dos puntos en `destino` sea exactamente el que le pusiste en
-`rclone config` (`rclone listremotes` te los dice).
+Los respaldos anteriores copiaban la base viva con su `-wal` y su `-shm`. Al
+restaurar, el motor nuevo extrae esos archivos a un temporal y los consolida
+con la API de SQLite. Al destino llega un solo archivo sano, sin acompañantes
+viejos que se apliquen encima.
 
 ---
 
-## Si algo no jala
+## Verificación y simulacro de restore
 
-### "no hay carpeta data/ que respaldar"
+La verificación semanal revisa:
 
-Corre `mc build` primero.
+- Que el SHA256 coincida con el sidecar, cuando existe.
+- Que el archivo se pueda abrir como tar.
+- Que exista `world/level.dat`.
+- Que las bases SQLite pasen `PRAGMA integrity_check`.
 
-### El respaldo pesa muchísimo
-
-Lo normal es 1–3 GB con el mundo pregenerado. Si pesa mucho más:
-
-```bash
-du -sh data/*  | sort -h | tail -5
-```
-
-Si ves algo grande que se regenera solo, agrégalo a `EXCLUDES` en el
-`docker-compose.yml`.
-
-### No quedan respaldos de hace días
-
-Revisa `conservar_dias` en `settings.yml`, y que el contenedor esté arriba:
+Para un simulacro completo sin tocar producción:
 
 ```bash
-mc status
-mc logs -s respaldos
+mkdir -p /tmp/restore-drill
+tar -xzf backups/world-20261031-011258.tgz -C /tmp/restore-drill
 ```
 
-### "¡OJO! No pude volver a prender el guardado automático"
-
-Esto sale si `mc backup now` falló justo después del `save-off`. El servidor
-quedó sin guardar al disco. Arréglalo ya:
+Después valida el contenido:
 
 ```bash
-mc console
-mc> save-on
-mc> save-all
+# level.dat debe ser gzip y un compound NBT
+python3 - <<'PY'
+import gzip, struct
+from pathlib import Path
+datos = gzip.decompress(Path("/tmp/restore-drill/world/level.dat").read_bytes())
+tipo, = struct.unpack(">B", datos[:1])
+print("NBT tipo:", tipo)
+PY
+
+# Todas las bases deben pasar integrity_check
+find /tmp/restore-drill -name '*.db' -o -name '*.sqlite' | while read -r base; do
+  sqlite3 "$base" 'PRAGMA integrity_check;'
+done
 ```
 
-### Quiero más margen
+En Paper 26.1 las regiones de chunks viven en
+`world/dimensions/minecraft/<dimension>/region/`. No uses el tamaño del archivo
+como prueba de integridad: el formato de esta versión no alinea los archivos a
+4096 bytes. Para una prueba fuerte, compara los hashes de las regiones contra
+el mundo en producción o valida la cabecera y los chunks de cada `.mca`.
 
-```yaml
-respaldos:
-  intervalo: "3h"        # cada 3 horas
-  conservar_dias: 14     # dos semanas
+Al terminar:
+
+```bash
+rm -rf /tmp/restore-drill
 ```
 
-Ojo con el disco: el doble de respaldos, el doble de espacio. `mc doctor` te
-avisa si se está llenando.
+---
+
+## Problemas comunes
+
+### `no hay carpeta data/ que respaldar`
+
+Ejecuta `mc build` primero.
+
+### `ya hay otro respaldo en curso`
+
+El bloqueo `backups/.bloqueo` está tomado. Espera a que termine el timer o
+revisa `mc backup status`. No borres el archivo de bloqueo mientras haya un
+proceso corriendo.
+
+### El respaldo pesa demasiado
+
+Lo normal es 1–3 GB con el mundo pregenerado. Revisa qué ocupa espacio:
+
+```bash
+du -sh data/* | sort -h | tail -5
+```
+
+Si aparece algo que se regenera solo, agrégalo a las exclusiones del motor.
+
+### `mc backup verify` marca un respaldo
+
+No lo borres. Revisa el mensaje, compara el SHA256 y, si hace falta, restaura
+en un directorio temporal para inspeccionarlo. Un respaldo con error puede ser
+la única copia de un período.
+
+### El timer no corre
+
+```bash
+systemctl status mc-backup.timer
+systemctl list-timers --all | grep mc-
+journalctl -u mc-backup.service -n 100 --no-pager
+```
+
+### La copia a la PC no corre sin sesión
+
+Falta el lingering:
+
+```bash
+sudo loginctl enable-linger "$USER"
+loginctl show-user "$USER" | grep Linger
+```
+
+### No llega la alerta a Discord
+
+```bash
+mc alert --seco --titulo "Prueba" "Texto"
+mc alert --titulo "Prueba" "Texto"
+```
+
+Si el segundo falla, revisa `PAGOS_BOT_TOKEN`, `ALERTAS_CANAL_ID` (o
+`PAGOS_CANAL_ID`) y la conexión del VPS. El bot debe tener permiso para
+escribir en ese canal.

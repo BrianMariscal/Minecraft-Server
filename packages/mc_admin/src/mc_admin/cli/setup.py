@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 import secrets as pysecrets
+import shutil
 
 import typer
 
 from mc_admin.cli import consola
-from mc_admin.config import ARCHIVO_ENV, cargar_secretos
+from mc_admin.config import (
+    ARCHIVO_ENV,
+    ARCHIVO_SETTINGS,
+    ARCHIVO_SETTINGS_EJEMPLO,
+    cargar_secretos,
+    encontrar_raiz,
+)
 from mc_admin.contexto import Contexto
 from mc_admin.errores import ErrorMc
 from mc_admin.infra import archivos
@@ -49,9 +56,21 @@ PREGUNTAS: list[tuple[str, str, str, bool]] = [
 ]
 
 
+def _crear_settings_si_falta() -> None:
+    """Copia settings.example.yml a settings.yml la primera vez."""
+    raiz = encontrar_raiz()
+    destino = raiz / ARCHIVO_SETTINGS
+    ejemplo = raiz / ARCHIVO_SETTINGS_EJEMPLO
+    if destino.is_file() or not ejemplo.is_file():
+        return
+    shutil.copyfile(ejemplo, destino)
+    consola.aviso(f"creé {ARCHIVO_SETTINGS} desde {ARCHIVO_SETTINGS_EJEMPLO}")
+
+
 def setup() -> None:
     """Revisa el entorno, crea .env si falta y te pide los datos necesarios."""
     try:
+        _crear_settings_si_falta()
         ctx = Contexto.cargar()
         consola.titulo(f"Preparando {ctx.settings.servidor.nombre}")
 

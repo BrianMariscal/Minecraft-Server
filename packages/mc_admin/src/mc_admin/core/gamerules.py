@@ -5,8 +5,8 @@ de lugar. Lo que todas las guías de internet llaman `playersSleepingPercentage`
 aquí se llama `players_sleeping_percentage`, y ya no viven en level.dat sino
 en `world/dimensions/<dimensión>/data/minecraft/game_rules.dat`.
 
-Verificado contra un Paper 26.1.2 de verdad: con el nombre viejo el servidor
-contesta "Incorrect argument for command" y la regla NO se aplica, sin más
+Verificado contra un Paper 26.1.2 real: con el nombre viejo el servidor
+contesta "Incorrect argument for command" y la regla NO se aplica, sin otro
 aviso. Por eso los nombres de aquí salieron de leer el game_rules.dat que
 generó el servidor, no de la documentación.
 
@@ -50,7 +50,7 @@ TODAS_LAS_DIMENSIONES = (Dimension.OVERWORLD, Dimension.NETHER, Dimension.END)
 def reglas_para(*, dormir_con_un_jugador: bool) -> list[Regla]:
     """Las gamerules que pone este servidor, y por qué cada una.
 
-    Son POCAS a propósito: todo lo demás se queda como vanilla, que es lo que
+    Son POCAS por diseño: todo lo demás se queda como vanilla, que es lo que
     la gente espera al entrar a un servidor de supervivencia.
     """
     reglas: list[Regla] = []

@@ -10,7 +10,7 @@ import pytest
 
 from mc_admin.infra.archivos import actualizar_settings
 
-# La raíz del proyecto de verdad: de ahí copiamos settings.yml y las
+# La raíz del proyecto real: de ahí copiamos settings.example.yml y las
 # plantillas, para que los tests prueben los archivos REALES y no una
 # maqueta que se desincroniza.
 RAIZ_REAL = Path(__file__).resolve().parents[3]
@@ -20,16 +20,16 @@ RAIZ_REAL = Path(__file__).resolve().parents[3]
 def proyecto(tmp_path: Path) -> Iterator[Path]:
     """Una copia del proyecto en un directorio temporal.
 
-    Copiamos lo que de verdad se versiona (settings.yml, manifest.yml,
+    Copiamos lo que se versiona (settings.example.yml, manifest.yml,
     templates y traducciones) para que un cambio en esos archivos haga
     fallar los tests si rompe algo.
     """
     destino = tmp_path / "proyecto"
     destino.mkdir()
-    shutil.copy(RAIZ_REAL / "settings.yml", destino / "settings.yml")
+    shutil.copy(RAIZ_REAL / "settings.example.yml", destino / "settings.yml")
     shutil.copy(RAIZ_REAL / ".env.example", destino / ".env.example")
     shutil.copytree(RAIZ_REAL / "minecraft", destino / "minecraft", dirs_exist_ok=True)
-    # El settings.yml real ya trae a la banda; los tests parten sin nadie.
+    # El ejemplo trae datos ficticios; los tests parten sin nadie.
     actualizar_settings(
         destino,
         {

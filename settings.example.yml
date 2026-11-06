@@ -1,9 +1,13 @@
 # ===========================================================================
 #  Minecraft HD — ÚNICA fuente de configuración editable
 # ===========================================================================
-#  Edita este archivo y corre `mc build` para regenerar todas las configs
-#  del servidor y de los plugins. Nunca edites a mano lo que hay en
-#  minecraft/generated/: se sobrescribe en cada build.
+#  Este archivo es la plantilla pública. Cópialo a settings.yml y edítalo:
+#      cp settings.example.yml settings.yml
+#  `mc setup` lo hace por ti la primera vez. Después corre `mc build` para
+#  regenerar todas las configs del servidor y de los plugins. Nunca edites a
+#  mano lo que hay en minecraft/generated/: se sobrescribe en cada build.
+#
+#  Los nombres, Discord IDs y XUIDs de este archivo son ficticios.
 #
 #  Los secretos (tokens, contraseñas, IDs de Discord) NO van aquí.
 #  Van en .env — mira .env.example.
@@ -34,7 +38,7 @@ servidor:
 
   # La IP del VPS (o un dominio). Solo es para que `mc status` diga a dónde
   # conectarse; vacío = "tu-ip".
-  direccion: "203.0.113.10"
+  direccion: ""
 
 # --- Versiones fijadas -----------------------------------------------------
 #  Investigado y verificado el 2026-09-30. NO uses LATEST.
@@ -47,7 +51,6 @@ versiones:
   minecraft: "26.1.2"
   # Minecraft 26.x exige Java 25.
   imagen_servidor: "itzg/minecraft-server:2026.9.2-java25"
-  imagen_respaldos: "itzg/mc-backup:2026.9.3"
 
 # --- Recursos --------------------------------------------------------------
 #  VPS de referencia: 8 GB RAM / 4 vCores. Dejamos ~2 GB al sistema,
@@ -70,10 +73,13 @@ rendimiento:
   simulation_distance: 8
 
 # --- Puertos ---------------------------------------------------------------
-#  Solo java y bedrock se abren en el firewall. Ver docs/vps.md.
+#  Java, Bedrock y NetherNet se abren en el firewall. Ver docs/vps.md.
 puertos:
   java: 25565         # TCP
-  bedrock: 19132      # UDP
+  bedrock: 19132      # UDP para RakNet y TCP para la señalización de NetherNet
+  # UDP extra para el juego por NetherNet (WebRTC). RakNet y NetherNet no
+  # pueden compartir el mismo puerto UDP.
+  bedrock_webrtc: 19133
   # TCP, publicado SOLO en 127.0.0.1 del VPS para que `mc` lo alcance.
   # NUNCA lo abras en el firewall.
   rcon: 25575
@@ -104,7 +110,7 @@ seguridad:
     timeout_login: 90
 
 # --- Mundo: datapacks ------------------------------------------------------
-#  Todos usan bloques vanilla a propósito, para que Bedrock los vea bien
+#  Todos usan bloques vanilla, para que Bedrock los vea bien
 #  vía Geyser sin packs de recursos del cliente.
 mundo:
   # Radio en bloques para `mc pregen`. 3000 ≈ 113k chunks, ~2-4 GB de mundo.
@@ -125,13 +131,6 @@ respaldos:
   intervalo: "6h"
   # Días que se conservan antes de borrarse.
   conservar_dias: 7
-  # Copia fuera del VPS con rclone. Desactivada por defecto;
-  # para prenderla ve docs/respaldos.md.
-  remoto:
-    activo: false
-    destino: ""           # ej. "gdrive:minecraft-hd" o "b2:minecraft-hd"
-    # Subir 1-3 GB a la nube cada 6 horas es mucho: una vez al día basta.
-    intervalo: "24h"
 
 # --- Chat ------------------------------------------------------------------
 chat:
@@ -156,7 +155,7 @@ chat:
     filtro_groserias: false
 
 # --- Tumbas (GravesX) ------------------------------------------------------
-#  Al morir queda una cabeza (un bloque de verdad, que Bedrock sí ve) con
+#  Al morir queda una cabeza (un bloque real, que Bedrock sí ve) con
 #  tus cosas, y al reaparecer te dan una brújula que apunta a ella.
 #  Antes era AxGraves, pero su tumba no se veía en Bedrock. Detalle en
 #  docs/versiones.md.
@@ -183,14 +182,14 @@ pagos:
   dia_de_pago: 2
   # Monto TOTAL del VPS en pesos mexicanos.
   # Con reparto "personalizado" solo es de referencia: se cobra la suma de
-  # los monto_mxn. Ahorita suman 7 x $40.00 = $280.00, $40.00 más que este
-  # total. Si no es a propósito, ajusta uno de los dos; el bot avisa del
+  # los monto_mxn. Ahora suman 7 x $40.00 = $280.00, $40.00 más que este
+  # total. Si no es intencional, ajusta uno de los dos; el bot avisa del
   # descuadre en su log al arrancar.
   monto_total_mxn: "240.00"
   # "iguales" divide el total entre todos los participantes.
   # "personalizado" usa el campo `monto_mxn` de cada participante.
   #
-  # Está en "personalizado" a propósito, con $40.00 para cada quien.
+  # Está en "personalizado" por diseño, con $40.00 para cada quien.
   # Con "iguales" el bot dividiría el total entre los que haya, así que al
   # unirse alguien más la cuota bajaría sola (con 8 serían $35.00). Así,
   # cada quien paga sus 40 pase lo que pase.
@@ -262,11 +261,13 @@ whitelist:
     - JugadorBedrock1
     - AdminBedrock
     - JugadorBedrock2
+    - JugadorBedrock3
     - JugadorBedrock4
   # El XUID de Xbox de cada gamertag de arriba. Lo llena `mc whitelist add
   # --bedrock` solo; ve docs/administrar.md si te lo pide.
   xuid:
     AdminBedrock: 1234567890123456
     JugadorBedrock2: 1234567890123457
+    JugadorBedrock3: 1234567890123458
     JugadorBedrock4: 1234567890123459
     JugadorBedrock1: 1234567890123460

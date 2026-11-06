@@ -71,11 +71,11 @@ def doctor(
 
         # --- Puertos ------------------------------------------------------ #
         p = ctx.settings.puertos
-        ocupados = puertos.ocupados([p.java], [p.bedrock])
+        ocupados = puertos.ocupados([p.java, p.bedrock], [p.bedrock, p.bedrock_webrtc])
         servidor = ctx.compose.estado_de("minecraft") if disponible else None
         for h in diag.revisar_puertos(
             ocupados,
-            {"Java": p.java, "Bedrock": p.bedrock},
+            {"Java": p.java, "Bedrock": p.bedrock, "Bedrock WebRTC": p.bedrock_webrtc},
             servidor_encendido=servidor is not None and servidor.corriendo,
         ):
             reporte.agregar(h)
@@ -95,13 +95,6 @@ def doctor(
         reporte.agregar(
             diag.revisar_compose(reemplazar_bloque(env_actual, ctx.bloque_compose()) == env_actual)
         )
-        remoto = diag.revisar_rclone(
-            ctx.settings.respaldos.remoto.activo,
-            ctx.ruta_rclone_conf.is_file(),
-            str(ctx.ruta_rclone_conf),
-        )
-        if remoto is not None:
-            reporte.agregar(remoto)
         reporte.agregar(diag.revisar_traducciones(len(sospechosas)))
 
         # --- En vivo ------------------------------------------------------ #

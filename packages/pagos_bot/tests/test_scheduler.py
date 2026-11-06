@@ -21,7 +21,7 @@ class SchedulerFalso:
       - `shutdown()` revisa `running` y, si está corriendo, ENCOLA el
         trabajo. No para nada todavía, así que `running` sigue en True.
       - Cuando el event loop corre lo encolado, `_shutdown` llama al
-        apagado de verdad, que truena si ya estaba parado.
+        apagado real, que truena si ya estaba parado.
 
     Por eso un segundo `shutdown()` pasa el primer chequeo sin problema y la
     excepción sale después, desde dentro del loop, donde ya no la atrapa
@@ -65,7 +65,7 @@ class ClienteFalso:
 
 @pytest.fixture
 def recordatorios(servicio: ServicioDeCobros) -> Recordatorios:
-    # El doble no hereda de discord.Client a propósito: solo usamos
+    # El doble no hereda de discord.Client por diseño: solo usamos
     # get_channel, y heredar arrastraría toda la maquinaria de la librería.
     r = Recordatorios(servicio, cast("discord.Client", ClienteFalso()), canal_id=123)
     r.scheduler = SchedulerFalso()

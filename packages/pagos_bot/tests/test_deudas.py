@@ -24,7 +24,7 @@ NOVIEMBRE = Periodo(2026, 11)
 
 @pytest.fixture
 def config_dia_2(config: PagosConfig) -> PagosConfig:
-    """Como el settings.yml de verdad: se paga el día 2."""
+    """Como el settings.yml real: se paga el día 2."""
     return config.model_copy(update={"dia_de_pago": 2})
 
 
@@ -77,7 +77,7 @@ class TestPrimeroLoAtrasado:
         mes = svc.dijo_que_pago(3)
         assert mes.periodo == OCTUBRE
 
-    def test_luego_el_de_ahorita(self, svc: ServicioCongelado) -> None:
+    def test_luego_el_actual(self, svc: ServicioCongelado) -> None:
         svc.viajar_a(momento(10, mes=11))
         svc.dijo_que_pago(3)
         svc.confirmar(3)

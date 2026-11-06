@@ -127,7 +127,7 @@ Haz `/unlinkaccount` primero.
 - **Floodgate 2.2.5** con `enable-own-linking: true`.
 - La base de datos es **SQLite**, en un archivo del volumen del servidor, así
   que entra en los respaldos automáticos.
-- El vínculo **global** de GeyserMC está **apagado** a propósito: funciona sin
+- El vínculo **global** de GeyserMC está **apagado** por diseño: funciona sin
   internet hacia GeyserMC y los datos no salen del VPS.
 - Para que esto no truene, `mc build` instala
   `floodgate-sqlite-database.jar` en `plugins/floodgate/`. **Sin ese jar,

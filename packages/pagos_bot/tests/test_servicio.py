@@ -218,7 +218,7 @@ class TestHistorial:
         svc.mes_actual()
         assert svc.historial() == []
 
-    def test_no_incluye_el_mes_de_ahorita(self, svc: ServicioCongelado) -> None:
+    def test_no_incluye_el_mes_actual(self, svc: ServicioCongelado) -> None:
         svc.mes_actual()
         svc.viajar_a(momento(3, mes=11))
         svc.mes_actual()

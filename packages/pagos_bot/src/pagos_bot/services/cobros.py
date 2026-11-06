@@ -66,7 +66,7 @@ class ServicioDeCobros:
         return self.agenda.periodo_actual(self.ahora())
 
     def mes_actual(self) -> MesDeCobro:
-        """El mes de ahorita. Si no existe, lo abre.
+        """El mes actual. Si no existe, lo abre.
 
         Esto es lo que hace que "cada mes arranca un periodo nuevo
         automáticamente": nadie tiene que acordarse de nada.
@@ -123,9 +123,9 @@ class ServicioDeCobros:
     # -- qué mes -------------------------------------------------------------- #
 
     def mes_de(self, periodo: Periodo | None) -> MesDeCobro:
-        """El mes que pide un comando. None = el de ahorita.
+        """El mes que pide un comando. None = el actual.
 
-        El de ahorita y el que sigue se abren si hace falta (el que sigue lo
+        El actual y el que sigue se abren si hace falta (el que sigue lo
         abre el aviso previo unos días antes). Uno viejo tiene que existir.
         """
         if periodo is None:
@@ -142,7 +142,7 @@ class ServicioDeCobros:
     def meses_abiertos(self) -> list[MesDeCobro]:
         """Del más viejo al más nuevo: donde se busca qué debe cada quien.
 
-        Trae el de ahorita (aunque ya esté cubierto), los anteriores que
+        Trae el actual (aunque ya esté cubierto), los anteriores que
         todavía no se cierran, y el que sigue si el aviso previo ya lo abrió.
         """
         actual = self.mes_actual()
@@ -198,7 +198,7 @@ class ServicioDeCobros:
         if esperando is not None:
             msg = (
                 f"ya le avisé al tesorero de tu pago de {esperando.periodo.nombre}; "
-                "nada más falta que lo confirme."
+                "solo falta que lo confirme."
             )
             raise ErrorDeCobro(msg)
 
@@ -270,7 +270,7 @@ class ServicioDeCobros:
         """El precio nuevo del VPS aplica al mes en curso y al siguiente.
 
         Los meses ya pasados conservan el precio que tenían: así el historial
-        dice lo que de verdad costó.
+        dice lo que costó en realidad.
         """
         actual = self.mes_actual()
         meses = [actual]

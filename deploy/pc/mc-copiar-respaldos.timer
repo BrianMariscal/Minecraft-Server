@@ -1,0 +1,11 @@
+[Unit]
+Description=Copia diaria de los respaldos de Minecraft HD
+
+[Timer]
+OnCalendar=*-*-* 03:15:00
+Persistent=true
+RandomizedDelaySec=15m
+Unit=mc-copiar-respaldos.service
+
+[Install]
+WantedBy=timers.target

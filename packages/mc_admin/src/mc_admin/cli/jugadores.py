@@ -1,6 +1,6 @@
 """`mc whitelist` y `mc admin`: quién puede entrar y quién manda.
 
-settings.yml es la única fuente de verdad. Cada comando lo edita y luego
+settings.yml es la única fuente de configuración. Cada comando lo edita y luego
 `sincronizar` deja al servidor igual: escribe `whitelist.json` completo, con
 el UUID correcto de cada quien, y si el servidor está encendido le dice que
 lo vuelva a leer y aplica los admins.

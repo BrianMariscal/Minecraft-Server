@@ -2,7 +2,7 @@
 # hace falta uv.lock). Sin este archivo, Docker le mandaría al daemon el
 # mundo entero, los respaldos y el .env en cada build.
 #
-# Solo dejamos pasar lo que el Dockerfile copia de verdad.
+# Solo dejamos pasar lo que el Dockerfile copia.
 *
 !pyproject.toml
 !uv.lock

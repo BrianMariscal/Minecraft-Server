@@ -1,0 +1,13 @@
+[Unit]
+Description=Revisión de respaldo, disco y servidor de Minecraft HD
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=minecraft
+Group=minecraft
+WorkingDirectory=/home/minecraft/minecraft-hd
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/minecraft/minecraft-hd/.venv/bin/mc monitor
+Nice=10

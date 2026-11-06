@@ -2,7 +2,7 @@
 
 Baja los plugins y datapacks del manifest verificando su sha256, genera las
 configs desde las plantillas y copia las traducciones. Correrlo dos veces
-seguidas no cambia nada: es idempotente a propósito.
+seguidas no cambia nada: es idempotente por diseño.
 """
 
 from __future__ import annotations
@@ -94,13 +94,6 @@ def armar_plan(ctx: Contexto, *, descargar: bool = True) -> PlanDeConstruccion:
             else (Accion.ACTUALIZAR if actual_env else Accion.CREAR),
         )
     )
-    if ctx.settings.respaldos.remoto.activo and not ctx.ruta_rclone_conf.is_file():
-        plan.problemas.append(
-            f"respaldos.remoto está prendido pero no existe {ctx.ruta_rclone_conf}. "
-            "Configura rclone en este VPS (docs/respaldos.md) o el contenedor "
-            "de respaldos remotos no va a poder subir nada."
-        )
-
     # 4. Traducciones propias.
     for origen, destino in TRADUCCIONES.items():
         ruta_origen = ctx.carpeta_traducciones / origen

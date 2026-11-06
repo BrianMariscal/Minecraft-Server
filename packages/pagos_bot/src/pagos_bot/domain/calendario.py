@@ -30,7 +30,7 @@ MESES_ES = (
 
 
 def dia_de_pago_real(anio: int, mes: int, dia_pedido: int) -> int:
-    """El día de pago que de verdad existe en ese mes.
+    """El día de pago que existe en ese mes.
 
     Si pides el 31 y el mes tiene 30, te da 30. Si pides el 31 en febrero,
     te da 28 (o 29 en bisiesto).

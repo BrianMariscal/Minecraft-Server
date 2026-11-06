@@ -35,7 +35,7 @@ teleport-to-center: true
 
 # --- /back -----------------------------------------------------------------
 # EssentialsX lo trae en false. Lo PRENDEMOS: es lo que hace que /back te
-# regrese al lugar donde te morías, no nada más al último /tp.
+# regrese al lugar donde te morías, no solo al último /tp.
 # Era un requisito explícito del proyecto.
 register-back-in-listener: true
 # Al salir de la cárcel o de un freeze, manda a donde estaba.
@@ -109,7 +109,7 @@ chat:
   # lleven su etiqueta y nadie más.
   #
   # Los códigos & son los clásicos de Minecraft, no MiniMessage: son los que
-  # Geyser traduce bien a Bedrock. Nada de degradados a propósito, que
+  # Geyser traduce bien a Bedrock. Nada de degradados por diseño, que
   # Bedrock los aplana a un solo color y se ve peor.
   format: '{PREFIX}&7{DISPLAYNAME} &8» &f{MESSAGE}'
 

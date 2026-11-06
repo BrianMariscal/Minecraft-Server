@@ -6,7 +6,7 @@
 #  cosas: cortar el flood (mensajes repetidos o larguísimos) y bajarle a las
 #  mayúsculas excesivas.
 #
-#  El filtro de groserías queda APAGADO a propósito: entre amigos nos
+#  El filtro de groserías queda APAGADO por diseño: entre amigos nos
 #  hablamos como nos hablamos. Era un requisito explícito del proyecto.
 #
 #  Solo escribimos lo que nos aparta del default.
@@ -32,7 +32,7 @@ capitalization:
   enabled: true
   custom-module-name: "Mayusculas"
   # true = lo CORRIGE a minúsculas en lugar de bloquearlo. Igual que arriba:
-  # el mensaje sí se manda, nada más sin los gritos.
+  # el mensaje sí se manda, solo sin los gritos.
   correct: true
   # Esto lo APAGAMOS. ChatSentinel lo trae en true y pone mayúscula a la
   # primera letra de cada mensaje. Queda raro y condescendiente; que cada
@@ -82,7 +82,7 @@ blacklist:
 # --- Otros módulos que apagamos y por qué --------------------------------
 # Publicidad: no tenemos nada que proteger de "entra a mi server", y el
 # filtro pesca cualquier mensaje con un punto (como una IP o una URL que
-# alguien quiera compartir a propósito).
+# alguien quiera compartir intencionalmente).
 advertising:
   enabled: false
 

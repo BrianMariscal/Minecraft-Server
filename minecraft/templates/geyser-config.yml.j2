@@ -12,8 +12,11 @@ bedrock:
   # VPS es el que decide quién llega (ver docs/vps.md).
   address: 0.0.0.0
   port: {{ puerto_bedrock }}
-  # raknet es el transporte normal de Bedrock, por UDP.
-  transport: raknet
+  # NetherNet (clientes Bedrock 26.60+) usa `port` para señalización TCP y
+  # `webrtc-port` para el juego por UDP. `both` mantiene RakNet para los
+  # clientes viejos: cada transporte necesita su propio puerto UDP.
+  webrtc-port: {{ puerto_bedrock_webrtc }}
+  transport: both
 
 java:
   # Como Geyser corre DENTRO del mismo Paper (no es un proxy aparte), no hay

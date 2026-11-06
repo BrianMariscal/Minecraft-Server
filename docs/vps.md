@@ -189,7 +189,7 @@ Ya en el VPS, dentro de la carpeta:
 ```bash
 cd ~/minecraft-hd
 
-# 1. Revisa el entorno y llena los secretos.
+# 1. Crea settings.yml desde el ejemplo y llena los secretos.
 uv run mc setup
 
 # 2. Baja los plugins (verifica el sha256 de cada uno) y genera las configs.
@@ -215,20 +215,23 @@ echo 'alias mc="cd ~/minecraft-hd && uv run mc"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-De aquí en adelante la guía usa `mc` sin más.
+De aquí en adelante la guía usa `mc` directamente.
 
 ---
 
 ## 7. El firewall
 
-Esto es lo más importante de seguridad del VPS. Solo tres puertos abiertos.
+Esto es lo más importante de seguridad del VPS. Solo los puertos del juego
+quedan abiertos.
 
 ```bash
 # El orden importa: primero SSH, o te quedas fuera de tu propio servidor.
 sudo ufw allow OpenSSH
 
 sudo ufw allow 25565/tcp comment 'Minecraft Java'
-sudo ufw allow 19132/udp comment 'Minecraft Bedrock'
+sudo ufw allow 19132/udp comment 'Minecraft Bedrock RakNet'
+sudo ufw allow 19132/tcp comment 'Minecraft Bedrock NetherNet signaling'
+sudo ufw allow 19133/udp comment 'Minecraft Bedrock NetherNet WebRTC'
 
 sudo ufw enable
 sudo ufw status numbered
@@ -239,14 +242,48 @@ Debe verse así:
 ```
 22/tcp    ALLOW IN    Anywhere    # OpenSSH
 25565/tcp ALLOW IN    Anywhere    # Minecraft Java
-19132/udp ALLOW IN    Anywhere    # Minecraft Bedrock
+19132/udp ALLOW IN    Anywhere    # Minecraft Bedrock RakNet
+19132/tcp ALLOW IN    Anywhere    # Minecraft Bedrock NetherNet signaling
+19133/udp ALLOW IN    Anywhere    # Minecraft Bedrock NetherNet WebRTC
 ```
+
+### El firewall del proveedor también filtra
+
+En IONOS, el VPS tiene además un firewall externo que se configura en el
+Cloud Panel, en **Network > Firewall Policies**. Ese firewall se aplica antes
+de que el tráfico llegue al VPS: si un puerto no está ahí, `ufw` no lo puede
+salvar. La política de Linux suele traer abiertos `22/tcp`, `80/tcp`,
+`443/tcp`, `8443/tcp` y `8447/tcp`; los puertos del juego se agregan a mano.
+
+Para Bedrock tienen que estar abiertos en **los dos** firewalls:
+
+| Protocolo | Puerto | Para qué |
+|---|---|---|
+| TCP | 25565 | Java |
+| UDP | 19132 | Bedrock por RakNet |
+| TCP | 19132 | Señalización de NetherNet |
+| UDP | 19133 | Juego por NetherNet |
+
+Si falta `19132/tcp` o `19133/udp`, el cliente de Bedrock 26.60+ se queda en
+"No se pudo conectar" aunque `ufw status` diga que están abiertos. El servidor
+puede seguir apareciendo en la lista por el ping de RakNet (UDP `19132`) y aun
+así no dejar entrar a un cliente nuevo, porque la entrada usa TCP.
+
+Para comprobar la señalización desde fuera del VPS:
+
+```bash
+curl --fail --max-time 10 http://TU_IP:19132/v1/join
+```
+
+Si contesta con datos del servidor, el TCP llega. Si se queda callado o da
+timeout, el puerto está filtrado antes de llegar al VPS.
 
 ### Dos cosas que hay que tener claras
 
-**El `/udp` de Bedrock no es opcional.** Bedrock va por UDP. Si abres
-`19132/tcp` por error, no va a entrar nadie de Bedrock y el error no dice
-nada útil.
+**Bedrock necesita UDP y, desde la versión 26.60, también TCP.** RakNet usa
+UDP `19132`; NetherNet usa TCP `19132` para la señalización y UDP `19133`
+para el juego. Si falta cualquiera de los tres, los clientes nuevos o los
+viejos no van a entrar, y el error en el juego no dice cuál falta.
 
 **RCON (25575) NO se abre. Nunca.** Quien tenga esa contraseña es dueño
 del servidor: puede dar op, banear y apagarlo. En el `docker-compose.yml`
@@ -280,7 +317,7 @@ sudo sysctl --system
 
 ## 8. Una dirección fácil de recordar
 
-Nadie se acuerda de `203.0.113.11`.
+Nadie se acuerda de la IP vieja.
 
 ### Gratis: DuckDNS
 
@@ -319,7 +356,7 @@ Y ya entran con `mc.tudominio.com`.
 
 ### Para que no tengan que escribir el puerto (solo Java)
 
-Con un registro **SRV**, los de Java entran escribiendo nada más
+Con un registro **SRV**, los de Java entran escribiendo solo
 `mc.tudominio.com`, sin `:25565`:
 
 | Campo | Valor |
@@ -353,6 +390,14 @@ Si quieres asegurarte de que Docker arranca con el sistema:
 
 ```bash
 sudo systemctl enable docker
+```
+
+Los timers de respaldo, verificación y monitor también quedan habilitados.
+Después de un reinicio, compruébalos con:
+
+```bash
+systemctl list-timers --all | grep mc-
+mc backup status
 ```
 
 ---
@@ -390,14 +435,24 @@ docker compose version
 
 ```bash
 mc doctor        # te dice qué proceso lo tiene
-sudo ss -tulpn | grep -E '25565|19132'
+sudo ss -tulpn | grep -E '25565|19132|19133'
 ```
 
 ### Los de Bedrock no pueden entrar
 
-1. ¿Abriste el puerto como **UDP**? `sudo ufw status | grep 19132`
-2. ¿Están poniendo el puerto 19132 en el juego?
-3. ¿Están en la whitelist con `mc whitelist add Nombre --bedrock`?
+1. ¿Están abiertos **UDP 19132**, **TCP 19132** y **UDP 19133** en `ufw`
+   y en el firewall del proveedor? En IONOS es **Network > Firewall
+   Policies**.
+   `sudo ufw status | grep -E '19132|19133'`
+2. Desde otra red, comprueba la señalización:
+   `curl --fail --max-time 10 http://TU_IP:19132/v1/join`
+   Si no contesta, el TCP 19132 está filtrado antes de llegar al VPS.
+3. ¿Están poniendo el puerto 19132 en el juego?
+4. Si su Minecraft es **26.60 o más nuevo**, el servidor los atiende por
+   NetherNet. Si no conectan, revisa que `transport` siga en `both` en
+   `data/plugins/Geyser-Spigot/config.yml` y corre `mc build` si cambiaste
+   `settings.yml`.
+5. ¿Están en la whitelist con `mc whitelist add Nombre --bedrock`?
 
 ### Los archivos de `data/` quedaron de otro usuario
 
@@ -508,12 +563,13 @@ mc logs -f
 
 ### Las cuatro cosas que Docker NO se lleva
 
-Esto es lo que de verdad se olvida:
+Esto es lo que suele olvidarse:
 
 1. **El firewall.** El VPS nuevo viene abierto o cerrado de fábrica, no como
-   lo dejaste. Vuelve a hacer la sección 7 de esta guía: `25565/tcp` y
-   `19132/udp`. Y acuérdate de `OpenSSH` antes de
-   `ufw enable`.
+   lo dejaste. Vuelve a hacer la sección 7 de esta guía: `25565/tcp`,
+   `19132/tcp`, `19132/udp` y `19133/udp`. Y acuérdate de `OpenSSH` antes de
+   `ufw enable`. En IONOS, abre los mismos puertos en **Network > Firewall
+   Policies**; el firewall del proveedor está antes que `ufw`.
 2. **El DNS.** Tu dominio o tu DuckDNS siguen apuntando a la IP vieja. Si no
    lo cambias, la banda se conecta a un servidor que ya no existe.
    - DuckDNS: actualiza la IP y el cron de `~/duckdns/actualizar.sh`.
@@ -522,8 +578,10 @@ Esto es lo que de verdad se olvida:
    - Los DNS tardan en propagarse. Si quieres que sea instantáneo, baja el
      TTL a 300 segundos **unos días antes** de mudarte.
 3. **Que Docker arranque con el sistema**: `sudo systemctl enable docker`.
-4. **Los respaldos fuera del VPS**, si los tenías: hay que volver a
-   configurar `rclone` en el VPS nuevo (`docs/respaldos.md`).
+4. **Los respaldos fuera del VPS.** La copia diaria vive en la PC, no en el
+   VPS: vuelve a instalar el timer de usuario en la PC y actualiza la IP o el
+   host en `MC_SSH` (`docs/respaldos.md`). No hay nada de rclone que
+   configurar en el servidor nuevo.
 
 ### Lo que NO hay que tocar
 
@@ -562,7 +620,7 @@ mc doctor       # puertos, memoria, disco, versiones, secretos
 mc status       # contenedores y TPS
 ```
 
-Y dentro del juego: que tu `/home` te lleve a tu casa de verdad. Si jala,
+Y dentro del juego: que tu `/home` te lleve a tu casa. Si jala,
 la mudanza salió bien.
 
 Cuando ya estés seguro, apaga el VPS viejo. No antes: tener los dos unos
@@ -572,7 +630,7 @@ días cuesta poco y te deja volver si algo salió mal.
 
 | Cada cuándo | Qué |
 |---|---|
-| Nunca (es automático) | Los respaldos, cada 6 horas |
-| Cada semana | `mc doctor` |
+| Nunca (es automático) | Respaldo local cada 6 horas y copia diaria a la PC |
+| Cada semana | `mc doctor`; la verificación de respaldos corre sola el domingo |
 | Cada mes | `mc update` y `sudo apt update && sudo apt upgrade` |
 | Antes de cualquier cambio | `mc backup now` |

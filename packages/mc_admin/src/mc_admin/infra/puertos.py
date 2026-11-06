@@ -45,8 +45,8 @@ def ocupados(puertos_tcp: list[int], puertos_udp: list[int]) -> dict[int, str]:
 def _duenos_desde_proc() -> dict[int, str]:
     """Mapea puerto -> nombre del proceso leyendo /proc (solo Linux).
 
-    Si algo no se puede leer, simplemente no aparece en el mapa: `mc doctor`
-    seguirá diciendo que el puerto está ocupado, nada más sin el nombre.
+    Si algo no se puede leer, no aparece en el mapa: `mc doctor`
+    seguirá diciendo que el puerto está ocupado, solo sin el nombre.
     """
     from pathlib import Path
 

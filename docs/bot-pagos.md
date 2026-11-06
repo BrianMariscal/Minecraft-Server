@@ -184,7 +184,7 @@ salió (con `dia_de_pago: 2` sale el 30 del mes anterior), cuenta como pago
 **adelantado** de ese mes.
 
 Si ya avisaste y el tesorero todavía no confirma, picarle otra vez no lo
-vuelve a etiquetar: el bot nada más te recuerda que está pendiente.
+vuelve a etiquetar: el bot solo te avisa de que sigue pendiente.
 
 ### Confirmar
 
@@ -222,7 +222,7 @@ propósito: si el tesorero no lo vio, el dinero no está.
 | `/eximir @persona [mes]` | Ese mes no le toca pagar, y no cuenta como que debe |
 
 `mes` se escribe como `2026-10`. Si no lo pones, `/desmarcar` y `/eximir`
-usan el mes de ahorita.
+usan el mes actual.
 
 **La banda** — `/miembro`
 

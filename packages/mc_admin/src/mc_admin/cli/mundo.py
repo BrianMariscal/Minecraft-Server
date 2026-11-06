@@ -95,7 +95,7 @@ def world_reset(
             consola.tenue("\n  --dry-run: no se tocó nada.")
             return
 
-        if not consola.confirmar_doble("\n¿De verdad quieres borrar el mundo?", "BORRAR EL MUNDO"):
+        if not consola.confirmar_doble("\n¿Seguro que quieres borrar el mundo?", "BORRAR EL MUNDO"):
             raise OperacionCancelada()
 
         # Respaldo ANTES de tocar nada. Si esto falla, no seguimos.

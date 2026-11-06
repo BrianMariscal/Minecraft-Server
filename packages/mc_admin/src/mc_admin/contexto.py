@@ -18,7 +18,7 @@ from mc_admin.infra.docker import Compose
 from mc_admin.infra.rcon import Conexion
 
 
-# Sin slots=True a propósito: `cached_property` necesita un __dict__ donde
+# Sin slots=True por diseño: `cached_property` necesita un __dict__ donde
 # guardar lo que ya calculó, y slots se lo quita.
 @dataclass
 class Contexto:
@@ -87,11 +87,6 @@ class Contexto:
     def ruta_logo(self) -> Path:
         return self.raiz / self.settings.servidor.logo
 
-    @property
-    def ruta_rclone_conf(self) -> Path:
-        """Donde `rclone config` deja su archivo en el VPS."""
-        return Path.home() / ".config/rclone/rclone.conf"
-
     def bloque_compose(self) -> str:
         """Las variables MC_* de .env, calculadas desde settings.yml."""
         # El dueño de la carpeta del proyecto, y no el usuario del proceso:
@@ -103,7 +98,6 @@ class Contexto:
                 self.settings,
                 uid=dueno.st_uid,
                 gid=dueno.st_gid,
-                conf_rclone=str(self.ruta_rclone_conf),
             )
         )
 

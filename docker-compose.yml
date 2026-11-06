@@ -2,10 +2,11 @@
 #  Minecraft HD — los contenedores del servidor
 # ===========================================================================
 #  minecraft          el servidor en sí (Paper + los plugins)
-#  respaldos          saca un respaldo cada 6 horas sin apagar el servidor
-#  respaldos-remoto   sube una copia a la nube (solo si lo prendes)
 #  pagos-bot          el bot de Discord que cobra la mensualidad del VPS
 #                     (y, si quieres, avisa cuando se cae el servidor)
+#
+#  Los respaldos automáticos ya no viven en un contenedor: los corre un
+#  timer de systemd con `mc backup now` (ver deploy/systemd/).
 #
 #  NO hay números mágicos aquí: la versión, la memoria, los puertos y los
 #  respaldos salen de settings.yml. `mc build` los pasa a variables MC_* en
@@ -47,8 +48,13 @@ services:
     ports:
       # Java, TCP.
       - "${MC_PUERTO_JAVA:-25565}:${MC_PUERTO_JAVA:-25565}/tcp"
+      # Bedrock: RakNet por UDP y, desde Geyser 2.12, la señalización de
+      # NetherNet por TCP en el mismo puerto.
+      - "${MC_PUERTO_BEDROCK:-19132}:${MC_PUERTO_BEDROCK:-19132}/tcp"
       # Bedrock, UDP. Ojo con el /udp: sin eso no entra nadie de Bedrock.
       - "${MC_PUERTO_BEDROCK:-19132}:${MC_PUERTO_BEDROCK:-19132}/udp"
+      # NetherNet (WebRTC), UDP. No puede compartir puerto con RakNet.
+      - "${MC_PUERTO_BEDROCK_WEBRTC:-19133}:${MC_PUERTO_BEDROCK_WEBRTC:-19133}/udp"
       # RCON, SOLO en 127.0.0.1: así lo alcanza `mc` desde el propio VPS,
       # pero desde internet no existe. NUNCA le quites el 127.0.0.1: si lo
       # abres, cualquiera con la contraseña es dueño del servidor.
@@ -101,8 +107,8 @@ services:
 
     healthcheck:
       # mc-health viene en la imagen de itzg: contesta cuando el servidor
-      # ya acepta jugadores, no nada más cuando el proceso existe. Sirve
-      # para que `respaldos` no arranque antes de tiempo y para `mc status`.
+      # ya acepta jugadores, no solo cuando el proceso existe. Sirve
+      # para `mc status` y para que los respaldos esperen a que esté sano.
       test: ["CMD", "mc-health"]
       # Con 5 datapacks grandes el primer arranque genera mucho mundo, así
       # que le damos 5 minutos de gracia antes de empezar a checar.
@@ -117,95 +123,6 @@ services:
       resources:
         limits:
           memory: ${MC_MEMORIA_LIMITE:-7680m}
-
-  # -------------------------------------------------------------------- #
-  #  Respaldos automáticos (en el disco del VPS)
-  # -------------------------------------------------------------------- #
-  respaldos:
-    image: ${MC_IMAGEN_RESPALDOS:-itzg/mc-backup:2026.9.3}
-    container_name: mc-hd-respaldos
-    restart: unless-stopped
-    # Esperamos a que el servidor esté SANO, no nada más encendido: un
-    # respaldo a medio arranque no sirve de nada.
-    depends_on:
-      minecraft:
-        condition: service_healthy
-
-    environment: &entorno-respaldos
-      TZ: "${TZ:-America/Mexico_City}"
-      BACKUP_INTERVAL: "${MC_RESPALDOS_INTERVALO:-6h}"
-      # Se borran los más viejos que esto.
-      PRUNE_BACKUPS_DAYS: "${MC_RESPALDOS_DIAS:-7}"
-
-      # --- En caliente, sin apagar el servidor ---
-      # El contenedor manda `save-off` y `save-all` por RCON, copia, y luego
-      # `save-on`. Nadie se desconecta.
-      RCON_HOST: "minecraft"
-      RCON_PORT: "${MC_PUERTO_RCON:-25575}"
-      RCON_PASSWORD: "${RCON_PASSWORD:?Falta RCON_PASSWORD en .env}"
-      # Si no hay nadie conectado, no tiene caso respaldar lo mismo otra vez.
-      # Para contar jugadores le pregunta al servidor por SERVER_HOST; sin
-      # esto preguntaría a `localhost`, que dentro de este contenedor no es
-      # el servidor de Minecraft.
-      PAUSE_IF_NO_PLAYERS: "true"
-      SERVER_HOST: "minecraft"
-      SERVER_PORT: "${MC_PUERTO_JAVA:-25565}"
-
-      # --- Qué se respalda ---
-      # Todo /data: el mundo, las configs de los plugins, la base de datos
-      # de CoreProtect, la de AuthMe y la de vinculación de Floodgate. Y,
-      # por el montaje de abajo, la del bot de pagos en /data/pagos-datos.
-      SRC_DIR: "/data"
-      # Lo que NO tiene caso guardar: se regenera solo y pesa mucho.
-      EXCLUDES: "*.jar,cache,logs,libraries,versions"
-      # Un tar comprimido por respaldo.
-      BACKUP_METHOD: "tar"
-      TAR_COMPRESS_METHOD: "gzip"
-      DEST_DIR: "/backups"
-      # Nombre con fecha y hora, que es de donde `mc backup list` saca el id.
-      BACKUP_NAME: "world"
-
-    volumes:
-      # Solo lectura: un respaldo jamás debe poder escribir en el mundo.
-      - ./data:/data:ro
-      # La base del bot de pagos, montada DENTRO de /data para que entre en
-      # el mismo tar. `mc build` crea la carpeta vacía data/pagos-datos que
-      # le sirve de punto de montaje.
-      - ./pagos-datos:/data/pagos-datos:ro
-      - ./backups:/backups
-
-  # -------------------------------------------------------------------- #
-  #  Copia fuera del VPS (apagada hasta que la prendas)
-  # -------------------------------------------------------------------- #
-  #  Solo arranca con respaldos.remoto.activo: true en settings.yml: `mc
-  #  build` pone entonces COMPOSE_PROFILES=remoto en .env. Usa el mismo
-  #  itzg/mc-backup, pero en vez de dejar el tar en backups/ lo sube con
-  #  rclone. Guía: docs/respaldos.md.
-  respaldos-remoto:
-    image: ${MC_IMAGEN_RESPALDOS:-itzg/mc-backup:2026.9.3}
-    container_name: mc-hd-respaldos-remoto
-    profiles: ["remoto"]
-    restart: unless-stopped
-    depends_on:
-      minecraft:
-        condition: service_healthy
-
-    environment:
-      <<: *entorno-respaldos
-      BACKUP_INTERVAL: "${MC_REMOTO_INTERVALO:-24h}"
-      BACKUP_METHOD: "rclone"
-      RCLONE_COMPRESS_METHOD: "gzip"
-      # Salen de respaldos.remoto.destino ("gdrive:minecraft-hd").
-      RCLONE_REMOTE: "${RCLONE_REMOTE:-}"
-      RCLONE_DEST_DIR: "${RCLONE_DEST_DIR:-}"
-
-    volumes:
-      - ./data:/data:ro
-      - ./pagos-datos:/data/pagos-datos:ro
-      # El rclone.conf que generaste con `rclone config` en el VPS. Sin
-      # :ro a propósito: con Google Drive, rclone renueva el token y lo
-      # vuelve a escribir ahí.
-      - ${MC_RCLONE_CONF:-./rclone.conf}:/config/rclone/rclone.conf
 
   # -------------------------------------------------------------------- #
   #  Bot de pagos del VPS
@@ -228,7 +145,7 @@ services:
 
     environment:
       TZ: "${TZ:-America/Mexico_City}"
-      # Sin `:?` a propósito: Compose revisa esas variables aunque el perfil
+      # Sin `:?` de forma intencional: Compose revisa esas variables aunque el perfil
       # esté apagado. Si faltan, el bot mismo lo dice clarito al arrancar,
       # y `mc start` las revisa antes de levantar nada.
       PAGOS_BOT_TOKEN: "${PAGOS_BOT_TOKEN:-}"

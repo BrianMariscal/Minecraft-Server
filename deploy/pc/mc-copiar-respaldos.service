@@ -1,0 +1,11 @@
+[Unit]
+Description=Copia el respaldo más reciente de Minecraft HD a esta PC
+
+[Service]
+Type=oneshot
+EnvironmentFile=-%h/.config/minecraft-hd/copiar.env
+ExecStart=%h/.local/bin/copiar_respaldos.py
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=2h

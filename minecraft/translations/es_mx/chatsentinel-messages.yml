@@ -17,7 +17,7 @@ default: "es"
 
 langs:
   es:
-    # --- Lo que de verdad se usa en este servidor ----------------------
+    # --- Lo que se usa en este servidor ----------------------
     # Solo están activos el flood, las mayúsculas y la espera entre
     # mensajes (ver chatsentinel-config.yml). El resto va traducido por si
     # algún día se prende algo.
@@ -39,7 +39,7 @@ langs:
     cancellation_fallback: "&8[&bChat&8] &7Bloqueé tu mensaje por &f%module%&7."
 
     # --- Silenciar el chat (solo admins) ------------------------------
-    server_muted: "&8[&bChat&8] &7El chat está silenciado ahorita."
+    server_muted: "&8[&bChat&8] &7El chat está silenciado en este momento."
     server_mute_enabled: "&7%player% silenció el chat. Razón: &f%reason%"
     server_mute_disabled: "&7%player% volvió a abrir el chat. Razón: &f%reason%"
 

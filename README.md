@@ -2,11 +2,12 @@
 
 > Servidor de Minecraft multiplataforma en producción: Java y Bedrock en el mismo mundo, Docker, CLI con **575 tests**, version pinning con **SHA256** y bot de pagos automatizado.
 
-[![CI](https://github.com/BrianMariscal/Minecraft-Server/actions/workflows/ci.yml/badge.svg?branch=produccion)](https://github.com/BrianMariscal/Minecraft-Server/actions/workflows/ci.yml)
+[![CI](https://github.com/BrianMariscal/Minecraft-Server/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BrianMariscal/Minecraft-Server/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-575%20passed-brightgreen)](https://github.com/BrianMariscal/Minecraft-Server/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
 
-Servidor para jugar con la banda: cuentas no premium, hasta 15 jugadores y todo en español de México. Corre en un VPS Linux y se administra con `mc`, una CLI hecha en Python.
+Servidor privado para un grupo de hasta 15 jugadores: cuentas no premium, Java y Bedrock en el mismo mundo y todo en español de México. Corre en un VPS Linux y se administra con `mc`, una CLI hecha en Python.
 
 ---
 
@@ -53,7 +54,7 @@ flowchart LR
 ## Decisiones clave
 
 - **Supply chain verificable:** los **28 artefactos** descargables (17 plugins, la base SQLite de Floodgate, 5 datapacks y 5 packs de Vanilla Tweaks) están fijados con versión y **SHA256**. `mc build` falla si un hash no coincide; nunca instala `latest`.
-- **575 tests que no dependen de Docker:** ningún test levanta un contenedor ni abre un socket. Docker y RCON se sustituyen por dobles, y los tests leen `settings.yml`, `manifest.yml` y las plantillas reales.
+- **575 tests que no dependen de Docker:** ningún test levanta un contenedor ni abre un socket. Docker y RCON se sustituyen por dobles, y los tests parten de `settings.example.yml`, `manifest.yml` y las plantillas reales.
 - **Tipos y validación en serio:** `mypy` en modo estricto, `ruff` para lint y formato, y `pydantic` para validar `settings.yml` y `.env`. Las configs se generan con **Jinja2**, no se editan a mano en `data/`.
 - **Versiones fijadas con intención:** Paper **26.1.2** y Java 25, no la versión más nueva: EssentialsX todavía no tiene release estable para 26.3. El detalle está en [docs/decisiones.md](docs/decisiones.md).
 - **Salud observable:** `mc doctor` revisa puertos, RAM, disco, TPS, versiones y traducciones; `mc-monitor.timer` vigila respaldo, disco y servidor cada hora y avisa por Discord.
@@ -65,25 +66,25 @@ Python 3.12+ · Docker Compose · Paper 26.1.2 · Java 25 · Typer + Rich · pyd
 ## Uso rápido
 
 ```bash
-mc setup    # revisa el entorno, crea .env y pide los secretos
+mc setup    # crea settings.yml desde el ejemplo y pide los secretos
 mc build    # descarga con SHA256 y genera las configuraciones
 mc start    # levanta los contenedores
 mc doctor   # revisa puertos, RAM, disco, TPS y versiones
 mc status   # ve quién está conectado
 ```
 
-La guía completa para montarlo desde cero está en **[docs/vps.md](docs/vps.md)**.
+La guía completa para montarlo desde cero está en **[docs/vps.md](docs/vps.md)**. El servidor real no tiene URL pública: se entra por invitación y la dirección se comparte aparte.
 
 ## Seguridad
 
 - **SHA256 en cada descarga:** plugins, datapacks y packs de Vanilla Tweaks se verifican antes de instalarse; un hash distinto aborta el build.
 - **Acceso controlado:** whitelist encendida, `/register` y `/login` para cuentas no premium, y RCON expuesto solo en `127.0.0.1:25575`.
 - **Auditoría y rollback:** CoreProtect registra quién movió cada bloque y permite revertir cambios.
-- **Secretos fuera de git:** tokens y contraseñas viven en `.env`; el repositorio solo incluye `.env.example` y el CI corre `gitleaks`.
+- **Secretos y datos fuera de git:** tokens y contraseñas viven en `.env`; nombres, Discord IDs y XUIDs viven en `settings.yml`. El repositorio solo incluye `.env.example` y `settings.example.yml`, y el CI corre `gitleaks` sobre todo el historial.
 
 ## Testing
 
-**575 tests. Ninguno levanta un contenedor ni abre un socket:** Docker y RCON se sustituyen por dobles, y los tests usan el `settings.yml`, el `manifest.yml` y las plantillas reales.
+**575 tests. Ninguno levanta un contenedor ni abre un socket:** Docker y RCON se sustituyen por dobles, y los tests parten de `settings.example.yml`, `manifest.yml` y las plantillas reales.
 
 Se corren con `uv run pytest`; la cobertura, con `uv run pytest --cov=mc_admin --cov=pagos_bot`.
 

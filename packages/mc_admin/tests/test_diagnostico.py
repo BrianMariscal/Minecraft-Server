@@ -228,18 +228,3 @@ class TestCompose:
         h = diag.revisar_compose(False)
         assert h.nivel is diag.Nivel.AVISO
         assert "mc build" in h.pista
-
-
-class TestRclone:
-    def test_apagado_no_dice_nada(self) -> None:
-        assert diag.revisar_rclone(False, False, "x") is None
-
-    def test_prendido_sin_configurar_es_problema(self) -> None:
-        h = diag.revisar_rclone(True, False, "/home/yo/.config/rclone/rclone.conf")
-        assert h is not None
-        assert h.nivel is diag.Nivel.MAL
-
-    def test_prendido_y_configurado(self) -> None:
-        h = diag.revisar_rclone(True, True, "x")
-        assert h is not None
-        assert h.nivel is diag.Nivel.BIEN

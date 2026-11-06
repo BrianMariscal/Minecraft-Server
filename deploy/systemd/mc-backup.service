@@ -1,0 +1,19 @@
+[Unit]
+Description=Respaldo en caliente de Minecraft HD
+Documentation=file:///home/minecraft/minecraft-hd/docs/respaldos.md
+After=docker.service
+Requires=docker.service
+OnFailure=mc-backup-alerta.service
+
+[Service]
+Type=oneshot
+User=minecraft
+Group=minecraft
+WorkingDirectory=/home/minecraft/minecraft-hd
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/minecraft/minecraft-hd/.venv/bin/mc backup now
+ExecStartPost=/home/minecraft/minecraft-hd/.venv/bin/mc backup prune
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=1h

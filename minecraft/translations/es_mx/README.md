@@ -31,7 +31,7 @@ dentro del jar, así que basta con dejarlo ahí.
   todos de administración (`/skin set`, `/skin clear`).
 - **LuckPerms**: no trae español y sus mensajes son **solo de
   administración** (`/lp user ... permission set`). Los ve únicamente quien
-  administra el servidor, nunca un jugador. Lo dejamos en inglés a propósito
+  administra el servidor, nunca un jugador. Lo dejamos en inglés por diseño
   en lugar de mantener una traducción de 700 líneas que nadie lee.
 - **ViaVersion**: sus mensajes son de incompatibilidad de versión y se
   configuran en su propio `config.yml`, que `mc build` ya genera en español.

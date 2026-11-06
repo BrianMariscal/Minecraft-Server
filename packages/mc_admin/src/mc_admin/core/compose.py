@@ -21,8 +21,7 @@ MEMORIA_EXTRA_MB = 1536
 # Los perfiles de Compose: servicios que solo arrancan si están prendidos
 # en settings.yml.
 PERFIL_PAGOS = "pagos"
-PERFIL_REMOTO = "remoto"
-TODOS_LOS_PERFILES = (PERFIL_PAGOS, PERFIL_REMOTO)
+TODOS_LOS_PERFILES = (PERFIL_PAGOS,)
 
 # Las marcas del bloque que `mc build` administra dentro de .env.
 INICIO_BLOQUE = "# >>> generado por `mc build` desde settings.yml: no lo edites a mano"
@@ -40,35 +39,21 @@ def limite_del_contenedor(memoria: str) -> str:
     return f"{memoria_en_mb(memoria) + MEMORIA_EXTRA_MB}m"
 
 
-def separar_remoto(destino: str) -> tuple[str, str]:
-    """'gdrive:minecraft-hd' -> ('gdrive', 'minecraft-hd').
-
-    itzg/mc-backup pide el nombre del remoto de rclone y la carpeta por
-    separado; en settings.yml se escriben juntos, como en la línea de
-    comandos de rclone.
-    """
-    remoto, _, carpeta = destino.partition(":")
-    return remoto.strip(), carpeta.strip().strip("/")
-
-
-def variables(settings: Settings, *, uid: int, gid: int, conf_rclone: str) -> dict[str, str]:
+def variables(settings: Settings, *, uid: int, gid: int) -> dict[str, str]:
     """Todas las variables que lee docker-compose.yml, ya calculadas."""
     v = settings.versiones
     p = settings.puertos
-    r = settings.respaldos
 
     valores = {
         "MC_VERSION": v.minecraft,
         "MC_IMAGEN": v.imagen_servidor,
-        "MC_IMAGEN_RESPALDOS": v.imagen_respaldos,
         "MC_MEMORIA": settings.recursos.memoria,
         "MC_MEMORIA_LIMITE": limite_del_contenedor(settings.recursos.memoria),
         "MC_AIKAR": "true" if settings.recursos.flags_aikar else "false",
         "MC_PUERTO_JAVA": str(p.java),
         "MC_PUERTO_BEDROCK": str(p.bedrock),
+        "MC_PUERTO_BEDROCK_WEBRTC": str(p.bedrock_webrtc),
         "MC_PUERTO_RCON": str(p.rcon),
-        "MC_RESPALDOS_INTERVALO": r.intervalo,
-        "MC_RESPALDOS_DIAS": str(r.conservar_dias),
         "MC_UID": str(uid),
         "MC_GID": str(gid),
     }
@@ -76,15 +61,6 @@ def variables(settings: Settings, *, uid: int, gid: int, conf_rclone: str) -> di
     perfiles: list[str] = []
     if settings.pagos.activo:
         perfiles.append(PERFIL_PAGOS)
-    if r.remoto.activo:
-        perfiles.append(PERFIL_REMOTO)
-        remoto, carpeta = separar_remoto(r.remoto.destino)
-        valores |= {
-            "MC_REMOTO_INTERVALO": r.remoto.intervalo,
-            "RCLONE_REMOTE": remoto,
-            "RCLONE_DEST_DIR": carpeta,
-            "MC_RCLONE_CONF": conf_rclone,
-        }
     # Se escribe aunque quede vacío: si no, un valor viejo de cuando algo
     # estuvo prendido seguiría vivo en el .env.
     valores["COMPOSE_PROFILES"] = ",".join(perfiles)

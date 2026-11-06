@@ -7,6 +7,7 @@ interpretamos las respuestas y qué error damos cuando algo falla.
 
 from __future__ import annotations
 
+import signal
 import socket
 import subprocess
 from pathlib import Path
@@ -259,13 +260,31 @@ class TestErroresDeRcon:
         monkeypatch.setattr(rcon, "MCRcon", lambda *a, **k: NoConecta())
         assert rcon.esta_vivo(CONEXION) is False
 
+    def test_un_timeout_no_deja_una_alarma_suelta(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """mcrcon no apaga su SIGALRM cuando la conexión falla.
+
+        La alarma sobrante interrumpía el `time.sleep` de `mc restart` y
+        soltaba un traceback de `MCRconException`.
+        """
+        llamadas: list[int] = []
+        monkeypatch.setattr(signal, "alarm", lambda segundos: llamadas.append(segundos))
+
+        class Tarda(ClienteRconFalso):
+            def connect(self) -> None:
+                raise Exception("Connection timeout error")  # noqa: TRY002
+
+        monkeypatch.setattr(rcon, "MCRcon", lambda *a, **k: Tarda())
+        with pytest.raises(ErrorDeRcon):
+            rcon.mandar(CONEXION, "list")
+        assert 0 in llamadas
+
 
 class TestLeerRespuestas:
     def test_tps(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """El encabezado trae "1m, 5m, 15m": esos números NO son los TPS.
 
         Tomarlos en orden de aparición daba 1.0 y `mc doctor` reportaba un
-        servidor lentísimo estando perfecto.
+        servidor lentísimo estando sano.
         """
         montar_rcon(
             monkeypatch,
@@ -331,7 +350,7 @@ class TestFiltroDeSecretos:
     def test_la_prosa_no_se_tacha(self) -> None:
         """El filtro busca ASIGNACIONES (clave=valor, clave: valor), no prosa.
 
-        Es a propósito: tachar cualquier palabra cerca de "secret" dejaría los
+        Es intencional: tachar cualquier palabra cerca de "secret" dejaría los
         logs ilegibles. La regla del proyecto es que la lógica nunca mete un
         secreto en un mensaje, y el filtro es la red por si se nos va una.
         """

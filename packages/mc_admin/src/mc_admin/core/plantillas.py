@@ -67,7 +67,7 @@ def _minimessage_a_legacy(texto: str) -> str:
     justo lo que Geyser traduce mejor a Bedrock. Solo soportamos lo que de
     verdad usamos en settings.yml: colores hex, <bold> y <white>.
 
-    No metemos degradados a propósito: Bedrock los aplana a un solo color y se
+    No metemos degradados por diseño: Bedrock los aplana a un solo color y se
     ve peor que un color sólido bien elegido.
     """
     import re
@@ -158,6 +158,7 @@ def construir_contexto(settings: Settings, secretos: Secretos) -> dict[str, Any]
         # Puertos
         "puerto_java": s.puertos.java,
         "puerto_bedrock": s.puertos.bedrock,
+        "puerto_bedrock_webrtc": s.puertos.bedrock_webrtc,
         "puerto_rcon": s.puertos.rcon,
         # Idioma
         "idioma": s.idioma.codigo,

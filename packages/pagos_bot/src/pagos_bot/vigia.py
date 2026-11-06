@@ -76,6 +76,6 @@ def texto_de(cambio: Cambio, minutos: int) -> str:
     if cambio is Cambio.SE_CAYO:
         return (
             f"⚠️ El servidor de Minecraft no contesta desde hace {minutos} minutos.\n"
-            "Si nadie lo apagó a propósito, revisa con `mc status` y `mc logs`."
+            "Si nadie lo apagó intencionalmente, revisa con `mc status` y `mc logs`."
         )
     return "✅ El servidor de Minecraft ya volvió."

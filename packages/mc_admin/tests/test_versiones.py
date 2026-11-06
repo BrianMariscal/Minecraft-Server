@@ -1,4 +1,4 @@
-"""Comparación de versiones, con las formas raras que de verdad se usan."""
+"""Comparación de versiones, con las formas raras que se usan."""
 
 from __future__ import annotations
 

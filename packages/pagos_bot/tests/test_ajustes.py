@@ -33,7 +33,7 @@ OCTUBRE = Periodo(2026, 10)
 
 @pytest.fixture
 def config_personal(config: PagosConfig) -> PagosConfig:
-    """Como el settings.yml de verdad: cada quien su monto."""
+    """Como el settings.yml real: cada quien su monto."""
     return config.model_copy(
         update={
             "reparto": Reparto.PERSONALIZADO,

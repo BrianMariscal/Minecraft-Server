@@ -12,6 +12,7 @@ from typing import Any
 
 import httpx
 
+from mc_admin.core.manifest import Destino
 from mc_admin.core.versiones import Comparacion, comparar
 from mc_admin.infra.descargas import TIMEOUT, USER_AGENT
 from mc_admin.infra.registro import obtener
@@ -27,6 +28,27 @@ _RE_MODRINTH = re.compile(r"cdn\.modrinth\.com/data/([A-Za-z0-9]+)/versions/")
 _RE_GEYSER = re.compile(r"download\.geysermc\.org/v2/projects/([a-z]+)/")
 _RE_GITHUB = re.compile(r"github\.com/([^/]+)/([^/]+)/releases/download/")
 
+# Loaders de Modrinth que puede usar cada destino. Un plugin de Paper no
+# debe proponerse en su variante NeoForge o Forge: son jars distintos.
+LOADERS_PLUGINS = frozenset(
+    {"paper", "spigot", "bukkit", "purpur", "folia", "velocity", "waterfall", "bungeecord"}
+)
+LOADERS_DATAPACKS = frozenset({"datapack"})
+
+
+def _loaders_aceptados(destino: Destino) -> frozenset[str]:
+    return LOADERS_DATAPACKS if destino is Destino.DATAPACKS else LOADERS_PLUGINS
+
+
+def _sirve_para(version: dict[str, Any], destino: Destino) -> bool:
+    """¿La versión de Modrinth declara un loader compatible con el destino?
+
+    Si la API no trae loaders, se acepta: es preferible revisarla a esconder
+    una actualización válida. Si trae loaders y ninguno sirve, se descarta.
+    """
+    loaders = {str(x).lower() for x in version.get("loaders", [])}
+    return not loaders or bool(loaders & _loaders_aceptados(destino))
+
 
 @dataclass(frozen=True, slots=True)
 class VersionDisponible:
@@ -37,7 +59,9 @@ class VersionDisponible:
     soporta: tuple[str, ...]
 
 
-def _modrinth_por_id(cliente: httpx.Client, project_id: str, mc: str) -> VersionDisponible | None:
+def _modrinth_por_id(
+    cliente: httpx.Client, project_id: str, mc: str, destino: Destino
+) -> VersionDisponible | None:
     """La versión más nueva de un proyecto de Modrinth que soporte `mc`."""
     try:
         r = cliente.get(f"{MODRINTH}/project/{project_id}/version")
@@ -47,7 +71,9 @@ def _modrinth_por_id(cliente: httpx.Client, project_id: str, mc: str) -> Version
         log.warning("no pude preguntarle a Modrinth por %s: %s", project_id, exc)
         return None
 
-    candidatas = [v for v in versiones if mc in v.get("game_versions", [])]
+    candidatas = [
+        v for v in versiones if mc in v.get("game_versions", []) and _sirve_para(v, destino)
+    ]
     if not candidatas:
         return None
     # Modrinth las devuelve de la más nueva a la más vieja.
@@ -92,17 +118,23 @@ def _github(cliente: httpx.Client, duenio: str, repo: str) -> VersionDisponible 
 
 
 def buscar_novedades(
-    nombre: str, version_actual: str, url: str, mc: str, cliente: httpx.Client
+    nombre: str,
+    version_actual: str,
+    url: str,
+    mc: str,
+    cliente: httpx.Client,
+    destino: Destino = Destino.PLUGINS,
 ) -> Comparacion:
     """Compara la versión que tenemos contra la más nueva que haya.
 
     La fuente se deduce de la URL del manifest: así no hay que mantener una
-    tabla aparte de "este plugin vive en tal lado".
+    tabla aparte de "este plugin vive en tal lado". El destino decide qué
+    loaders de Modrinth cuentan: plugins de Paper o datapacks del mundo.
     """
     disponible: VersionDisponible | None = None
 
     if m := _RE_MODRINTH.search(url):
-        disponible = _modrinth_por_id(cliente, m.group(1), mc)
+        disponible = _modrinth_por_id(cliente, m.group(1), mc, destino)
     elif m := _RE_GEYSER.search(url):
         disponible = _geyser(cliente, m.group(1))
     elif m := _RE_GITHUB.search(url):

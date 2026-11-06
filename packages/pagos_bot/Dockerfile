@@ -38,7 +38,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --package pagos-bot
 
 
-# --- Etapa 2: la imagen que de verdad corre --------------------------------
+# --- Etapa 2: la imagen que se ejecuta --------------------------------
 FROM python:3.12-slim AS runtime
 
 # Usuario sin privilegios: si alguien se mete por el bot, no es root.

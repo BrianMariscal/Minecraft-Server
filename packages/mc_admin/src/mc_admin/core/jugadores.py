@@ -115,7 +115,7 @@ def quitar(lista: list[str], nombre: str, plataforma: Plataforma) -> CambioEnLis
 
 
 # --------------------------------------------------------------------------- #
-#  UUIDs: con lo que de verdad compara el servidor
+#  UUIDs: con lo que compara el servidor
 # --------------------------------------------------------------------------- #
 #
 #  La whitelist, los ops y LuckPerms identifican a cada quien por UUID, no por

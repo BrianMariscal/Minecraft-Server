@@ -24,7 +24,7 @@ RAIZ_REAL = Path(__file__).resolve().parents[3]
 
 
 def _settings(proyecto: Path, **cambios: Any) -> Settings:
-    """settings.yml de verdad, con algunas claves cambiadas."""
+    """settings.yml real, con algunas claves cambiadas."""
     ruta = proyecto / "settings.yml"
     datos = yaml.safe_load(ruta.read_text(encoding="utf-8"))
     for clave, valor in cambios.items():
@@ -38,7 +38,7 @@ def _settings(proyecto: Path, **cambios: Any) -> Settings:
 
 
 def _variables(settings: Settings) -> dict[str, str]:
-    return core.variables(settings, uid=1001, gid=1002, conf_rclone="/home/yo/rclone.conf")
+    return core.variables(settings, uid=1001, gid=1002)
 
 
 class TestMemoria:
@@ -53,10 +53,20 @@ class TestMemoria:
 
 class TestVariables:
     def test_salen_de_settings(self, proyecto: Path) -> None:
-        v = _variables(_settings(proyecto, **{"recursos.memoria": "5G", "puertos.java": 25570}))
+        v = _variables(
+            _settings(
+                proyecto,
+                **{
+                    "recursos.memoria": "5G",
+                    "puertos.java": 25570,
+                    "puertos.bedrock_webrtc": 19134,
+                },
+            )
+        )
         assert v["MC_MEMORIA"] == "5G"
         assert v["MC_MEMORIA_LIMITE"] == "6656m"
         assert v["MC_PUERTO_JAVA"] == "25570"
+        assert v["MC_PUERTO_BEDROCK_WEBRTC"] == "19134"
         assert v["MC_UID"] == "1001"
         assert v["MC_GID"] == "1002"
 
@@ -65,14 +75,6 @@ class TestVariables:
         v = _variables(s)
         assert v["MC_VERSION"] == s.versiones.minecraft
         assert v["MC_IMAGEN"] == s.versiones.imagen_servidor
-        assert v["MC_IMAGEN_RESPALDOS"] == s.versiones.imagen_respaldos
-
-    def test_respaldos(self, proyecto: Path) -> None:
-        v = _variables(
-            _settings(proyecto, **{"respaldos.intervalo": "3h", "respaldos.conservar_dias": 14})
-        )
-        assert v["MC_RESPALDOS_INTERVALO"] == "3h"
-        assert v["MC_RESPALDOS_DIAS"] == "14"
 
     def test_el_bot_de_pagos_es_un_perfil(self, proyecto: Path) -> None:
         prendido = _variables(_settings(proyecto, **{"pagos.activo": True}))
@@ -82,25 +84,6 @@ class TestVariables:
         """Con el bot apagado, Docker no debe quedarse reiniciándolo en bucle."""
         apagado = _variables(_settings(proyecto, **{"pagos.activo": False}))
         assert apagado["COMPOSE_PROFILES"] == ""
-
-    def test_respaldo_remoto(self, proyecto: Path) -> None:
-        v = _variables(
-            _settings(
-                proyecto,
-                **{"respaldos.remoto": {"activo": True, "destino": "gdrive:mc/hd/"}},
-            )
-        )
-        assert v["COMPOSE_PROFILES"] == "pagos,remoto"
-        assert v["RCLONE_REMOTE"] == "gdrive"
-        assert v["RCLONE_DEST_DIR"] == "mc/hd"
-        assert v["MC_RCLONE_CONF"] == "/home/yo/rclone.conf"
-        assert v["MC_REMOTO_INTERVALO"] == "24h"
-
-    def test_remoto_sin_dos_puntos_truena(self, proyecto: Path) -> None:
-        from mc_admin.errores import ErrorDeConfig
-
-        with pytest.raises(ErrorDeConfig, match="remoto:carpeta"):
-            _settings(proyecto, **{"respaldos.remoto": {"activo": True, "destino": "gdrive"}})
 
 
 class TestBloque:
@@ -173,7 +156,7 @@ class TestElComposeDeVerdad:
         return (RAIZ_REAL / "docker-compose.yml").read_text(encoding="utf-8")
 
     def test_usa_todas_las_variables_mc(self, proyecto: Path, texto: str) -> None:
-        s = _settings(proyecto, **{"respaldos.remoto": {"activo": True, "destino": "g:x"}})
+        s = cargar_settings(proyecto)
         for clave in _variables(s):
             if clave == "COMPOSE_PROFILES":
                 continue  # la lee Compose mismo, no el archivo
@@ -185,8 +168,8 @@ class TestElComposeDeVerdad:
     def test_le_da_tiempo_de_apagarse(self, texto: str) -> None:
         assert "stop_grace_period: 2m" in texto
 
-    def test_la_base_del_bot_entra_a_los_respaldos(self, texto: str) -> None:
-        assert texto.count("./pagos-datos:/data/pagos-datos:ro") == 2
+    def test_la_base_del_bot_sigue_en_su_carpeta(self, texto: str) -> None:
+        assert "./pagos-datos:/datos" in texto
 
 
 class CorridaFalsa:
@@ -229,7 +212,5 @@ class TestArrancarYApagar:
             "compose",
             "--profile",
             "pagos",
-            "--profile",
-            "remoto",
             "down",
         ]

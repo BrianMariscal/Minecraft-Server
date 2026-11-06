@@ -3,7 +3,7 @@
 Lo usa `mc doctor` para avisar que quedó texto sin traducir en las configs
 generadas y en los archivos de mensajes de los plugins.
 
-Es heurístico a propósito: no intentamos "detectar idioma" de verdad, nada más
+Es heurístico: no intentamos "detectar idioma"; solo
 buscamos palabras que solo aparecen en inglés y que son típicas de los mensajes
 de plugins de Minecraft.
 """
@@ -229,7 +229,7 @@ def revisar_texto(texto: str, nombre_archivo: str) -> list[LineaSospechosa]:
     hallazgos: list[LineaSospechosa] = []
     for numero, linea in enumerate(texto.splitlines(), start=1):
         desnuda = linea.strip()
-        # Los comentarios de las plantillas están en español a propósito y
+        # Los comentarios de las plantillas están en español por diseño y
         # pueden citar nombres de opciones en inglés.
         if not desnuda or desnuda.startswith("#"):
             continue

@@ -17,6 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Preparar settings.yml desde el ejemplo
+        run: cp settings.example.yml settings.yml
+
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
