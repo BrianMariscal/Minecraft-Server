@@ -76,6 +76,13 @@ gameplay:
 # El default de Geyser es `system`, que seguiría el idioma del VPS (inglés).
 default-locale: {{ geyser_locale }}
 
+# --- Techo del Nether --------------------------------------------------------
+# Bedrock no deja ver ni construir por encima de Y=127 en el Nether, y el
+# techo de bedrock está justo ahí. Con esto Geyser le presenta el Nether a
+# Bedrock como si fuera el End (que llega a Y=255), así que ya ven y pueden
+# construir arriba. El costo es que el cielo del Nether se ve como el del End.
+above-bedrock-nether-building: true
+
 advanced:
   # Dónde está la llave que comparten Geyser y Floodgate. La genera Floodgate
   # sola en su primer arranque; nosotros no la tocamos.
