@@ -64,7 +64,7 @@ está apagado, queda listo para cuando arranque.
 No se usa `whitelist add` del servidor porque con los de Bedrock guarda un
 UUID equivocado (el del nombre, no el de Xbox) y no los deja entrar.
 
-### El hueco de un servidor no premium
+### El riesgo de un servidor no premium
 
 Sin cuentas de Mojang, el nombre no prueba nada: la contraseña la pone **el
 primero** que entra con ese nombre. Si alguien de fuera se entera del nombre
@@ -87,7 +87,7 @@ mc admin remove Admin_HD
 mc admin list
 ```
 
-Esto hace todo solo:
+El comando hace lo siguiente:
 
 1. Lo mete a `admins:` en `settings.yml`.
 2. **Lo mete a la whitelist**: no hace falta `mc whitelist add` aparte.

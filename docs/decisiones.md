@@ -1,14 +1,14 @@
 # Decisiones de diseño
 
-Esta página explica las decisiones que no son obvias al leer el código o el
-`docker-compose.yml`. Las versiones concretas y las alternativas que se
-descartaron están en **[versiones.md](versiones.md)**.
+Aquí apunto las decisiones que no se entienden solo leyendo el código o el
+`docker-compose.yml`. Las versiones concretas y lo que se descartó están en
+**[versiones.md](versiones.md)**.
 
-## Paper 26.1.2, no la versión más nueva
+## Paper 26.1.2, no la más nueva
 
-Cuando se armó el proyecto, la versión más nueva de Minecraft era la 26.3
-(septiembre de 2026), pero se usa **26.1.2** porque es la más reciente que
-soportan con releases estables todas las piezas:
+Cuando armé el proyecto, la versión más nueva de Minecraft era la 26.3
+(septiembre de 2026). Uso **26.1.2** porque es la última que todos los
+componentes soportan con releases estables:
 
 | Pieza | Hasta dónde llega | Por qué importa |
 |---|---|---|
@@ -17,11 +17,11 @@ soportan con releases estables todas las piezas:
 | Geyser 2.12.1 | 26.3 | Sin Geyser no entra nadie de Bedrock |
 | ViaVersion 5.12.2 | 26.3 | Traduce a los clientes de Java más nuevos que el servidor |
 | CoreProtect 24.1 | 26.2 | Es la red de seguridad contra grifeo |
-| Towns and Towers | 26.2 | El datapack se quedó en 26.2, y se necesita el datapack para que Bedrock lo vea |
+| Towns and Towers | 26.2 | El datapack se quedó en 26.2, y necesito el datapack para que Bedrock lo vea |
 
-Subir a 26.2 obligaría a usar un build de desarrollo de EssentialsX y AuthMe
+Subir a 26.2 me obligaría a usar un build de desarrollo de EssentialsX y AuthMe
 sin probar. Subir a 26.3 además dejaría fuera CoreProtect y Towns and Towers.
-Minecraft 26.x también exige **Java 25**: la imagen es
+Minecraft 26.x también pide **Java 25**: la imagen es
 `itzg/minecraft-server:2026.9.2-java25`, no una `-java21`.
 
 ## Versiones fijadas con SHA256
@@ -34,24 +34,24 @@ Los **28 artefactos** descargables tienen versión y hash fijados en
 - 5 packs de Vanilla Tweaks.
 
 `mc build` descarga, calcula el SHA256 y solo entonces copia el archivo. Si un
-hash no coincide, el build falla. La única excepción es el ZIP contenedor de
-Vanilla Tweaks: cambia de bytes entre generaciones, así que se verifican los
-5 packs de adentro, que sí están pinneados. Con `latest`, un reinicio cualquiera podría
-traer una versión nueva de Paper o de un plugin y romper el servidor sin que
-nadie lo haya decidido. `mc update` es la vía para revisar y aplicar versiones
-nuevas de forma consciente.
+hash no coincide, falla. La única excepción es el ZIP contenedor de Vanilla
+Tweaks: cambia de bytes entre generaciones, así que se verifican los 5 packs de
+adentro, que sí están fijados. Si usara `latest`, un reinicio cualquiera podría
+traer una versión nueva de Paper o de un plugin y romper el servidor sin que yo
+lo hubiera decidido. `mc update` sirve para revisar y aplicar versiones nuevas a
+mano.
 
 ## GravesX en vez de AngelChest
 
-AngelChest no tiene release estable para 26.x. Su último release estable es de
-enero de 2025 y lo único probado para 26.x era un release candidate servido
-desde un endpoint de “lo más nuevo”, así que tampoco se podía fijar con SHA256.
+AngelChest no tiene release estable para 26.x. El último es de enero de 2025 y
+lo único probado para 26.x era un release candidate servido desde un endpoint de
+"lo más nuevo", así que tampoco se podía fijar con SHA256.
 
-Se probó AxGraves, pero dibujaba la tumba solo con paquetes y un jugador de
+Probé AxGraves, pero dibujaba la tumba solo con paquetes y un jugador de
 Bedrock no la veía. **GravesX 2026.4.9.2** sí declara soporte para 26.1.2 y
 coloca un bloque real (una cabeza), que Geyser muestra a Bedrock como cualquier
 otro bloque. Además conserva la XP, dura una hora y cualquiera puede abrirla,
-tal como se pidió.
+como se pidió.
 
 ## Vanilla Tweaks: dos packs que ya no existen
 
@@ -66,16 +66,15 @@ Se pidieron seis packs y solo cuatro siguen publicados para 26.x:
 | invisible item frames | Ya no existe para 26.x |
 | right-click harvest | Ya no existe para 26.x |
 
-No se sustituyeron por plugins de autores sin reputación: cada dependencia
-extra es otra cosa que se puede romper en la siguiente actualización.
+No los cambié por plugins de autores sin reputación. Cada dependencia extra es
+otra cosa que se puede romper en la siguiente actualización.
 
 ## Datapacks en vez de mods para el mundo
 
 Terralith, Incendium, Nullscape, Dungeons and Taverns y Towns and Towers son
-**datapacks de bloques vanilla**. Es intencional: así los jugadores de Bedrock
-ven los mismos biomas y estructuras que los de Java sin instalar nada. Lo mismo
-aplica a Timber: la tala de árbol completo es un datapack de Vanilla Tweaks, no
-un plugin más.
+**datapacks de bloques vanilla**. Lo hice así para que los jugadores de Bedrock
+vean los mismos biomas y estructuras que los de Java sin instalar nada. Timber
+también es un datapack de Vanilla Tweaks, no un plugin.
 
 ## Configuración generada, no editada
 
@@ -84,13 +83,13 @@ memoria, idioma, respaldos y datos del bot. `mc build` valida ese archivo y
 `.env` con pydantic, renderiza las plantillas Jinja2 y escribe las
 configuraciones en `data/`.
 
-Por eso **no se editan los archivos de `data/`**: se sobrescriben. Las copias
+Por eso no se editan los archivos de `data/`: se sobrescriben. Las copias
 comentadas para leer están en `minecraft/generated/`, y el bloque `MC_*` que
 `mc build` escribe al final de `.env` tampoco se toca a mano.
 
 ## Dos contenedores y timers de systemd
 
-La arquitectura no usa un tercer contenedor para respaldos:
+No uso un tercer contenedor para respaldos:
 
 | Pieza | Qué hace |
 |---|---|
@@ -104,11 +103,11 @@ La arquitectura no usa un tercer contenedor para respaldos:
 
 Los respaldos corren con systemd y `mc backup now` para que no dependan del
 ciclo de vida de un contenedor y sigan funcionando aunque Minecraft esté
-apagado. Es una decisión deliberada, no una pieza faltante.
+apagado.
 
-## `mc doctor` como health check
+## `mc doctor` como chequeo
 
-`mc doctor` revisa puertos, RAM, disco, TPS, versiones y traducciones. No
-sustituye a un sistema de observabilidad completo, pero cubre lo que puede
-romper el servidor en este despliegue y lo hace sin servicios externos.
-`mc-monitor.timer` complementa la revisión cada hora y avisa por Discord.
+`mc doctor` revisa puertos, RAM, disco, TPS, versiones y traducciones. No es un
+sistema de monitoreo completo, pero cubre lo que puede romper este despliegue y
+no depende de servicios externos. `mc-monitor.timer` complementa la revisión
+cada hora y avisa por Discord.

@@ -10,9 +10,9 @@ La dirección y el puerto cambian según en qué juegues.
 Cambia `tu-direccion.com` por la de tu servidor (ve `docs/vps.md` si todavía
 no tienes una).
 
-**Si juegas en Bedrock 26.60 o más nuevo**, el servidor ya acepta NetherNet.
-No hay que cambiar nada: la dirección y el puerto siguen siendo los mismos.
-Las versiones anteriores siguen entrando por RakNet.
+Si juegas en Bedrock 26.60 o más nuevo, el servidor ya acepta NetherNet. No
+hay que cambiar nada: la dirección y el puerto siguen siendo los mismos. Las
+versiones anteriores siguen entrando por RakNet.
 
 ---
 
@@ -35,12 +35,11 @@ Dile a un admin tu nombre:
 El servidor es no premium, o sea que Mojang no verifica a nadie. Tu personaje
 es tuyo porque tienes una contraseña.
 
-**La primera vez** te sale una ventanita que dice **"Registrarte"**: escribe
-una contraseña, repítela y dale a **Registrarme**. **Apúntatela**: si se te
-olvida, un admin tiene que borrar tu registro y empiezas de nuevo.
+La primera vez te sale una ventanita que dice **"Registrarte"**: escribe una
+contraseña, repítela y dale a **Registrarme**. Apúntatela: si se te olvida, un
+admin tiene que borrar tu registro y empiezas de nuevo.
 
-**Las siguientes veces** sale la ventanita **"Entrar"**: tu contraseña y
-listo.
+Las siguientes veces sale la ventanita **"Entrar"**: tu contraseña y listo.
 
 Si por alguna razón no te sale la ventanita (versiones viejas de Minecraft),
 el chat te dice qué escribir:
@@ -50,8 +49,8 @@ el chat te dice qué escribir:
 /login tuContraseña                     ← las demás
 ```
 
-Hasta que no entres, no puedes moverte, hablar ni abrir tu inventario. Es a
-propósito: así nadie puede entrar con tu nombre y llevarse tus cosas.
+Hasta que no entres, no puedes moverte, hablar ni abrir tu inventario. Así
+nadie puede entrar con tu nombre y llevarse tus cosas.
 
 Si se te cae el internet y vuelves en menos de 10 minutos, no tienes que
 escribir la contraseña otra vez.
@@ -173,16 +172,16 @@ Usa uno de estos (si el primero no jala, prueba el otro):
 - **No lo hacemos nosotros.** Es un servicio de terceros, gratis. Si un día
   deja de funcionar, no es tu configuración.
 - **Deja el DNS puesto.** No hay que cambiarlo cada vez.
-- **Si la consola deja de navegar**, regresa el DNS a automático. Es lo
-  primero que hay que probar si algo de la red falla.
+- Si la consola deja de navegar, regresa el DNS a automático. Es lo primero
+  que hay que probar si algo de la red falla.
 - La primera vez que entras a BedrockConnect tarda un poco. Es normal.
 
 ---
 
-## Si juegas en Java Y en Bedrock
+## Si juegas en Java y en Bedrock
 
-Puedes tener **el mismo personaje** en los dos: el mismo inventario, las
-mismas casas, la misma XP.
+Puedes tener el mismo personaje en los dos: el mismo inventario, las mismas
+casas, la misma XP.
 
 Ve a **[docs/vincular-cuentas.md](vincular-cuentas.md)**.
 
@@ -212,7 +211,7 @@ Ve a **[docs/vincular-cuentas.md](vincular-cuentas.md)**.
   reaparecer te dan una brújula que apunta a ella. Dura **1 hora** y
   **cualquiera puede abrirla**, así que si un amigo llega antes, te las puede
   guardar. `/graves` te enseña dónde están las tuyas.
-- **Dormir solo.** Con que **una** persona se duerma, amanece.
+- **Dormir solo.** Con que una persona se duerma, amanece.
 - **Ordenar cofres.** Escribe `/chestsort` y prende "auto-sort chests": cada
   cofre que abras se acomoda solo. En Java también se ordena con shift + clic
   en una casilla vacía. Funciona igual en Bedrock.

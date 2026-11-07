@@ -7,7 +7,7 @@
 - Docker con Compose, solo si vas a levantar el servidor o validar `docker-compose.yml`.
 - Git.
 
-Los tests **no** necesitan Docker: no levantan contenedores ni abren sockets.
+Los tests no necesitan Docker.
 
 ## Instalación
 
@@ -21,13 +21,13 @@ uv run pre-commit install
 
 `uv sync` instala el workspace de `packages/mc_admin` y `packages/pagos_bot`, más las herramientas de desarrollo: ruff, mypy, pytest, pytest-cov y pre-commit.
 
-El repositorio no versiona `settings.yml`: ese archivo lleva los nombres, Discord IDs y XUIDs reales. Para desarrollo, crea tu copia desde la plantilla:
+El repositorio no versiona `settings.yml` porque lleva los nombres, Discord IDs y XUIDs reales. Para desarrollo, crea tu copia desde la plantilla:
 
 ```bash
 cp settings.example.yml settings.yml
 ```
 
-`mc setup` también la crea sola la primera vez.
+`mc setup` también la crea la primera vez.
 
 ## lint, tipos y tests
 
@@ -39,9 +39,7 @@ uv run pytest                   # tests
 uv run pytest --cov=mc_admin --cov=pagos_bot
 ```
 
-La cobertura tiene un piso de **67%** (`fail_under` en `pyproject.toml`).
-Si un cambio la baja, `pytest` falla: no se baja el número para que pase un
-commit; se agregan tests o se justifica el cambio en el mismo commit.
+La cobertura tiene un piso de **67%** (`fail_under` en `pyproject.toml`). Si un cambio la baja, `pytest` falla. Hay que agregar tests o justificar el cambio en el mismo commit.
 
 El `pre-commit` ejecuta, antes de cada commit:
 
@@ -53,7 +51,7 @@ El `pre-commit` ejecuta, antes de cada commit:
 
 ## Los tests
 
-Son **601 tests**. Ninguno levanta un contenedor ni abre un socket: Docker y RCON se sustituyen por dobles. Los tests parten de `settings.example.yml`, el `manifest.yml` y las plantillas **reales**, así que detectan cambios que rompan el formato del chat, la duplicación de pistones, las rutas de los datapacks o las reglas del bot de pagos.
+Son **601 tests**. No levantan contenedores ni abren sockets: Docker y RCON se reemplazan con dobles. Parten de `settings.example.yml`, el `manifest.yml` y las plantillas **reales**, así que detectan cambios que rompan el formato del chat, la duplicación de pistones, las rutas de los datapacks o las reglas del bot de pagos.
 
 La configuración compartida está en `pyproject.toml`:
 
@@ -118,7 +116,7 @@ minecraft-hd/
 | `mc-monitor.timer` | Revisión horaria de respaldo, disco y servidor |
 | `mc-copiar-respaldos.timer` | Copia diaria del VPS a la PC (timer de usuario) |
 
-Los respaldos son timers de systemd, **no** un contenedor. `mc backup now` se puede correr a mano y los timers siguen funcionando aunque Minecraft esté apagado.
+Los respaldos son timers de systemd, no un contenedor. `mc backup now` se puede correr a mano y los timers siguen funcionando aunque Minecraft esté apagado.
 
 ## CI
 
@@ -131,10 +129,6 @@ El workflow `.github/workflows/ci.yml` corre en `main`, en `produccion` y en cad
 5. Build de la imagen del bot de pagos.
 6. `gitleaks` sobre el historial.
 
-El workflow `.github/workflows/smoke.yml` corre los lunes (o a mano desde
-Actions) y hace lo que el CI normal evita a propósito: baja los 28 artefactos
-reales, verifica sus SHA256 y comprueba que un segundo `mc build` no cambie
-nada. Así se detecta si un plugin desapareció, cambió de URL o publicó otra
-versión sin avisar.
+El workflow `.github/workflows/smoke.yml` corre los lunes (o a mano desde Actions) y hace lo que el CI normal no hace: baja los 28 artefactos reales, verifica sus SHA256 y comprueba que un segundo `mc build` no cambie nada. Así se detecta si un plugin desapareció, cambió de URL o publicó otra versión sin avisar.
 
 El badge del README apunta a la rama `main`.

@@ -1,29 +1,29 @@
 # Respaldos
 
-El proyecto tiene cinco capas de protección:
+Los respaldos tienen cinco partes:
 
-1. **Respaldo local automático** cada 6 horas, sin apagar el servidor.
-2. **Verificación semanal** de todos los respaldos.
-3. **Simulacro mensual de restauración**: se extrae el último respaldo en un
+1. Respaldo local automático cada 6 horas, sin apagar el servidor.
+2. Verificación semanal de todos los respaldos.
+3. Simulacro mensual de restauración: se extrae el último respaldo en un
    temporal y se comprueba que el mundo y las bases SQLite abren.
-4. **Copia diaria a la PC** por SSH, fuera del VPS.
-5. **Alertas por Discord** si un respaldo falla o el servidor se queda sin
+4. Copia diaria a la PC por SSH, fuera del VPS.
+5. Alertas por Discord si un respaldo falla o el servidor se queda sin
    respaldo reciente.
 
-Los respaldos locales viven en `backups/`. La copia externa vive en
+Los respaldos locales están en `backups/`. La copia externa vive en
 `~/Respaldos_Minecraft_HD/` en la PC.
 
 ---
 
-## Qué hace el motor de respaldos
+## Qué hace `mc backup now`
 
-`mc backup now` ejecuta este procedimiento:
+El comando ejecuta este procedimiento:
 
 1. Pide al servidor `save-off` y `save-all flush` por RCON, para que el mundo
    quede quieto en disco.
 2. Detecta las bases SQLite dentro de `data/` y las del bot de pagos.
-3. Pide a SQLite una **foto consistente** de cada base con su API de respaldo.
-   Así no importa que el servidor o el bot sigan escribiendo.
+3. Pide a SQLite una copia consistente de cada base con su API de respaldo,
+   así no importa que el servidor o el bot sigan escribiendo.
 4. Escribe el archivo `.tgz` en un nombre temporal y lo renombra al final.
    Nunca queda un respaldo a medias con nombre definitivo.
 5. Agrega `BACKUP_INFO.json` dentro del archivo, con fecha, versión de
@@ -61,9 +61,9 @@ backups/
 └── .bloqueo
 ```
 
-Los respaldos anteriores al motor nuevo pueden llamarse `.tar.gz` y no tener
-sidecars. `mc backup verify` los revisa igual; solo los respaldos nuevos
-exigen `BACKUP_INFO.json`.
+Los respaldos anteriores a esta versión del comando pueden llamarse `.tar.gz`
+y no tener sidecars. `mc backup verify` los revisa igual; solo los respaldos
+nuevos exigen `BACKUP_INFO.json`.
 
 ---
 
@@ -111,8 +111,8 @@ Haz un respaldo manual antes de actualizar un plugin, cambiar algo grande en
 
 ## Respaldos automáticos con systemd
 
-Los respaldos ya no viven en un contenedor. Los ejecuta un timer de systemd
-con el usuario `minecraft`, que llama a `mc backup now` y después a
+Los respaldos no viven en un contenedor. Los ejecuta un timer de systemd con
+el usuario `minecraft`, que llama a `mc backup now` y después a
 `mc backup prune`.
 
 Los archivos están en `deploy/systemd/`:
@@ -153,8 +153,8 @@ varios minutos en comprimirse.
 
 ## Simulacro de restauración
 
-Verificar el `.tgz` no es lo mismo que restaurarlo. El simulacro hace la
-parte peligrosa del restore —extraer el mundo y abrir las bases— pero en una
+Verificar el `.tgz` no prueba que se pueda restaurar. El simulacro hace la
+parte peligrosa de una restauración (extraer el mundo y abrir las bases) en una
 carpeta temporal, sin apagar el servidor ni tocar `data/`:
 
 ```bash
@@ -179,9 +179,9 @@ mundo: el doble del tamaño del respaldo, aproximadamente.
 
 ## Copia diaria a la PC
 
-Un respaldo que vive en el mismo VPS no protege contra la pérdida del VPS. La
-copia externa se hace por SSH desde la PC, sin credenciales nuevas: usa la
-misma llave con la que administras el servidor.
+Tener los respaldos solo en el VPS no sirve si se pierde el VPS. La copia
+externa se hace por SSH desde la PC, sin credenciales nuevas: usa la misma
+llave con la que administras el servidor.
 
 El script está en `deploy/pc/copiar_respaldos.py`. Hace esto:
 
@@ -312,13 +312,13 @@ el tiempo que el mundo.
 ### Respaldos viejos con WAL
 
 Los respaldos anteriores copiaban la base viva con su `-wal` y su `-shm`. Al
-restaurar, el motor nuevo extrae esos archivos a un temporal y los consolida
+restaurar, el comando actual extrae esos archivos a un temporal y los consolida
 con la API de SQLite. Al destino llega un solo archivo sano, sin acompañantes
 viejos que se apliquen encima.
 
 ---
 
-## Verificación y simulacro de restore
+## Verificación y simulacro de restauración
 
 La verificación semanal revisa:
 
@@ -386,7 +386,7 @@ Lo normal es 1–3 GB con el mundo pregenerado. Revisa qué ocupa espacio:
 du -sh data/* | sort -h | tail -5
 ```
 
-Si aparece algo que se regenera solo, agrégalo a las exclusiones del motor.
+Si aparece algo que se regenera solo, agrégalo a las exclusiones de los respaldos.
 
 ### `mc backup verify` marca un respaldo
 

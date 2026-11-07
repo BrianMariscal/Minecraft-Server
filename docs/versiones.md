@@ -1,10 +1,10 @@
 # Versiones: qué está fijado y por qué
 
-Todo en este proyecto tiene versión exacta. Nada de `latest`.
+Todo va con versión exacta; no uso `latest`.
 
-La razón es simple: con `latest`, un reinicio cualquiera puede traerte una
-versión nueva de Paper que rompe tres plugins, y te enteras cuando nadie
-puede entrar. Aquí las versiones solo cambian cuando tú decides.
+Con `latest`, un reinicio cualquiera puede traer una versión nueva de Paper
+que rompe tres plugins, y te enteras cuando nadie puede entrar. Aquí las
+versiones cambian cuando yo decido.
 
 - Las versiones del servidor y de las imágenes están en **`settings.yml`**.
 - Las de los plugins y datapacks, con su sha256, están en
@@ -15,13 +15,13 @@ puede entrar. Aquí las versiones solo cambian cuando tú decides.
 
 ## Por qué Minecraft 26.1.2 y no la más nueva
 
-Investigado y verificado el 30 de septiembre de 2026.
+Lo revisé el 30 de septiembre de 2026.
 
-Cuando se armó esto, la versión más nueva de Minecraft era la **26.3**
-(salió el 15 de septiembre de 2026). No la usamos. Tampoco la 26.2.
+Cuando armé esto, la versión más nueva de Minecraft era la **26.3**
+(salió el 15 de septiembre de 2026). No la uso, ni la 26.2.
 
 El proyecto corre en **26.1.2** porque es la versión más reciente que
-**todas** las piezas soportan con releases estables. Esto es lo que topa:
+**todos** los componentes soportan con releases estables. Esto es lo que topa:
 
 | Pieza | Hasta dónde llega | Por qué importa |
 |---|---|---|
@@ -63,7 +63,7 @@ actualizado no podría entrar.
 
 ---
 
-## Lo que se cambió respecto a lo que se pidió
+## Lo que cambié del pedido
 
 ### AngelChest → GravesX
 
@@ -77,12 +77,12 @@ Se pidió AngelChest para las tumbas. **No se puede usar:**
   sha256: en cuanto salga el RC6, el sha256 dejaría de coincidir y `mc build`
   fallaría.
 
-Primero se puso **AxGraves 1.32.1**, pero dibuja la tumba solo con paquetes
+Primero puse **AxGraves 1.32.1**, pero dibuja la tumba solo con paquetes
 (un armor stand y un holograma que no existen en el mundo). En Bedrock no se
 veía nada: el 2026-10-06 un jugador de Bedrock se murió y no encontró ni la
 tumba ni sus cosas.
 
-Ahora va **GravesX 2026.4.9.2**: release estable, declara soporte 26.1.2,
+Ahora uso **GravesX 2026.4.9.2**: release estable, declara soporte 26.1.2,
 está en Modrinth (URL y sha256 fijables) y pone un **bloque real** (una
 cabeza) donde mueres, que Geyser le enseña a Bedrock como a cualquier otro
 bloque. Además integra Floodgate y al reaparecer te da una brújula que apunta
@@ -111,13 +111,13 @@ como en los *crafting tweaks*):
 | **invisible item frames** | ❌ ya no existe para 26.x |
 | **right-click harvest** | ❌ ya no existe para 26.x |
 
-No se sustituyeron por plugins de terceros por diseño: los que hay son de
-autores sin reputación y cada uno es una dependencia más que se puede romper
-en la siguiente actualización.
+No los cambié por plugins de terceros: los que hay son de autores sin
+reputación y cada uno es una dependencia más que se puede romper en la
+siguiente actualización.
 
 ### Tala de árbol completo: datapack en vez de plugin
 
-Se pidió "un plugin ligero compatible con Geyser". Se usa el datapack
+Para la tala se pidió un plugin ligero compatible con Geyser. Uso el datapack
 **Timber de Vanilla Tweaks** (v2.1.19), que es mejor para este caso:
 
 - Es 100% vanilla del lado del servidor, así que Bedrock lo ve bien vía
@@ -127,14 +127,15 @@ Se pidió "un plugin ligero compatible con Geyser". Se usa el datapack
 
 ### Sonido al ser mencionado en el chat: no se puso
 
-Se pidió "si existe un plugin ligero compatible con Geyser; si no, omítelo".
-No existe uno mantenido para 26.x, así que no se puso.
+Para el sonido al ser mencionado se pidió un plugin ligero compatible con
+Geyser, y si no había, omitirlo. No hay uno mantenido para 26.x, así que no
+está.
 
 ---
 
-## Piezas que no se pidieron pero hacen falta
+## Lo que no se pidió pero hacía falta
 
-Estas dos salieron de arrancar el servidor real y leer lo que avisaba:
+Estos dos salieron de arrancar el servidor y leer los avisos:
 
 ### VaultUnlocked 2.20.3
 
@@ -160,13 +161,13 @@ Sin él, AuthMe apaga solo dos protecciones y lo avisa:
 > `[AuthMe] WARNING! The denyTabComplete feature requires PacketEvents!
 > Disabling it...`
 
-En un servidor no premium, que el inventario esté protegido antes de que
-alguien escriba su contraseña no es un detalle: es lo que evita que alguien
-entre con tu nombre y se lleve tus cosas.
+En un servidor no premium, proteger el inventario antes de que alguien
+escriba su contraseña evita que alguien entre con tu nombre y se lleve tus
+cosas.
 
 ---
 
-## Cosas de Minecraft 26.x que rompen las guías de internet
+## Detalles de 26.x que no salen en las guías
 
 ### Las gamerules cambiaron de nombre
 
@@ -178,8 +179,8 @@ En 26.x pasaron de `camelCase` a `snake_case`:
 ```
 
 Con el nombre viejo el servidor contesta `Incorrect argument for command` y
-**la regla no se aplica**, sin otro aviso que esa línea. Es muy fácil creer
-que quedó puesta.
+**la regla no se aplica**, sin otro aviso que esa línea. Es fácil creer que
+quedó puesta.
 
 ### Las gamerules ahora son por dimensión
 
@@ -207,7 +208,7 @@ WARN: ... Missing element villager_death:entities/villager
 WARN: ... Missing element double_shulker_shells:entities/shulker
 ```
 
-**No es un problema y las cabezas de mobs sí funcionan.**
+**No es un problema: las cabezas de mobs funcionan.**
 
 Vanilla Tweaks arma el pack de "more mob heads" con enganches para convivir
 con otros packs suyos, los instales o no. Cada loot table queda con tres
@@ -243,9 +244,9 @@ comentarios y con las claves en orden alfabético. Es normal.
 
 ## Cómo subir una versión
 
-`mc update` te dice qué hay nuevo, pero **no edita el manifest solo**. Es a
-propósito: cada versión nueva hay que bajarla y recalcularle el sha256, y eso
-conviene hacerlo leyendo el changelog del plugin.
+`mc update` te dice qué hay nuevo, pero **no edita el manifest solo**. Cada
+versión nueva hay que bajarla y recalcularle el sha256, y conviene leer el
+changelog del plugin.
 
 ```bash
 mc backup now            # primero lo primero
@@ -260,8 +261,8 @@ Luego, para cada plugin que quieras subir:
 3. Pega ese sha256 en el manifest.
 4. `mc build` otra vez, luego `mc restart`, y revisa `mc logs`.
 
-`mc update` nunca te propone subir un plugin a una versión que ya no soporta
-tu Minecraft: así es como se rompe un servidor de un día para otro.
+`mc update` no te propone un plugin que ya no soporte tu versión de
+Minecraft.
 
 ### Si quieres cambiar de versión de Minecraft
 

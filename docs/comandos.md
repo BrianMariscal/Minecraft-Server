@@ -1,7 +1,7 @@
 # Comandos de `mc`
 
-`mc` es la CLI del proyecto. Todos los comandos aceptan `--help`, y los que
-modifican el servidor o los datos tienen `--dry-run` cuando aplica.
+`mc` es la CLI del proyecto. Cada comando acepta `--help`; los que modifican el
+servidor o los datos aceptan `--dry-run` cuando tiene sentido.
 
 ## Preparar
 
@@ -65,11 +65,11 @@ modifican el servidor o los datos tienen `--dry-run` cuando aplica.
 | `mc monitor` | Revisa respaldo, disco y servidor; avisa por Discord |
 | `mc alert` | Manda una alerta al canal de Discord |
 
-## Operaciones peligrosas
+## Comandos que tocan datos
 
 `mc backup restore` y `mc world reset` piden doble confirmación, hacen un
 respaldo antes de tocar nada y aceptan `--dry-run`. Para el resto de comandos,
 `mc --help` y `mc <comando> --help` muestran las opciones disponibles.
 
-Antes de restaurar o regenerar el mundo, revisa
+Antes de restaurar o regenerar el mundo, lee
 **[respaldos.md](respaldos.md)** y **[administrar.md](administrar.md)**.

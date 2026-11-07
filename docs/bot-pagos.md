@@ -159,7 +159,7 @@ Cuando todos pagan, el bot manda:
 
 Y deja de molestar hasta el mes que entra.
 
-### Lo que se queda debiendo no se olvida
+### Las deudas pasan al siguiente mes
 
 Si octubre se cierra con alguien sin pagar, al cambiar a noviembre esa
 deuda **sigue ahí**:
@@ -196,8 +196,8 @@ El tesorero (o quien tenga el rol configurado) confirma con:
 - **`/confirmar @persona`**, que confirma lo más viejo que esa persona
   tenga pendiente. Para un mes en concreto: `/confirmar @persona mes:2026-10`.
 
-Hasta que no se confirma, ese dinero **no cuenta como juntado**. Es a
-propósito: si el tesorero no lo vio, el dinero no está.
+Hasta que no se confirma, ese dinero **no cuenta como juntado**. Si el
+tesorero no lo vio, el dinero no está.
 
 ---
 
@@ -225,7 +225,7 @@ propósito: si el tesorero no lo vio, el dinero no está.
 `mes` se escribe como `2026-10`. Si no lo pones, `/desmarcar` y `/eximir`
 usan el mes actual.
 
-**La banda** — `/miembro`
+**La banda:** `/miembro`
 
 | Comando | Qué hace |
 |---|---|
@@ -234,7 +234,7 @@ usan el mes actual.
 | `/miembro monto @persona monto [este_mes]` | Cambia lo que paga. Por defecto desde el mes que viene |
 | `/miembro nombre @persona nombre` | Cómo aparece en las listas |
 
-**Cómo se cobra** — `/ajustes`
+**Cómo se cobra:** `/ajustes`
 
 | Comando | Qué hace |
 |---|---|
@@ -315,7 +315,7 @@ Y `mc build && mc restart`. El contenedor del bot ya no arranca.
 
 ---
 
-## Cómo está hecho (para quien le interese)
+## Cómo está hecho
 
 - **El dinero se guarda en centavos como entero.** Nunca en `float`: un float
   no puede representar 0.10 exacto y después de sumar quince veces te sobran
@@ -325,9 +325,9 @@ Y `mc build && mc restart`. El contenedor del bot ya no arranca.
 - **Los recordatorios no se repiten.** Antes de mandar un aviso, el bot
   revisa en su base de datos si ya mandó ese mismo aviso hoy. Si el VPS se
   reinicia tres veces el día de pago, el aviso sale **una** vez.
-- **Los botones sobreviven los reinicios.** Cada botón lleva en su
-  identificador lo que necesita (el de "Sí me llegó", de quién y de qué mes
-  es el pago), así que el de un mensaje de hace una semana sigue jalando.
+- **Los botones siguen funcionando después de reiniciar.** Cada botón lleva
+  en su identificador lo que necesita (el de "Sí me llegó", de quién y de qué
+  mes es el pago), así que el de un mensaje de hace una semana sigue jalando.
 - **La configuración vive en la base de datos**, en la tabla `ajustes`. Cada
   cambio desde Discord se valida completo antes de guardarse: si el
   resultado no tiene sentido, no se guarda nada.
@@ -338,7 +338,7 @@ Y `mc build && mc restart`. El contenedor del bot ya no arranca.
   log y vuelve a intentar: un bot caído no le cobra a nadie.
 - **La base de datos es SQLite** en un volumen, y **entra en los respaldos**
   automáticos junto con el mundo.
-- **El libro de movimientos solo crece.** La tabla `auditoria` no tiene
+- **La tabla de movimientos solo crece.** La tabla `auditoria` no tiene
   `UPDATE` ni `DELETE`: cada acción del tesorero o del bot deja un renglón con
   actor, fecha, mes y detalle. Así se puede reconstruir qué pasó sin depender
   de los logs del contenedor, que se rotan.

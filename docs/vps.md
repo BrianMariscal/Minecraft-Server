@@ -1,7 +1,6 @@
 # Subir el servidor a un VPS
 
-Esta guía va de cero: desde contratar el VPS hasta tener el servidor
-corriendo.
+Esta guía empieza con el VPS vacío y termina con el servidor corriendo.
 
 ---
 
@@ -20,8 +19,8 @@ Con 8 GB, `settings.yml` le da 6 GB al servidor y quedan ~2 GB para el
 sistema, el bot de pagos y los respaldos. `mc doctor` te avisa si queda
 justo.
 
-El disco pesa más de lo que parece: un mundo pregenerado de radio 3000 son
-unos 20 GB, más 7 días de respaldos.
+El disco se llena más rápido de lo que parece: un mundo pregenerado de radio
+3000 son unos 20 GB, más 7 días de respaldos.
 
 ### Dónde, si juegas desde México
 
@@ -221,8 +220,8 @@ De aquí en adelante la guía usa `mc` directamente.
 
 ## 7. El firewall
 
-Esto es lo más importante de seguridad del VPS. Solo los puertos del juego
-quedan abiertos.
+Esto es lo más importante para la seguridad del VPS. Solo los puertos del
+juego quedan abiertos.
 
 ```bash
 # El orden importa: primero SSH, o te quedas fuera de tu propio servidor.
@@ -278,7 +277,7 @@ curl --fail --max-time 10 http://TU_IP:19132/v1/join
 Si contesta con datos del servidor, el TCP llega. Si se queda callado o da
 timeout, el puerto está filtrado antes de llegar al VPS.
 
-### Dos cosas que hay que tener claras
+### Dos detalles importantes
 
 **Bedrock necesita UDP y, desde la versión 26.60, también TCP.** RakNet usa
 UDP `19132`; NetherNet usa TCP `19132` para la señalización y UDP `19133`
@@ -317,7 +316,7 @@ sudo sysctl --system
 
 ## 8. Una dirección fácil de recordar
 
-Nadie se acuerda de la IP vieja.
+Una IP es difícil de recordar.
 
 ### Gratis: DuckDNS
 
@@ -478,15 +477,14 @@ Si va justo, bájale a `recursos.memoria` en `settings.yml` y corre
 
 ## Cambiar de proveedor de VPS
 
-La pregunta normal es "¿me llevo mi Docker y ya?". Casi: los contenedores
-son desechables, lo que importa son los **datos**.
+Cuando uno se muda, lo primero que piensa es en llevarse Docker. Los
+contenedores dan igual; lo que importa son los **datos**.
 
-Y aquí hay algo que juega a tu favor: el `docker-compose.yml` usa *bind
-mounts* a la carpeta del proyecto, no volúmenes de Docker. O sea que **todo
-lo irremplazable vive dentro de `minecraft-hd/`**. No hay nada escondido
-en `/var/lib/docker` que haya que exportar.
+El `docker-compose.yml` usa *bind mounts* a la carpeta del proyecto, no
+volúmenes de Docker. Todo lo irremplazable vive dentro de `minecraft-hd/`. No
+hay nada escondido en `/var/lib/docker` que haya que exportar.
 
-### Lo que SÍ te llevas
+### Lo que te llevas
 
 | Qué | Por qué |
 |---|---|
@@ -497,7 +495,7 @@ en `/var/lib/docker` que haya que exportar.
 | `minecraft/`, `packages/`, `docker-compose.yml` | El proyecto. |
 | `backups/` | Opcional, pero llévate al menos el último. |
 
-### Lo que NO te llevas
+### Lo que no te llevas
 
 | Qué | Por qué |
 |---|---|
@@ -561,7 +559,7 @@ mc start
 mc logs -f
 ```
 
-### Las cuatro cosas que Docker NO se lleva
+### Lo que Docker no se lleva
 
 Esto es lo que suele olvidarse:
 
@@ -583,7 +581,7 @@ Esto es lo que suele olvidarse:
    host en `MC_SSH` (`docs/respaldos.md`). No hay nada de rclone que
    configurar en el servidor nuevo.
 
-### Lo que NO hay que tocar
+### Lo que no cambia
 
 - **Los tokens de Discord.** Están amarrados a la aplicación, no a la
   máquina. Los dos bots siguen funcionando igual.
@@ -594,7 +592,7 @@ Esto es lo que suele olvidarse:
 - **El mes del bot de pagos.** Va en `pagos-datos/`, así que no se pierde
   quién ya pagó.
 
-### La ruta alterna: por respaldo
+### Otra opción: restaurar un respaldo
 
 Si prefieres no andar con `rsync` y sus exclusiones, un respaldo ya trae
 exactamente lo que hay que llevarse (deja fuera los jars, el caché y los
